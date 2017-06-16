@@ -351,3 +351,41 @@ function ( ym_add_object_library )
     )
 
 endfunction ()
+
+# gtest 用のターゲットの生成
+# USAGE: ym_add_gtest ( <target-name>
+#                       <source-file> [<source-file>]
+#                     )
+function( ym_add_gtest )
+  foreach ( pos RANGE 0 ${ARGC} )
+    if ( ${pos} EQUAL ${ARGC} )
+      break()
+    endif ()
+    list (GET ARGV ${pos} argv)
+    if ( ${pos} EQUAL 0 )
+      # ターゲット名の設定
+      set (_target_name   "${argv}")
+    else ()
+      list (APPEND _sources ${argv})
+    endif ()
+  endforeach ()
+
+  add_executable ( ${_target_name}
+    ${_sources}
+    )
+
+  target_compile_options ( ${_target_name}
+    PRIVATE "-g"
+    )
+
+  target_link_libraries ( ${_target_name}
+    ${YM_LIB_DEPENDS}
+    pthread
+    ${GTEST_BOTH_LIBRARIES}
+    )
+
+  add_test ( ${_target_name}
+    ${_target_name}
+    )
+
+endfunction ()
