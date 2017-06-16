@@ -102,7 +102,8 @@ public:
   /// @brief コンストラクタ
   /// @param[in] file ファイル名
   /// @param[in] line 行番号
-  /// @note 通常 file, line には __FILE__, __LINE__ マクロを用いる．
+  ///
+  /// 通常 file, line には __FILE__, __LINE__ マクロを用いる．
   AssertNotReached(const char* file,
 		   int line) :
     AssertError(file, line) { }
@@ -114,7 +115,8 @@ public:
 /// @brief 通常は到達してはいけない部分に達したときに例外を投げる関数．
 /// @param[in] file 例外の発生したソースファイル名
 /// @param[in] line 例外の発生したソースファイルの行番号
-/// @note 通常 file, line には __FILE__, __LINE__ マクロを用いる．
+///
+/// 通常 file, line には __FILE__, __LINE__ マクロを用いる．
 //////////////////////////////////////////////////////////////////////
 inline
 void
@@ -146,7 +148,8 @@ assert_cond(A assertion,
 /// @param[in] assertion 例外発生条件
 /// @param[in] file ファイル名
 /// @param[in] line 行番号
-/// @note 通常 file, line には __FILE__, __LINE__ マクロを用いる．
+///
+/// 通常 file, line には __FILE__, __LINE__ マクロを用いる．
 //////////////////////////////////////////////////////////////////////
 template<typename A>
 void
@@ -163,10 +166,10 @@ assert_cond(A assertion,
 /// @brief 通常は到達してはいけない部分に達したときに例外を投げるマクロ
 ///
 /// ソースプログラム中で
-///
+/// @code{.cpp}
 ///   ...
 ///   ASSERT_NOT_REACHED;
-///
+/// @endcode
 /// という風に使う．ここに実行が到達したら例外が送出される．
 //////////////////////////////////////////////////////////////////////
 #define ASSERT_NOT_REACHED assert_not_reached(__FILE__, __LINE__)
@@ -178,10 +181,10 @@ assert_cond(A assertion,
 /// @param[in] assertion 例外発生条件
 ///
 /// ソースプログラム中で
-///
+/// @code{.cpp}
 ///   ...
 ///   ASSERT_COND( x > 0 );
-///
+/// @endcode
 /// という風に使う．この例では x > 0 が成り立たないと例外が送出される．
 //////////////////////////////////////////////////////////////////////
 #define ASSERT_COND(assertion) assert_cond(assertion, __FILE__, __LINE__)

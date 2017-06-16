@@ -23,7 +23,6 @@
 #if defined(__clang__)
 #include <algorithm>
 #include <functional>
-//#define constexpr const
 #elif __GNUC__ >= 4 && __GNUC_MINOR__ >= 6
 #include <ext/algorithm>
 #include <functional>
@@ -39,7 +38,7 @@
 
 
 //////////////////////////////////////////////////////////////////////
-// std:: にある汎用的な名前を自分の名前空間にインポートする
+// std:: にある汎用的な名前を自分の名前空間(YM_NAMESPACE)にインポートする
 //////////////////////////////////////////////////////////////////////
 BEGIN_NAMESPACE_YM
 
