@@ -83,6 +83,9 @@ typedef @UINT64_TYPE@ ymuint64;
 /// @brief ポインタと同サイズの符号なし整数型
 typedef @PTRINT_TYPE@ ympuint;
 
+/// @brief サイズの指定に使う型
+typedef ymuint64 SizeType;
+
 
 //////////////////////////////////////////////////////////////////////
 // システム検査の結果
