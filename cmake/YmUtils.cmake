@@ -288,6 +288,7 @@ function ( ym_add_object_library )
       set (_target_name_a "${argv}_a")
       set (_target_name_p "${argv}_p")
       set (_target_name_d "${argv}_d")
+      set (_target_name_dd "${argv}_dd")
     else ()
       list (APPEND _sources ${argv})
     endif ()
@@ -347,6 +348,20 @@ function ( ym_add_object_library )
     )
 
   target_compile_definitions (${_target_name_d}
+    PRIVATE
+    )
+
+  # shared debug モードのターゲット
+  add_library (${_target_name_dd}
+    OBJECT
+    ${_sources}
+    )
+
+  target_compile_options (${_target_name_dd}
+    PRIVATE "-g" "-fPIC"
+    )
+
+  target_compile_definitions (${_target_name_dd}
     PRIVATE
     )
 
