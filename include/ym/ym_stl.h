@@ -69,6 +69,10 @@ using std::make_pair;
 using std::string;
 using std::vector;
 using std::list;
+using std::unique_ptr;
+using std::shared_ptr;
+using std::weak_ptr;
+using std::initializer_list;
 
 END_NAMESPACE_YM
 
