@@ -176,10 +176,16 @@ typedef ymuint64 SizeType;
 //////////////////////////////////////////////////////////////////////
 
 /// @brief ym-common 用の名前空間の開始
-#define BEGIN_NAMESPACE_YM BEGIN_NAMESPACE(@YM_NAMESPACE@)
+#define BEGIN_NAMESPACE_YM BEGIN_NAMESPACE(@YM_NSNAME@)
 
 /// @brief ym-common 用の名前空間の終了
-#define END_NAMESPACE_YM END_NAMESPACE(@YM_NAMESPACE@)
+#define END_NAMESPACE_YM END_NAMESPACE(@YM_NSNAME@)
+
+/// @brief ym-common 用の名前空間
+#define YM_NAMESPACE ::@YM_NSNAME@
+
+/// @brief ym-common 用の名前空間の文字列
+#define YM_NSNAME_STR "@YM_NSNAME@"
 
 // 雑多な定義
 #include "ym/ym_stl.h"
