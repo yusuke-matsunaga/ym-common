@@ -7,5 +7,7 @@
 
 # オプション文字列を追加する場合は以下のように
 # 既存のoptions変数に追加すること．
-
 # options="$options -DXXX=YYY"
+
+# 環境変数の設定は以下のように行う．
+# export PATH="/usr/local/bin:$PATH"

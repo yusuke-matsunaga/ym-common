@@ -4,7 +4,7 @@
 #
 # コンパイル用のディレクトリを作るシェルスクリプト
 #
-# Copyright (C) 2016, 2017 Yusuke Matsunaga (松永 裕介)
+# Copyright (C) 2016, 2017, 2018 Yusuke Matsunaga (松永 裕介)
 # All rights reserved
 
 
@@ -75,22 +75,18 @@ echo ${SED:="sed"} > /dev/null
 srcdir=`pwd`
 
 # 引数の数が異なっていたら usage を表示して終わる．
-if [ $# -ne 2 ]; then
-    echo "USAGE mk_builddir.sh <compiledir> <installdir>"
+if [ $# -ne 1 ]; then
+    echo "USAGE mk_builddir.sh <compiledir>"
     exit 1
 fi
 
 # ビルド用のディレクトリ名
 builddir=$1
 
-# インストール先のディレクトリ名
-installdir=$2
-
 # ディレクトリ名を表示して確認を求める．
 echo "****"
 echo "source  directory: $srcdir"
 echo "build   directory: $builddir"
-echo "install directory: $installdir"
 echo "****"
 do_confirm "continue ?"
 
@@ -105,7 +101,6 @@ test -d ${builddir} || mkdir -p ${builddir}
 # boot.sh ファイルを作る．
 boot="boot.sh"
 ${SED} -e s!___SRC_DIR___!${srcdir}! \
-     -e s!___INSTALL_DIR___!${installdir}! \
     ${srcdir}/ym-common/etc/${boot}.in > ${builddir}/${boot}
 chmod +x ${builddir}/${boot}
 

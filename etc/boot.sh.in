@@ -4,7 +4,7 @@
 # @brief cmake を実行するスクリプト
 # @author Yusuke Matsunaga (松永 裕介)
 #
-# Copyright (C) 2016, 2017 Yusuke Matsunaga (松永 裕介)
+# Copyright (C) 2016, 2017, 2018 Yusuke Matsunaga (松永 裕介)
 # All rights reserved
 
 # コマンドの定義
@@ -22,4 +22,4 @@ if test -f ${OPT_FILE}; then
 fi
 
 # cmake の実行
-${CMAKE} -DCMAKE_INSTALL_PREFIX=___INSTALL_DIR___ $options ___SRC_DIR___
+${CMAKE} $options ___SRC_DIR___
