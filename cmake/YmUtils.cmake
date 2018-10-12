@@ -113,6 +113,25 @@ macro ( ym_init opt_args )
 
 endmacro ()
 
+# Python に関する初期化を行う．
+#
+# 入力: なし
+# 出力: PYTHON_INTERP Python の実行ファイル
+#       PYTHON_VERSION_MAJOR Python の major バージョン
+#       PYTHON_VERSION_MINOR Python の minor バージョン
+#       ... FindPythonInterp, FindPythonLibs によって設定される変数
+#       YM_PYTHON_STRING: Python3.6 のような文字列
+#       YM_PYTHON_LIBDIR: ここで生成される Python ライブラリの格納先
+macro ( ym_init_python )
+  # Python のバージョン指定
+  set( Python_ADDITIONAL_VERSIONS 3.7 3.6 3.5 3.4 3.3 3.2 3.1 )
+  include( FindPythonInterp )
+  include( FindPythonLibs )
+
+  set( YM_PYTHON_STRING "python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}" )
+  set( YM_PYTHON_LIBDIR "lib/${YM_PYTHON_STRING}/site-packages/${YM_PROJECT_STRING}" )
+endmacro ()
+
 
 # ym_use_gtest: ym-common に内蔵の gtest を使うためのマクロ
 #
@@ -405,3 +424,43 @@ function( ym_add_gtest )
     )
 
 endfunction ()
+
+# Doxygen 用のルール生成
+#
+# USAGE: ym_add_doxygen()
+#
+# 以下の準備が必要．
+# - ${PROJECT_SOURCE_DIR}/etc/Doxyfile.in というテンプレートファイルを用意する．
+# - CMAKE 変数 YM_DOXY_SRCS にスキャン対象のソースディレクトリをリストの
+#   形で入れておく．
+# - プロジェクト名とバージョンを連結した文字列を YM_PROJECT_STRING に入れておく．
+macro ( ym_add_doxygen )
+  # YM_DOXY_SRCS を Doxyfile の INPUT 用に変換する．
+  string ( REPLACE ";" " " YM_DOXY_INPUT "${YM_DOXY_SRCS}" )
+
+  # Doxyfile の生成
+  configure_file (
+    "${PROJECT_SOURCE_DIR}/etc/Doxyfile.in"
+    "${PROJECT_BINARY_DIR}/Doxyfile"
+    )
+
+  # doxygen 用ターゲット
+  add_custom_target(dox ALL
+    DEPENDS "${PROJECT_BINARY_DIR}/docs/html/index.html"
+    )
+
+  # doxygen 起動ルール
+  add_custom_command(
+    COMMAND "${DOXYGEN_EXECUTABLE}" ">" "doxygen.log"
+    DEPENDS "${PROJECT_BINARY_DIR}/Doxyfile" ${YM_DOXY_SRCS}
+    OUTPUT "${PROJECT_BINARY_DIR}/docs/html/index.html"
+    COMMENT "generating doxygen documents"
+    )
+
+  # 生成物のインストールルール
+  install (DIRECTORY
+    "${PROJECT_BINARY_DIR}/docs"
+    DESTINATION "share/${YM_PROJECT_STRING}"
+    )
+
+endmacro ( ym_add_doxygen )
