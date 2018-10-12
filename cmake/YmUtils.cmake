@@ -132,6 +132,24 @@ macro ( ym_init_python )
   set( YM_PYTHON_LIBDIR "lib/${YM_PYTHON_STRING}/site-packages/${YM_PROJECT_STRING}" )
 endmacro ()
 
+# Cython に関する初期化を行う．
+#
+# 入力: なし
+# 出力: CYTHON_EXECUTABLE cython のプログラム
+#       ... FindCython で定義される変数
+macro ( ym_init_cython )
+  include ( UseCython )
+endmacro ()
+
+# Doxygen に関する初期化を行う．
+macro ( ym_init_doxygen )
+  include ( FindDoxygen )
+endmacro ()
+
+# Google PerfTools に関する初期化を行う．
+macro ( ym_init_gperftools )
+  find_package ( Gperftools )
+endmacro ()
 
 # ym_use_gtest: ym-common に内蔵の gtest を使うためのマクロ
 #
