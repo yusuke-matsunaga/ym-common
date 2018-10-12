@@ -151,6 +151,12 @@ macro ( ym_init_gperftools )
   find_package ( Gperftools )
 endmacro ()
 
+# CTest に関する初期化を行う．
+macro ( ym_init_ctest )
+  include ( CTest )
+  enable_testing ()
+endmacro ()
+
 # ym_use_gtest: ym-common に内蔵の gtest を使うためのマクロ
 #
 # 入力: なし
