@@ -170,6 +170,41 @@ macro ( ym_use_gtest )
     "${PROJECT_BINARY_DIR}/ym-common/gtest-1.7.0/libgtest_main.a")
 endmacro ()
 
+# ym_init_submodules: サブモジュール関係の変数を設定するマクロ
+#
+# 入力: サブモジュール名(ディレクトリ名)のリスト
+# 出力: YM_SUBMODULE_LIST サブモジュール名のリスト
+#       YM_SUBMODULE_INCLUDE_DIRS サブモジュールのインクルードディレクトリのリスト
+#       YM_SUBMODULE_CYTHON_DIRS サブモジュールの Cython ディレクトリのリスト
+#       YM_SUBMODULE_OBJ_LIST サブモジュールのオブジェクトのリスト
+#       YM_SUBMODULE_OBJ_D_LIST サブモジュールの debug 版オブジェクトのリスト
+#       YM_SUBMODULE_OBJ_A_LIST サブモジュールの archive 版オブジェクトのリスト
+#       YM_SUBMODULE_OBJ_AD_LIST サブモジュールの debug-archive 版オブジェクトのリスト
+#       YM_SUBMODULE_OBJ_P_LIST サブモジュールの gperf 版オブジェクトのリスト
+macro ( ym_init_submodules )
+  set ( YM_SUBMODULE_LIST )
+  set ( YM_SUBMODULE_INCLUDE_LIST )
+  set ( YM_SUBMODULE_CYTHON_LIST )
+  set ( YM_SUBMODULE_OBJ_LIST )
+  set ( YM_SUBMODULE_OBJ_D_LIST )
+  set ( YM_SUBMODULE_OBJ_A_LIST )
+  set ( YM_SUBMODULE_OBJ_AD_LIST )
+  set ( YM_SUBMODULE_OBJ_P_LIST )
+  foreach ( __arg ${ARGV} )
+    list ( APPEND YM_SUBMODULE_LIST "${__arg}" )
+    list ( APPEND YM_SUBMODULE_INCLUDE_LIST "${PROJECT_SOURCE_DIR}/${__arg}/include" )
+    if ( ${__arg} STREQUAL "ym-common" )
+      continue ()
+    endif ()
+    list ( APPEND YM_SUBMODULE_CYTHON_LIST "${PROJECT_SOURCE_DIR}/${__arg}/cython-src" )
+    string ( REPLACE "-" "_" __obj ${__arg} )
+    list ( APPEND YM_SUBMODULE_OBJ_LIST "$<TARGET_OBJECTS:${__obj}>" )
+    list ( APPEND YM_SUBMODULE_OBJ_D_LIST "$<TARGET_OBJECTS:${__obj}_d>" )
+    list ( APPEND YM_SUBMODULE_OBJ_A_LIST "$<TARGET_OBJECTS:${__obj}_a>" )
+    list ( APPEND YM_SUBMODULE_OBJ_AD_LIST "$<TARGET_OBJECTS:${__obj}_ad>" )
+    list ( APPEND YM_SUBMODULE_OBJ_P_LIST "$<TARGET_OBJECTS:${__obj}_p>" )
+  endforeach ()
+endmacro ()
 
 # ヘッダファイルを生成するためのマクロ
 #
