@@ -449,18 +449,27 @@ endfunction ()
 # gtest 用のターゲットの生成
 # USAGE: ym_add_gtest ( <target-name>
 #                       <source-file> [<source-file>]
+#                       ["DEFINITIONS" <definitions>]
 #                     )
 function( ym_add_gtest )
-  foreach ( pos RANGE 0 ${ARGC} )
-    if ( ${pos} EQUAL ${ARGC} )
+  set (_def_mode 0 )
+  foreach ( _pos RANGE 0 ${ARGC} )
+    if ( ${_pos} EQUAL ${ARGC} )
       break()
     endif ()
-    list (GET ARGV ${pos} argv)
-    if ( ${pos} EQUAL 0 )
+    list ( GET ARGV ${_pos} _arg )
+    if ( ${_pos} EQUAL 0 )
       # ターゲット名の設定
-      set (_target_name   "${argv}")
+      set ( _target_name   "${_arg}" )
+    elseif ( ${_arg} STREQUAL "DEFINITIONS" )
+      set ( _def_mode 1 )
     else ()
-      list (APPEND _sources ${argv})
+      if ( ${_def_mode} EQUAL 0 )
+	list ( APPEND _sources ${_arg} )
+      else ()
+	set ( _definitions ${_arg} )
+	set ( _def_mode 0 )
+      endif ()
     endif ()
   endforeach ()
 
@@ -471,6 +480,12 @@ function( ym_add_gtest )
   target_compile_options ( ${_target_name}
     PRIVATE "-g"
     )
+
+  if ( DEFINED _definitions )
+    target_compile_definitions ( ${_target_name}
+      PRIVATE ${_definitions}
+      )
+  endif ()
 
   target_link_libraries ( ${_target_name}
     ${YM_LIB_DEPENDS}
