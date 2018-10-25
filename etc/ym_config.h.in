@@ -5,7 +5,7 @@
 /// @brief システム検査関係の基本定義ファイル
 /// @author Yusuke Matsunaga (松永 裕介)
 ///
-/// Copyright (C) 2016 Yusuke Matsunaga
+/// Copyright (C) 2016, 2018 Yusuke Matsunaga
 /// All rights reserved.
 
 
@@ -44,14 +44,8 @@
 #define SIZEOF_LONG @LONG_SIZE@
 #define SIZEOF_LONG_LONG @LLONG_SIZE@
 
-/// @brief 符号付き整数型
-typedef int ymint;
-
 /// @brief 符号なし整数型
 typedef unsigned int ymuint;
-
-/// @brief 符号付きlong型
-typedef long int ymlong;
 
 /// @brief 符号なしlong型
 typedef unsigned long int ymulong;
@@ -185,7 +179,7 @@ typedef ymuint64 SizeType;
 #define YM_NAMESPACE ::@YM_NSNAME@
 
 /// @brief ym-common 用の名前空間の文字列
-#define YM_NSNAME_STR "@YM_NSNAME@"
+#define YM_NAMESPACE_STR "::@YM_NSNAME@"
 
 // 雑多な定義
 #include "ym/ym_stl.h"
