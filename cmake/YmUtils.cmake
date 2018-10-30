@@ -14,7 +14,7 @@
 #       LZMA_FOUND  lzma が使用可能の時セットされる．
 #       ZLIB_FOUND  gzip が使用可能の時セットされる．
 #       POPT_FOUND  popt が使用可能の時セットされる．
-macro ( ym_init opt_args )
+macro ( ym_init )
 
   # bzip2 ライブラリを使う．
   set ( __USE_BZIP2 OFF )
@@ -28,17 +28,7 @@ macro ( ym_init opt_args )
   # popt ライブラリを使う．
   set ( __USE_POPT OFF )
 
-  set ( __tmp_str ${opt_args} )
-  while ( NOT ${__tmp_str} STREQUAL "" )
-    string ( FIND ${__tmp_str} ":" __pos )
-    if ( ${__pos} EQUAL -1 )
-      set ( __arg ${__tmp_str} )
-      set ( __tmp_str "" )
-    else ()
-      string ( SUBSTRING ${__tmp_str} 0 ${__pos} __arg )
-      math ( EXPR __pos_1 "${__pos} + 1" )
-      string ( SUBSTRING ${__tmp_str} ${__pos_1} -1 __tmp_str )
-    endif ()
+  foreach ( __arg ${ARGV} )
     if ( ${__arg} STREQUAL USE_BZIP2 )
       set ( __USE_BZIP2 ON )
     elseif ( ${__arg} STREQUAL USE_LZMA )
@@ -51,7 +41,7 @@ macro ( ym_init opt_args )
       # エラー
       message ( FATAL_ERROR "illegal argument in ym_init(): " ${__arg} )
     endif ()
-  endwhile ()
+  endforeach ()
 
   # ===================================================================
   # システムの検査
