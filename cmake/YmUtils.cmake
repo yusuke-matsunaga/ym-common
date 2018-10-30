@@ -338,7 +338,7 @@ function ( ym_gen_header )
   # ヘッダファイルの生成
   configure_file(
     "${PROJECT_SOURCE_DIR}/ym-common/etc/ym_config.h.in"
-    "${PROJECT_BINARY_DIR}/ym_config.h"
+    "${PROJECT_BINARY_DIR}/include/ym_config.h"
     )
 
 endfunction()
