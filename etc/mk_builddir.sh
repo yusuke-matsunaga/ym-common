@@ -45,6 +45,15 @@ else
     exit 1
 fi
 
+# コマンドの定義
+# 環境変数 SED をセットしておけばその値が使われる．
+# そうでなければデフォルトの sed が使われる．
+echo ${SED:="sed"} > /dev/null
+
+# Usage を出力する．
+usage() {
+    echo "USAGE: mk_builddir.sh [-f] <compiledir>"
+}
 
 # メッセージを出力して yes/no の応答を待つ．
 # yes/no 以外の入力の場合には再入力を促してループする．
@@ -66,29 +75,40 @@ do_confirm() {
     done
 }
 
-# コマンドの定義
-# 環境変数 SED をセットしておけばその値が使われる．
-# そうでなければデフォルトの sed が使われる．
-echo ${SED:="sed"} > /dev/null
+# オプションの処理
+while getopts f option; do
+    case $option in
+	f)
+	    force_flag=1;;
+	\?)
+	    usage
+	    exit 1;;
+    esac
+done
+shift `expr "$OPTIND" - 1`
 
 # 実行されたディレクトリを srcdir にセットする．
 srcdir=`pwd`
 
 # 引数の数が異なっていたら usage を表示して終わる．
 if [ $# -ne 1 ]; then
-    echo "USAGE mk_builddir.sh <compiledir>"
+    usage
     exit 1
 fi
 
 # ビルド用のディレクトリ名
 builddir=$1
 
-# ディレクトリ名を表示して確認を求める．
-echo "****"
-echo "source  directory: $srcdir"
-echo "build   directory: $builddir"
-echo "****"
-do_confirm "continue ?"
+if [ ${force_flag} == 1 ]; then
+    confirmation="yes"
+else
+    # ディレクトリ名を表示して確認を求める．
+    echo "****"
+    echo "source  directory: $srcdir"
+    echo "build   directory: $builddir"
+    echo "****"
+    do_confirm "continue ?"
+fi
 
 if [ ${confirmation} = "no" ]; then
     echo "Cancelled"
