@@ -16,7 +16,7 @@ echo ${CMAKE:="cmake"} > /dev/null
 options=""
 
 # ローカルな設定はこのファイルに書いておく．
-OPT_FILE="boot-opt.sh"
+OPT_FILE="./boot-opt.sh"
 if test -f ${OPT_FILE}; then
    . ${OPT_FILE}
 fi
