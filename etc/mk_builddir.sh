@@ -76,6 +76,7 @@ do_confirm() {
 }
 
 # オプションの処理
+force_flag=0
 while getopts f option; do
     case $option in
 	f)

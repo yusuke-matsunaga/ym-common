@@ -119,7 +119,7 @@ macro ( ym_init_python )
   include( FindPythonLibs )
 
   set( YM_PYTHON_STRING "python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}" )
-  set( YM_PYTHON_LIBDIR "lib/${YM_PYTHON_STRING}/site-packages/${YM_PROJECT_STRING}" )
+  set( YM_PYTHON_LIBDIR "lib/${YM_PYTHON_STRING}/site-packages/" )
 endmacro ()
 
 # Cython に関する初期化を行う．
