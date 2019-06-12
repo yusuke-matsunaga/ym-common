@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <memory>
 
 #if defined(__clang__)
 #include <algorithm>
