@@ -19,7 +19,12 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <unordered_set>
+#include <unordered_map>
+#include <regex>
 #include <memory>
+#include <limits>
+#include <utility>
 
 #if defined(__clang__)
 #include <algorithm>
@@ -74,6 +79,14 @@ using std::unique_ptr;
 using std::shared_ptr;
 using std::weak_ptr;
 using std::initializer_list;
+using std::numeric_limits;
+using std::unordered_map;
+using std::unordered_set;
+using std::regex;
+using std::smatch;
+using std::move;
+using std::swap;
+using std::stoi;
 
 END_NAMESPACE_YM
 
