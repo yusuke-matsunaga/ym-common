@@ -87,6 +87,10 @@ using std::smatch;
 using std::move;
 using std::swap;
 using std::stoi;
+using std::tuple;
+using std::make_tuple;
+using std::tie;
+using std::ignore;
 
 END_NAMESPACE_YM
 
