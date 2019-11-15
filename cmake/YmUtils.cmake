@@ -103,7 +103,7 @@ macro ( ym_init )
 
 endmacro ()
 
-# Python に関する初期化を行う．
+# Python3 に関する初期化を行う．
 #
 # 入力: なし
 # 出力: PYTHON_INTERP Python の実行ファイル
@@ -114,22 +114,20 @@ endmacro ()
 #       YM_PYTHON_LIBDIR: ここで生成される Python ライブラリの格納先
 macro ( ym_init_python )
   # Python のバージョン指定
-  set( Python_ADDITIONAL_VERSIONS 3.7 3.6 3.5 3.4 3.3 3.2 3.1 )
-  include( FindPythonInterp )
-  include( FindPythonLibs )
+  find_package( Python3 COMPONENTS Interpreter Development )
 
   foreach ( __arg ${ARGV} )
     if ( ${__arg} STREQUAL "REQUIRED" )
-      if ( NOT PYTHONINTERP_FOUND )
+      if ( NOT Python3_INTERPRETER_FOUND )
 	message( FATAL_ERROR "Python interpreter not found" )
       endif ()
-      if ( NOT PYTHONLIBS_FOUND )
+      if ( NOT Python3_Development_FOUND )
 	message( FATAL_ERROR "Python libraries not found" )
       endif ()
     endif ()
   endforeach()
 
-  set( YM_PYTHON_STRING "python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}" )
+  set( YM_PYTHON_STRING "python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}" )
   set( YM_PYTHON_LIBDIR "lib/${YM_PYTHON_STRING}/site-packages/" )
 endmacro ()
 
