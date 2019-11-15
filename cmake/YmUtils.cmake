@@ -118,7 +118,7 @@ macro ( ym_init_python )
 
   foreach ( __arg ${ARGV} )
     if ( ${__arg} STREQUAL "REQUIRED" )
-      if ( NOT Python3_INTERPRETER_FOUND )
+      if ( NOT Python3_Interpreter_FOUND )
 	message( FATAL_ERROR "Python interpreter not found" )
       endif ()
       if ( NOT Python3_Development_FOUND )
