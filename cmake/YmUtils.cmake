@@ -357,16 +357,12 @@ function ( ym_add_object_library )
     if ( ${pos} EQUAL 0 )
       # ターゲット名の設定
       # - 最適化モード
-      # - 最適化モード(アーカイブタイプ _a)
       # - プロファイルモード (_p)
       # - デバッグモード (_d)
-      # - デバッグモード (アーカイブタイプ _ad)
-      # の4つがある．
+      # の3つがある．
       set (_target_name   "${argv}_obj")
-      set (_target_name_a "${argv}_obj_a")
       set (_target_name_p "${argv}_obj_p")
       set (_target_name_d "${argv}_obj_d")
-      set (_target_name_ad "${argv}_obj_ad")
     else ()
       list (APPEND _sources ${argv})
     endif ()
@@ -383,20 +379,6 @@ function ( ym_add_object_library )
     )
 
   target_compile_definitions (${_target_name}
-    PRIVATE "-DNDEBUG"
-    )
-
-  # release:archive モードのターゲット
-  add_library (${_target_name_a}
-    OBJECT
-    ${_sources}
-    )
-
-  target_compile_options (${_target_name_a}
-    PRIVATE "-O3"
-    )
-
-  target_compile_definitions (${_target_name_a}
     PRIVATE "-DNDEBUG"
     )
 
@@ -426,20 +408,6 @@ function ( ym_add_object_library )
     )
 
   target_compile_definitions (${_target_name_d}
-    PRIVATE
-    )
-
-  # debug:archive モードのターゲット
-  add_library (${_target_name_ad}
-    OBJECT
-    ${_sources}
-    )
-
-  target_compile_options (${_target_name_ad}
-    PRIVATE "-g"
-    )
-
-  target_compile_definitions (${_target_name_ad}
     PRIVATE
     )
 
