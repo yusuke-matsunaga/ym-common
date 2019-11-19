@@ -177,8 +177,6 @@ endmacro ()
 #       YM_SUBMODULE_CYTHON_DIRS サブモジュールの Cython ディレクトリのリスト
 #       YM_SUBMODULE_OBJ_LIST サブモジュールのオブジェクトのリスト
 #       YM_SUBMODULE_OBJ_D_LIST サブモジュールの debug 版オブジェクトのリスト
-#       YM_SUBMODULE_OBJ_A_LIST サブモジュールの archive 版オブジェクトのリスト
-#       YM_SUBMODULE_OBJ_AD_LIST サブモジュールの debug-archive 版オブジェクトのリスト
 #       YM_SUBMODULE_OBJ_P_LIST サブモジュールの gperf 版オブジェクトのリスト
 macro ( ym_init_submodules )
   set ( YM_SUBMODULE_LIST )
@@ -186,8 +184,6 @@ macro ( ym_init_submodules )
   set ( YM_SUBMODULE_CYTHON_LIST )
   set ( YM_SUBMODULE_OBJ_LIST )
   set ( YM_SUBMODULE_OBJ_D_LIST )
-  set ( YM_SUBMODULE_OBJ_A_LIST )
-  set ( YM_SUBMODULE_OBJ_AD_LIST )
   set ( YM_SUBMODULE_OBJ_P_LIST )
   foreach ( __arg ${ARGV} )
     list ( APPEND YM_SUBMODULE_LIST "${__arg}" )
@@ -199,8 +195,6 @@ macro ( ym_init_submodules )
     string ( REPLACE "-" "_" __obj ${__arg} )
     list ( APPEND YM_SUBMODULE_OBJ_LIST "$<TARGET_OBJECTS:${__obj}_obj>" )
     list ( APPEND YM_SUBMODULE_OBJ_D_LIST "$<TARGET_OBJECTS:${__obj}_obj_d>" )
-    list ( APPEND YM_SUBMODULE_OBJ_A_LIST "$<TARGET_OBJECTS:${__obj}_obj_a>" )
-    list ( APPEND YM_SUBMODULE_OBJ_AD_LIST "$<TARGET_OBJECTS:${__obj}_obj_ad>" )
     list ( APPEND YM_SUBMODULE_OBJ_P_LIST "$<TARGET_OBJECTS:${__obj}_obj_p>" )
   endforeach ()
 endmacro ()
