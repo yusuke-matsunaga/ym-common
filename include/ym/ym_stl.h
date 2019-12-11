@@ -5,7 +5,7 @@
 /// @brief stl 関係のヘッダファイル
 /// @author Yusuke Matsunaga (松永 裕介)
 ///
-/// Copyright (C) 2016 Yusuke Matsunaga
+/// Copyright (C) 2016, 2019 Yusuke Matsunaga
 /// All rights reserved.
 
 
@@ -21,6 +21,7 @@
 #include <list>
 #include <unordered_set>
 #include <unordered_map>
+#include <bitset>
 #include <regex>
 #include <memory>
 #include <limits>
@@ -82,6 +83,7 @@ using std::initializer_list;
 using std::numeric_limits;
 using std::unordered_map;
 using std::unordered_set;
+using std::bitset;
 using std::regex;
 using std::smatch;
 using std::move;
