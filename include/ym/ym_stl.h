@@ -26,22 +26,10 @@
 #include <memory>
 #include <limits>
 #include <utility>
+#include <chrono>
 
-#if defined(__clang__)
 #include <algorithm>
 #include <functional>
-#elif __GNUC__ >= 4 && __GNUC_MINOR__ >= 6
-#include <ext/algorithm>
-#include <functional>
-#elif __GNUC__ >= 3
-#include <ext/algorithm>
-#include <ext/functional>
-#define constexpr const
-#else
-#include <algorithm>
-#include <functional>
-#define constexpr const
-#endif
 
 
 //////////////////////////////////////////////////////////////////////
