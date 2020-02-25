@@ -145,6 +145,20 @@ macro ( ym_init_doxygen )
   include ( FindDoxygen )
 endmacro ()
 
+# Lua に関する初期化を行う．
+#
+# 入力: なし
+# 出力: LUA_FOUND:          Lua が見つかった時 true
+#       LUA_LIBRARIES:      lualib のパス
+#       LUA_INCLUDE_DIR:    lua.h のパス
+#       LUA_VERSION_STRING: バージョン文字列
+#       LUA_VERSION_MAJOR:  メイジャーバージョン
+#       LUA_VERSION_MINOR:  マイナーバージョン
+#       LUA_VERSION_PATCH:  パッチレベル
+macro ( ym_init_lua )
+  include ( FindLua )
+endmacro ()
+
 # Google PerfTools に関する初期化を行う．
 macro ( ym_init_gperftools )
   find_package ( Gperftools )
