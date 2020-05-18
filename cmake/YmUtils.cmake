@@ -159,6 +159,17 @@ macro ( ym_init_lua )
   include ( FindLua )
 endmacro ()
 
+# Curl に関する初期化を行う．
+#
+# 入力: なし
+# 出力: CURL_FOUND:          curl が見つかった時 true
+#       CURL_INCLUDE_DIRS:   インクルードディレクトリ
+#       CURL_LIBRARIES:      ライブラリ
+#       CURL_VERSION_STRING: バージョンを表す文字列
+macro ( ym_init_curl )
+  include ( FindCURL )
+endmacro ()
+
 # Google PerfTools に関する初期化を行う．
 macro ( ym_init_gperftools )
   find_package ( Gperftools )
