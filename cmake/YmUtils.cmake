@@ -159,6 +159,21 @@ macro ( ym_init_lua )
   include ( FindLua )
 endmacro ()
 
+# Curses に関する初期化を行う．
+#
+# 入力: なし
+# 出力: CURSES_FOUND
+#       CURSES_INCLUDE_DIRS
+#       CURSES_LIBRAIRES
+#       CURSES_CFLAGS
+#       CURSES_HAVE_CURSES_H
+#       CURSES_HAVE_NCURSES_H
+#       CURSES_HAVE_NCURSES_NCURSES_H
+#       CURSES_HAVE_NCURSES_CURSES_H
+macro ( ym_init_curses )
+  include ( FindCurses )
+endmacro ()
+
 # Curl に関する初期化を行う．
 #
 # 入力: なし
