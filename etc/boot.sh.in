@@ -4,7 +4,7 @@
 # @brief cmake を実行するスクリプト
 # @author Yusuke Matsunaga (松永 裕介)
 #
-# Copyright (C) 2016, 2017, 2018 Yusuke Matsunaga (松永 裕介)
+# Copyright (C) 2016, 2017, 2018, 2020 Yusuke Matsunaga (松永 裕介)
 # All rights reserved
 
 # コマンドの定義
@@ -21,5 +21,16 @@ if test -f ${OPT_FILE}; then
    . ${OPT_FILE}
 fi
 
+# ninja が利用可能なら build.ninja を作る．
+which ninja > /dev/null
+if test $? == 0; then
+    gen_opt="-G Ninja"
+    gen="ninja"
+else
+    gen_opt="" # デフォルト
+    gen="make"
+fi
+
 # cmake の実行
-${CMAKE} $options ___SRC_DIR___
+${CMAKE} $gen_opt $options ___SRC_DIR___ && \
+    echo "Set up completed, then type '$gen' to make all staffs."
