@@ -529,6 +529,7 @@ macro ( ym_add_doxygen )
     COMMAND "${DOXYGEN_EXECUTABLE}" ">" "doxygen.log"
     DEPENDS "${PROJECT_BINARY_DIR}/Doxyfile" ${YM_DOXY_SRCS}
     OUTPUT "${PROJECT_BINARY_DIR}/docs/html/index.html"
+    BYPRODUCTS include # 意味不明 CMP0058 関連
     COMMENT "generating doxygen documents"
     )
 
