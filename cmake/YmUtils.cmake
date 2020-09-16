@@ -511,7 +511,7 @@ endfunction ()
 # - プロジェクト名とバージョンを連結した文字列を YM_PROJECT_STRING に入れておく．
 macro ( ym_add_doxygen )
   # YM_DOXY_SRCS を Doxyfile の INPUT 用に変換する．
-  string ( REPLACE ";" " " YM_DOXY_INPUT "${YM_DOXY_SRCS}" )
+  string ( REPLACE ";" " " YM_DOXY_INPUT "${ARGV}" )
 
   # Doxyfile の生成
   configure_file (
@@ -524,10 +524,13 @@ macro ( ym_add_doxygen )
     DEPENDS "${PROJECT_BINARY_DIR}/docs/html/index.html"
     )
 
+  cmake_policy( SET CMP0058 NEW )
+
   # doxygen 起動ルール
   add_custom_command(
     COMMAND "${DOXYGEN_EXECUTABLE}" ">" "doxygen.log"
-    DEPENDS "${PROJECT_BINARY_DIR}/Doxyfile" ${YM_DOXY_SRCS}
+    DEPENDS "${PROJECT_BINARY_DIR}/Doxyfile"
+    DEPENDS ${ARGV}
     OUTPUT "${PROJECT_BINARY_DIR}/docs/html/index.html"
     COMMENT "generating doxygen documents"
     )
