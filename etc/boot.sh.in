@@ -23,7 +23,7 @@ fi
 
 # ninja が利用可能なら build.ninja を作る．
 which ninja > /dev/null
-if test $? == 0; then
+if test $? -eq 0; then
     gen_opt="-G Ninja"
     gen="ninja"
 else

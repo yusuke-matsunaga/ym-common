@@ -100,7 +100,7 @@ fi
 # ビルド用のディレクトリ名
 builddir=$1
 
-if [ ${force_flag} == 1 ]; then
+if [ ${force_flag} -eq 1 ]; then
     confirmation="yes"
 else
     # ディレクトリ名を表示して確認を求める．
@@ -132,7 +132,7 @@ if [ -f ${builddir}/${optfile} ]; then
     echo "Try to copy ${optfile} to ${builddir}"
     echo "${builddir}/${optfile} already exists."
     do_confirm "Would you overwrite it?"
-    if [ ${confirmation} == "no" ]; then
+    if [ ${confirmation} = "no" ]; then
 	echo "Coping file is cancelled"
     fi
 else
