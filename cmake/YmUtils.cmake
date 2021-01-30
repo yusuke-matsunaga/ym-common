@@ -479,7 +479,7 @@ function( ym_add_gtest )
     )
 
   target_compile_options ( ${_target_name}
-    PRIVATE "-g"
+    PRIVATE "-g" "-fPIC"
     )
 
   if ( DEFINED _definitions )
