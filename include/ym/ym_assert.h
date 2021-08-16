@@ -5,7 +5,7 @@
 /// @brief assertion 関係のクラス
 /// @author Yusuke Matsunaga (松永 裕介)
 ///
-/// Copyright (C) 2016 Yusuke Matsunaga
+/// Copyright (C) 2016, 2021 Yusuke Matsunaga
 /// All rights reserved.
 
 
@@ -35,12 +35,11 @@ class AssertError :
 public:
 
   /// @brief コンストラクタ
-  /// @param[in] file ファイル名
-  /// @param[in] line 行番号
-  AssertError(const char* file,
-	      int line) :
-    mFileName(file),
-    mLineNumber(line)
+  AssertError(
+    const char* file,
+    int line
+  ) : mFileName(file),  ///< [in] ファイル名
+      mLineNumber(line) ///< [in] 行番号
   {
   }
 
@@ -76,14 +75,14 @@ private:
 //////////////////////////////////////////////////////////////////////
 /// @relates AssertError
 /// @brief AssertError を ostream に書き出す
-/// @param[in] s 出力ストリーム
-/// @param[in] obj エラーオブジェクト
 /// @return s をそのまま返す
 //////////////////////////////////////////////////////////////////////
 inline
 ostream&
-operator<<(ostream& s,
-	   const AssertError& obj)
+operator<<(
+  ostream& s,            ///< [in] 出力ストリーム
+  const AssertError& obj ///< [in] エラーオブジェクト
+)
 {
   s << "assertion failed at file: " << obj.file_name()
     << ", line: " << obj.line_number();
@@ -100,28 +99,27 @@ class AssertNotReached :
 {
 public:
   /// @brief コンストラクタ
-  /// @param[in] file ファイル名
-  /// @param[in] line 行番号
   ///
   /// 通常 file, line には __FILE__, __LINE__ マクロを用いる．
-  AssertNotReached(const char* file,
-		   int line) :
-    AssertError(file, line) { }
+  AssertNotReached(
+    const char* file, ///< [in] ファイル名
+    int line          ///< [in] 行番号
+  ) : AssertError(file, line) { }
 };
 
 
 //////////////////////////////////////////////////////////////////////
 /// @relates AssertNotReached
 /// @brief 通常は到達してはいけない部分に達したときに例外を投げる関数．
-/// @param[in] file 例外の発生したソースファイル名
-/// @param[in] line 例外の発生したソースファイルの行番号
 ///
 /// 通常 file, line には __FILE__, __LINE__ マクロを用いる．
 //////////////////////////////////////////////////////////////////////
 inline
 void
-assert_not_reached(const char* file,
-		   int line)
+assert_not_reached(
+  const char* file, ///< [in] 例外の発生したソースファイル名
+  int line          ///< [in] 例外の発生したソースファイルの行番号
+)
 {
   if ( ym_check ) throw AssertNotReached(file, line);
 }
@@ -129,14 +127,14 @@ assert_not_reached(const char* file,
 
 //////////////////////////////////////////////////////////////////////
 /// @brief assert 違反で任意の例外クラスを投げるテンプレート関数
-/// @param[in] assertion 例外発生条件
-/// @param[in] except エラーオブジェクト
 //////////////////////////////////////////////////////////////////////
 template<typename A,
 	 typename E>
 void
-assert_cond(A assertion,
-	    E except)
+assert_cond(
+  A assertion, ///< [in] 例外発生条件
+  E except     ///< [in] エラーオブジェクト
+)
 {
   if ( ym_check && !assertion ) throw except;
 }
@@ -145,17 +143,16 @@ assert_cond(A assertion,
 //////////////////////////////////////////////////////////////////////
 /// @relates AssertError
 /// @brief assert 違反で AssertError 例外を投げるテンプレート関数
-/// @param[in] assertion 例外発生条件
-/// @param[in] file ファイル名
-/// @param[in] line 行番号
 ///
 /// 通常 file, line には __FILE__, __LINE__ マクロを用いる．
 //////////////////////////////////////////////////////////////////////
 template<typename A>
 void
-assert_cond(A assertion,
-	    const char* file,
-	    int line)
+assert_cond(
+  A assertion,      ///< [in] 例外発生条件
+  const char* file, ///< [in] ファイル名
+  int line          ///< [in] 行番号
+)
 {
   if ( ym_check && !assertion ) throw AssertError(file, line);
 }
