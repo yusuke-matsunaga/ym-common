@@ -32,3 +32,21 @@ ym_add_gtest ( common_Range_test
 ym_add_gtest ( common_BinCodec_test
   BinCodecTest.cc
   )
+
+
+# ===================================================================
+#  timer_test
+# ===================================================================
+
+add_executable ( timer_test
+  timer_test.cc
+  )
+
+
+# ===================================================================
+#  multitimer_test
+# ===================================================================
+
+add_executable ( multitimer_test
+  multitimer_test.cc
+  )
