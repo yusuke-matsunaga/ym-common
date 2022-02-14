@@ -14,6 +14,8 @@
 #       LZMA_FOUND  lzma が使用可能の時セットされる．
 #       ZLIB_FOUND  gzip が使用可能の時セットされる．
 #       POPT_FOUND  popt が使用可能の時セットされる．
+#
+#       YM_LIB_DEPENDS bzip2, lzma, gzip, popt などの依存するライブラリ
 macro ( ym_init )
 
   # bzip2 ライブラリを使う．
@@ -80,6 +82,27 @@ macro ( ym_init )
 
 
   # ===================================================================
+  # インクルードディレクトリの設定
+  # ===================================================================
+
+  if ( ZLIB_FOUND )
+    include_directories(${ZLIBINCLUDE_DIRS})
+  endif ( ZLIB_FOUND )
+
+  if ( BZIP2_FOUND )
+    include_directories(${BZIP2_INCLUDE_DIRS})
+  endif ( BZIP2_FOUND )
+
+  if ( LIBLZMA_FOUND )
+    include_directories(${LIBLZMA_INCLUDE_DIRS})
+  endif ( LIBLZMA_FOUND )
+
+  if ( POPT_FOUND )
+    include_directories(${POPT_INCLUDE_DIR})
+  endif ( POPT_FOUND )
+
+
+  # ===================================================================
   # リンクすべきライブラリの設定
   # ===================================================================
 
@@ -87,21 +110,22 @@ macro ( ym_init )
 
   if ( ZLIB_FOUND )
     list (APPEND YM_LIB_DEPENDS ${ZLIB_LIBRARIES})
-  endif ()
+  endif ( ZLIB_FOUND )
 
   if ( BZIP2_FOUND )
     list (APPEND YM_LIB_DEPENDS ${BZIP2_LIBRARIES})
-  endif ()
+  endif ( BZIP2_FOUND )
 
   if ( LIBLZMA_FOUND )
     list (APPEND YM_LIB_DEPENDS ${LIBLZMA_LIBRARIES})
-  endif ()
+  endif ( LIBLZMA_FOUND )
 
   if ( POPT_FOUND )
     list (APPEND YM_LIB_DEPENDS ${POPT_LIBRARY})
-  endif ()
+  endif ( POPT_FOUND )
 
 endmacro ()
+
 
 # Python3 に関する初期化を行う．
 #
