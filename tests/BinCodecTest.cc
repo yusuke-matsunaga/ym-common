@@ -29,6 +29,24 @@ TEST(BinCodecTest, rw_8)
 }
 
 // 1バイトの読み書きのテスト
+TEST(BinCodecTest, rw_8all)
+{
+  ostringstream obuff;
+  BinEnc ofs{obuff};
+  for ( int val = 0; val < 256; ++ val ) {
+    auto oval = static_cast<ymuint8>(val);
+    ofs.write_8(oval);
+  }
+
+  istringstream ibuff{obuff.str()};
+  BinDec ifs{ibuff};
+  for ( int val = 0; val < 256; ++ val ) {
+    ymuint8 ival = ifs.read_8();
+    EXPECT_EQ( val, ival );
+  }
+}
+
+// 1バイトの読み書きのテスト
 TEST(BinCodecTest, s_8)
 {
   ostringstream obuff;
