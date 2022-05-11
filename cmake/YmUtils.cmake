@@ -592,6 +592,10 @@ function( ym_add_gtest )
     PRIVATE "-g" "-fPIC"
     )
 
+  target_include_directories ( ${_target_name}
+    PRIVATE ${GTEST_INCLUDE_DIRS}
+    )
+
   if ( DEFINED _definitions )
     target_compile_definitions ( ${_target_name}
       PRIVATE ${_definitions}
