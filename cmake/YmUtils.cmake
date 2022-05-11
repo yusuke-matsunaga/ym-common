@@ -220,17 +220,85 @@ macro ( ym_init_ctest )
   enable_testing ()
 endmacro ()
 
-# ym_use_gtest: ym-common に内蔵の gtest を使うためのマクロ
+# ym_use_gtest: googletest を使うためのマクロ
 #
-# 入力: なし
-# 出力: GTEST_INCLUDE_DIR    gtest 用のインクルードディレクトリ
+# 入力: GIT_REPOSITORY       gtest の git レポジトリ(オプション)
+#       GIT_TAG              gtest の git タグ(オプション)
+# 出力: GTEST_INCLUDE_DIRS   gtest 用のインクルードディレクトリ
+#       GTEST_LIBRARY        gtest ライブラリ
+#       GTEST_MAIN_LIBRARY   gtest_main ライブラリ
 #       GTEST_BOTH_LIBRARIES gtest 用のライブラリ
 macro ( ym_use_gtest )
-  option(BUILD_GMOCK off)
-  option(INSTALL_GTEST off)
-  add_subdirectory (ym-common/googletest)
-  set (GTEST_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/ym-common/googletest/googletest/include")
-  set (GTEST_BOTH_LIBRARIES gtest_main)
+  include(ExternalProject)
+  find_package(Threads REQUIRED)
+
+  set( __git_repository https://github.com/google/googletest.git )
+  set( __git_tag release-1.11.0 )
+  foreach ( pos RANGE 0 ${ARGC} )
+    if ( ${pos} EQUAL ${ARGC} )
+      break()
+    endif ()
+    list ( GET ARGV ${pos} __arg )
+    if ( ${__arg} STREQUAL GIT_REPOSITORY )
+      math ( EXPR pos1 "${pos} + 1")
+      list ( GET ARGV ${pos1} __val )
+      set ( __git_repository ${__val} )
+    elseif ( ${__arg} STREQUAL GIT_TAG )
+      math ( EXPR pos1 "${pos} + 1")
+      list ( GET ARGV ${pos1} __val )
+      set ( __git_tag ${__val} )
+    endif ()
+  endforeach ()
+
+  ExternalProject_Add(
+    googletest
+    GIT_REPOSITORY ${__git_repository}
+    GIT_TAG ${__git_tag}
+    UPDATE_COMMAND ""
+    INSTALL_COMMAND ""
+    LOG_DOWNLOAD ON
+    LOG_CONFIGURE ON
+    LOG_BUILD ON)
+
+  ExternalProject_Get_Property(googletest source_dir)
+  set(GTEST_INCLUDE_DIRS ${source_dir}/googletest/include)
+  set(GMOCK_INCLUDE_DIRS ${source_dir}/googlemock/include)
+
+  ExternalProject_Get_Property(googletest binary_dir)
+  set(GTEST_LIBRARY_PATH ${binary_dir}/lib/${CMAKE_FIND_LIBRARY_PREFIXES}gtest.a)
+  set(GTEST_LIBRARY gtest)
+  add_library(${GTEST_LIBRARY} UNKNOWN IMPORTED)
+  set_target_properties(${GTEST_LIBRARY} PROPERTIES
+    IMPORTED_LOCATION ${GTEST_LIBRARY_PATH}
+    IMPORTED_LINK_INTERFACE_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+  add_dependencies(${GTEST_LIBRARY} googletest)
+
+  set(GTEST_MAIN_LIBRARY_PATH ${binary_dir}/lib/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main.a)
+  set(GTEST_MAIN_LIBRARY gtest_main)
+  add_library(${GTEST_MAIN_LIBRARY} UNKNOWN IMPORTED)
+  set_target_properties(${GTEST_MAIN_LIBRARY} PROPERTIES
+    IMPORTED_LOCATION ${GTEST_MAIN_LIBRARY_PATH}
+    IMPORTED_LINK_INTERFACE_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+  add_dependencies(${GTEST_MAIN_LIBRARY} googletest)
+
+  set(GTEST_BOTH_LIBRARIES ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
+
+  set(GMOCK_LIBRARY_PATH ${binary_dir}/lib/${CMAKE_FIND_LIBRARY_PREFIXES}gmock.a)
+  set(GMOCK_LIBRARY gmock)
+  add_library(${GMOCK_LIBRARY} UNKNOWN IMPORTED)
+  set_target_properties(${GMOCK_LIBRARY} PROPERTIES
+    IMPORTED_LOCATION ${GMOCK_LIBRARY_PATH}
+    IMPORTED_LINK_INTERFACE_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+  add_dependencies(${GMOCK_LIBRARY} googletest)
+
+  set(GMOCK_MAIN_LIBRARY_PATH ${binary_dir}/lib/${CMAKE_FIND_LIBRARY_PREFIXES}gmock_main.a)
+  set(GMOCK_MAIN_LIBRARY gmock_main)
+  add_library(${GMOCK_MAIN_LIBRARY} UNKNOWN IMPORTED)
+  set_target_properties(${GMOCK_MAIN_LIBRARY} PROPERTIES
+    IMPORTED_LOCATION ${GMOCK_MAIN_LIBRARY_PATH}
+    IMPORTED_LINK_INTERFACE_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+  add_dependencies(${GMOCK_MAIN_LIBRARY} ${GTEST_LIBRARY})
+
 endmacro ()
 
 # ym_init_submodules: サブモジュール関係の変数を設定するマクロ
