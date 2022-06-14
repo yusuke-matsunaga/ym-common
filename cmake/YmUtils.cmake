@@ -198,6 +198,16 @@ macro ( ym_init_curses )
   include ( FindCurses )
 endmacro ()
 
+# Readline に関する初期化を行う．
+#
+# 入力: なし
+# 出力: Readline_FOUND
+#       Readline_INCLUDE_DIRS
+#       Readline_LIBRARY
+macro ( ym_init_readline )
+  include ( FindReadline )
+endmacro ()
+
 # Curl に関する初期化を行う．
 #
 # 入力: なし
