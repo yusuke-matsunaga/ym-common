@@ -117,6 +117,18 @@ public:
     raw_write(block, n);
   }
 
+  /// @brief シグネチャの書き込み
+  ///
+  /// write_string() と異なり文字数を書き込まない．
+  void
+  write_signature(
+    const string& signature ///< [in] シグネチャ文字列
+  )
+  {
+    auto l = signature.size();
+    raw_write(reinterpret_cast<const ymuint8*>(signature.c_str()), l);
+  }
+
 
 private:
   //////////////////////////////////////////////////////////////////////

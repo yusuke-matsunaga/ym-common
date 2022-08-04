@@ -150,6 +150,22 @@ public:
     raw_read(block, n);
   }
 
+  /// @brief シグネチャの読み出し
+  /// @return 与えられたシグネチャと一致したら true を返す．
+  bool
+  read_signature(
+    const string& signature ///< [in] シグネチャ文字列
+  )
+  {
+    auto l = signature.size();
+    ymuint8* buff = new ymuint8[l + 1];
+    raw_read(buff, l);
+    buff[l] = '\0';
+    string tmp{reinterpret_cast<char*>(buff)};
+    delete [] buff;
+    return tmp == signature;
+  }
+
 
 private:
   //////////////////////////////////////////////////////////////////////
