@@ -26,10 +26,6 @@ ym_add_gtest ( common_Range_test
   RangeTest.cc
   )
 
-ym_add_gtest ( common_BinCodec_test
-  BinCodecTest.cc
-  )
-
 
 # ===================================================================
 #  timer_test
