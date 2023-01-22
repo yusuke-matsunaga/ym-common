@@ -109,23 +109,6 @@ public:
 
 
 //////////////////////////////////////////////////////////////////////
-/// @relates AssertNotReached
-/// @brief 通常は到達してはいけない部分に達したときに例外を投げる関数．
-///
-/// 通常 file, line には __FILE__, __LINE__ マクロを用いる．
-//////////////////////////////////////////////////////////////////////
-inline
-void
-assert_not_reached(
-  const char* file, ///< [in] 例外の発生したソースファイル名
-  int line          ///< [in] 例外の発生したソースファイルの行番号
-)
-{
-  if ( ym_check ) throw AssertNotReached(file, line);
-}
-
-
-//////////////////////////////////////////////////////////////////////
 /// @brief assert 違反で任意の例外クラスを投げるテンプレート関数
 //////////////////////////////////////////////////////////////////////
 template<typename A,
@@ -137,24 +120,7 @@ assert_cond(
 )
 {
   if ( ym_check && !assertion ) throw except;
-}
-
-
-//////////////////////////////////////////////////////////////////////
-/// @relates AssertError
-/// @brief assert 違反で AssertError 例外を投げるテンプレート関数
-///
-/// 通常 file, line には __FILE__, __LINE__ マクロを用いる．
-//////////////////////////////////////////////////////////////////////
-template<typename A>
-void
-assert_cond(
-  A assertion,      ///< [in] 例外発生条件
-  const char* file, ///< [in] ファイル名
-  int line          ///< [in] 行番号
-)
-{
-  if ( ym_check && !assertion ) throw AssertError(file, line);
+  //if ( ym_check && !assertion ) abort();
 }
 
 
@@ -169,7 +135,7 @@ assert_cond(
 /// @endcode
 /// という風に使う．ここに実行が到達したら例外が送出される．
 //////////////////////////////////////////////////////////////////////
-#define ASSERT_NOT_REACHED assert_not_reached(__FILE__, __LINE__)
+#define ASSERT_NOT_REACHED assert_cond(false, AssertNotReached(__FILE__, __LINE__))
 
 
 //////////////////////////////////////////////////////////////////////
@@ -184,7 +150,7 @@ assert_cond(
 /// @endcode
 /// という風に使う．この例では x > 0 が成り立たないと例外が送出される．
 //////////////////////////////////////////////////////////////////////
-#define ASSERT_COND(assertion) assert_cond(assertion, __FILE__, __LINE__)
+#define ASSERT_COND(assertion) assert_cond(assertion, AssertError(__FILE__, __LINE__))
 
 END_NAMESPACE_YM
 
