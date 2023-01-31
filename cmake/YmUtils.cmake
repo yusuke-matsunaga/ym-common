@@ -138,18 +138,7 @@ endmacro ()
 #       YM_PYTHON_LIBDIR: ここで生成される Python ライブラリの格納先
 macro ( ym_init_python )
   # Python のバージョン指定
-  find_package( Python3 COMPONENTS Interpreter Development )
-
-#  foreach ( __arg ${ARGV} )
-#    if ( ${__arg} STREQUAL "REQUIRED" )
-#      if ( NOT Python3_Interpreter_FOUND )
-#	message( FATAL_ERROR "Python interpreter not found" )
-#      endif ()
-#      if ( NOT Python3_Development_FOUND )
-#	message( FATAL_ERROR "Python libraries not found" )
-#      endif ()
-#    endif ()
-#  endforeach()
+  find_package( Python3 ${ARGV} COMPONENTS Interpreter Development )
 
   set( YM_PYTHON_STRING "python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}" )
   set( YM_PYTHON_LIBDIR "lib/${YM_PYTHON_STRING}/site-packages/" )
