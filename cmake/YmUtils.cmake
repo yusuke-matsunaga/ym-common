@@ -172,6 +172,17 @@ macro ( ym_init_lua )
   include ( FindLua )
 endmacro ()
 
+# Jsoncpp に関する初期化を行う．
+#
+# 入力: なし
+# 出力: JsonCpp_FOUND: jsoncpp が見つかった時 true
+#       JsonCpp_INCLUDE_DIR: jsoncpp のインクルードパス
+#       JsonCpp_LIBRARY: jsoncpp のライブラリ
+#       JsonCpp::JsonCpp ライブラリターゲット
+macro ( ym_init_jsoncpp )
+  include ( FindJsoncpp )
+endmacro ()
+
 # Curses に関する初期化を行う．
 #
 # 入力: なし
