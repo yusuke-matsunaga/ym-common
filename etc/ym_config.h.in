@@ -39,46 +39,11 @@
 // サイズ固定の組み込み型
 //////////////////////////////////////////////////////////////////////
 
-#define SIZEOF_SHORT @SHORT_SIZE@
-#define SIZEOF_INT @INT_SIZE@
-#define SIZEOF_LONG @LONG_SIZE@
-#define SIZEOF_LONG_LONG @LLONG_SIZE@
-
-/// @brief 符号なし整数型
-typedef unsigned int ymuint;
-
-/// @brief 符号なしlong型
-typedef unsigned long int ymulong;
-
-/// @brief 符号付き8ビット整数型
-typedef char ymint8;
-
-/// @brief 符号なし8ビット整数型
-typedef unsigned char ymuint8;
-
-/// @brief 符号付き16ビット整数型
-typedef @INT16_TYPE@ ymint16;
-
-/// @brief 符号なし16ビット整数型
-typedef @UINT16_TYPE@ ymuint16;
-
-/// @brief 符号付き32ビット整数型
-typedef @INT32_TYPE@ ymint32;
-
-/// @brief 符号なし32ビット整数型
-typedef @UINT32_TYPE@ ymuint32;
-
-/// @brief 符号付き64ビット整数型
-typedef @INT64_TYPE@ ymint64;
-
-/// @brief 符号なし64ビット整数型
-typedef @UINT64_TYPE@ ymuint64;
-
 /// @brief ポインタと同サイズの符号なし整数型
-typedef @PTRINT_TYPE@ ympuint;
+typedef @PTRINT_TYPE@ PtrIntType;
 
 /// @brief サイズの指定に使う型
-typedef ymuint64 SizeType;
+typedef size_t SizeType;
 
 
 //////////////////////////////////////////////////////////////////////

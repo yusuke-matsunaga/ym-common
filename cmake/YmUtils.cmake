@@ -442,53 +442,7 @@ function ( ym_gen_header )
   # 組み込み型のサイズの検査
   # ===================================================================
   include (CheckTypeSize)
-  check_type_size (short       SHORT_SIZE)
-  check_type_size (int         INT_SIZE)
-  check_type_size (long        LONG_SIZE)
-  check_type_size ("long long" LLONG_SIZE)
   check_type_size ("void *"    VOIDP_SIZE)
-
-  if ( SHORT_SIZE EQUAL 2 )
-    set( INT16_TYPE short )
-    set( UINT16_TYPE "unsigned short" )
-  elseif ( INT_SIZE EQUAL 2 )
-    set( INT16_TYPE int )
-    set( UINT16_TYPE "unsigned int" )
-  else ()
-    # エラー
-    message ( FATAL_ERROR
-      "No valid type for 16-bit integer" )
-  endif ()
-
-  if ( SHORT_SIZE EQUAL 4 )
-    set( INT32_TYPE short )
-    set( UINT32_TYPE "unsigned short" )
-  elseif ( INT_SIZE EQUAL 4 )
-    set( INT32_TYPE int )
-    set( UINT32_TYPE "unsigned int" )
-  elseif ( LONG_SIZE EQUAL 4 )
-    set( INT32_TYPE long )
-    set( UINT32_TYPE "unsigned long" )
-  else ()
-    # エラー
-    message ( FATAL_ERROR
-      "No valid type for 32-bit integer" )
-  endif ()
-
-  if ( INT_SIZE EQUAL 8 )
-    set( INT64_TYPE int )
-    set( UINT64_TYPE "unsigned int" )
-  elseif ( LONG_SIZE EQUAL 8 )
-    set( INT64_TYPE long )
-    set( UINT64_TYPE "unsigned long" )
-  elseif ( LLONG_SIZE EQUAL 8 )
-    set( INT64_TYPE "lon long" )
-    set( UINT64_TYPE "unsigned long long" )
-  else ()
-    # エラー
-    message ( FATAL_ERROR
-      "No valid type for 64-bit integer" )
-  endif ()
 
   if ( INT_SIZE EQUAL VOIDP_SIZE )
     set( PTRINT_TYPE "unsigned int" )
