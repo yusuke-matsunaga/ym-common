@@ -451,6 +451,9 @@ function ( ym_gen_header )
   # 組み込み型のサイズの検査
   # ===================================================================
   include (CheckTypeSize)
+  check_type_size (int         INT_SIZE)
+  check_type_size (long        LONG_SIZE)
+  check_type_size ("long long" LLONG_SIZE)
   check_type_size ("void *"    VOIDP_SIZE)
 
   if ( INT_SIZE EQUAL VOIDP_SIZE )
