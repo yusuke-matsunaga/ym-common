@@ -181,6 +181,10 @@ endmacro ()
 #       JsonCpp::JsonCpp ライブラリターゲット
 macro ( ym_init_jsoncpp )
   include ( FindJsoncpp )
+  if ( ${JsonCpp_FOUND} )
+    include_directories ( ${JsonCpp_INCLUDE_DIR} )
+    list ( APPEND YM_LIB_DEPENDS ${JsonCpp_LIBRARY} )
+  endif ()
 endmacro ()
 
 # Curses に関する初期化を行う．
