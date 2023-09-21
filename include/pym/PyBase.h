@@ -46,6 +46,23 @@ public:
     return false;
   }
 
+  /// @brief vector<string> を表す PyObject を作る．
+  static
+  PyObject*
+  ToPyList(
+    const vector<string>& val_list ///< [in] 値のリスト
+  )
+  {
+    SizeType n = val_list.size();
+    auto obj = PyList_New(n);
+    for ( SizeType i = 0; i < n; ++ i ) {
+      auto& val = val_list[i];
+      auto str_obj = Py_BuildValue("s", val.c_str());
+      PyList_SetItem(obj, i, str_obj);
+    }
+    return obj;
+  }
+
 };
 
 END_NAMESPACE_YM
