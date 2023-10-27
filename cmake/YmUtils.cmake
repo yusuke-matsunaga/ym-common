@@ -252,6 +252,15 @@ macro ( ym_init_curlpp )
   include ( FindCURLpp )
 endmacro ()
 
+# libevent を使うためのマクロ
+# 入力: なし
+# 出力: LIBEVENT_FOUND:       libevent が見つかった時 true
+#       LIBEVENT_INCLUDE_DIR: インクルードディレクトリ
+#       LIBEVENT_LIBRARIES:   ライブラリ
+macro ( ym_init_libevent )
+  include ( FindLibEvent )
+endmacro ()
+
 # ym_use_gtest: googletest を使うためのマクロ
 #
 # 入力: GIT_REPOSITORY       gtest の git レポジトリ(オプション)
