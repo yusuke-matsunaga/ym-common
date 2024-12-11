@@ -106,7 +106,7 @@ macro ( ym_init )
   # リンクすべきライブラリの設定
   # ===================================================================
 
-  set ( YM_LIB_DEPENDS )
+  set ( YM_LIB_DEPENDS -pthread )
 
   if ( ZLIB_FOUND )
     list (APPEND YM_LIB_DEPENDS ${ZLIB_LIBRARIES})
