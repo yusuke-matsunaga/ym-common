@@ -33,9 +33,8 @@ public:
   /// @brief コンストラクタ
   MultiTimer_(
     SizeType num ///< [in] 時区間の数 ( > 0 )
-  ) : mAccTime(num)
+  ) : mAccTime(num, 0.0)
   {
-    reset_all();
     start(0);
   }
 
@@ -70,7 +69,7 @@ public:
     SizeType id ///< [in] 時区間の番号 ( 0 <= id < num() )
   )
   {
-    ASSERT_COND( id < num() );
+    _check_id(id);
     mAccTime[id] = 0.0;
   }
 
@@ -80,6 +79,7 @@ public:
     SizeType id ///< [in] 時区間の番号 ( 0 <= id < num() )
   )
   {
+    _check_id(id);
     if ( id != mCurId ) {
       stop();
       mCurId = id;
@@ -93,7 +93,7 @@ public:
     SizeType id ///< [in] 時区間の番号 ( 0 <= id < num() )
   ) const
   {
-    ASSERT_COND( id < num() );
+    _check_id(id);
     return mAccTime[id];
   }
 
@@ -109,6 +109,17 @@ private:
   {
     duration d = ClockType::now() - mStartTime;
     mAccTime[mCurId] += d.count();
+  }
+
+  /// @brief id が適正な値かチェックする．
+  void
+  _check_id(
+    SizeType id
+  )
+  {
+    if ( id >= num() ) {
+      throw std::out_of_range{"id is out of range"};
+    }
   }
 
 

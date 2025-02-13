@@ -26,7 +26,7 @@ public:
   /// @brief コンストラクタ
   RangeIterator(
     T pos /// [in] 現在の値
-  ) : mCurPos(pos)
+  ) : mCurPos{pos}
   {
   }
 
@@ -117,8 +117,8 @@ public:
   Range_(
     T start, ///< [in] 開始位置
     T end    ///< [in] 終了位置
-  ) : mStart(start),
-      mEnd(end)
+  ) : mStart{start},
+      mEnd{end}
   {
     // sanity check
     if ( mStart < mEnd ) {
@@ -140,8 +140,8 @@ public:
   explicit
   Range_(
     T end ///< [in] 終了位置
-  ) : mStart(0),
-      mEnd(end)
+  ) : mStart{0},
+      mEnd{end}
   {
   }
 
