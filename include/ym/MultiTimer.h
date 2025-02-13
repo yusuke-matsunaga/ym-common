@@ -115,7 +115,7 @@ private:
   void
   _check_id(
     SizeType id
-  )
+  ) const
   {
     if ( id >= num() ) {
       throw std::out_of_range{"id is out of range"};
