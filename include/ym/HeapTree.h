@@ -102,7 +102,7 @@ public:
     auto pos = mArray.size();
     mArray.push_back(item);
     mPosMap.emplace(item, pos + 1);
-    move_up(item);
+    _move_up(item);
   }
 
   /// @brief 要素を取り去る．
@@ -122,7 +122,7 @@ public:
     if ( last != item ) {
       -- pos;
       locate_node(last, pos);
-      move_down(last);
+      _move_down(last);
     }
   }
 
@@ -141,7 +141,7 @@ public:
     mArray.pop_back();
     if ( size() > 0 ) {
       locate_node(last, 0);
-      move_down(last);
+      _move_down(last);
     }
     return item;
   }
@@ -160,8 +160,8 @@ public:
     -- pos;
     ASSERT_COND( mArray[pos] == item );
 
-    move_up(item);
-    move_down(item);
+    _move_up(item);
+    _move_down(item);
   }
 
   /// @brief 要素がヒープに含まれるか調べる．
@@ -176,13 +176,19 @@ public:
   /// @brief 内容を出力する．
   void
   print(
-    ostream& s ///< [in] 出力先のストリーム
+    ostream& s,                                       ///< [in] 出力先のストリーム
+    std::function<void(ostream&, ItemType)> printfunc ///< [in] 要素の出力関数
+    = [](ostream& s, ItemType item) {
+      s << item;
+    }
   ) const
   {
     s << " heap_size = " << size() << endl;
     for ( auto item: mArray ) {
       s << " Item#" << heap_pos(item) - 1
-	<< ": " << item << endl;
+	<< ": ";
+      printfunc(s, item);
+      s << endl;
     }
     s << endl;
   }
@@ -195,7 +201,7 @@ private:
 
   /// @brief 要素を適当な位置まで沈める．
   void
-  move_down(
+  _move_down(
     ItemType item ///< [in] 対象のノード
   )
   {
@@ -249,7 +255,7 @@ private:
 
   /// @brief 要素を適当な位置まで浮かび上がらせる．
   void
-  move_up(
+  _move_up(
     ItemType item ///< [in] 対象の要素
   )
   {
