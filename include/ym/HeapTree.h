@@ -146,7 +146,7 @@ public:
     return item;
   }
 
-  /// @brief ノードの値の変更に伴ってヒープ構造を更新する．
+  /// @brief 要素の値の変更に伴ってヒープ構造を更新する．
   void
   update(
     ItemType item ///< [in] 値が変更された要素
@@ -162,6 +162,15 @@ public:
 
     move_up(item);
     move_down(item);
+  }
+
+  /// @brief 要素がヒープに含まれるか調べる．
+  bool
+  is_in(
+    ItemType item ///< [in] 対象の要素
+  ) const
+  {
+    return mPosMap.count(item) > 0;
   }
 
   /// @brief 内容を出力する．
