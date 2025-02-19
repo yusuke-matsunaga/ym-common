@@ -43,3 +43,12 @@ add_executable ( timer_test
 add_executable ( multitimer_test
   multitimer_test.cc
   )
+
+
+# ===================================================================
+#  HeapTree_test
+# ===================================================================
+
+ym_add_gtest ( common_HeapTree_test
+  HeapTreeTest.cc
+  )
