@@ -67,6 +67,7 @@ public:
       val = string{PyBytes_AsString(obj2)};
       return true;
     }
+    return false;
   }
 
 };
