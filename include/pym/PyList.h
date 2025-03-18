@@ -17,25 +17,24 @@
 BEGIN_NAMESPACE_YM
 
 //////////////////////////////////////////////////////////////////////
-/// @class PyList PyList.h "PyList.h"
-/// @brief Python のリストに関する関数を集めたクラス
+/// @class PyListConv PyList.h "PyList.h"
+/// @brief 要素のリストを表す PyObject* を作るファンクタクラス
+///
+/// - T は要素のクラス
+/// - Conv は T を PyObject に変換するファンクタクラス
 //////////////////////////////////////////////////////////////////////
-class PyList
+template<class T, class Conv>
+class PyListConv
 {
 public:
   //////////////////////////////////////////////////////////////////////
   // 外部インターフェイス
   //////////////////////////////////////////////////////////////////////
 
-  /// @brief vector<T> を表す PyObject を作る．
-  /// @return リストを表す Python のオブジェクト(PyList)を返す．
-  ///
-  /// conv は T を PyObject* に変換するファンクタクラス
-  template<class T, class Conv>
-  static
+  /// @brief 要素のリストを表す PyObject* を作る．
   PyObject*
-  ToPyObject(
-    const vector<T>& val_list ///< [in] 値のリスト
+  operator()(
+    const std::vector<T>& val_list
   )
   {
     Conv conv;
@@ -49,16 +48,29 @@ public:
     return obj;
   }
 
-  /// @brief PyObject から vector<T> を取り出す．
-  /// @return 正しく変換できた時に true を返す．
-  ///
-  /// deconv は PyObject* から T を取り出すファンクタクラス
-  template<class T, class Deconv>
-  static
+};
+
+
+//////////////////////////////////////////////////////////////////////
+/// @class PyListDeconv PyList.h "PyList.h"
+/// @brief 要素のリストを取り出すファンクタクラス
+///
+/// - T は要素のクラス
+/// - Deconv は PyObject* を T に変換するファンクタクラス
+//////////////////////////////////////////////////////////////////////
+template<class T, class Deconv>
+class PyListDeconv
+{
+public:
+  //////////////////////////////////////////////////////////////////////
+  // 外部インターフェイス
+  //////////////////////////////////////////////////////////////////////
+
+  /// @brief 要素のリストを取り出す．
   bool
-  FromPyObject(
-    PyObject* obj,           ///< [in] Python のオブジェクト
-    std::vector<T>& val_list ///< [out] 結果を格納するリスト
+  operator()(
+    PyObject* obj,
+    std::vector<T>& val_list
   )
   {
     Deconv deconv;
@@ -88,6 +100,51 @@ public:
       val_list.push_back(val);
     }
     return true;
+  }
+
+};
+
+
+//////////////////////////////////////////////////////////////////////
+/// @class PyList PyList.h "PyList.h"
+/// @brief Python のリストに関する関数を集めたクラス
+//////////////////////////////////////////////////////////////////////
+class PyList
+{
+public:
+  //////////////////////////////////////////////////////////////////////
+  // 外部インターフェイス
+  //////////////////////////////////////////////////////////////////////
+
+  /// @brief vector<T> を表す PyObject を作る．
+  /// @return リストを表す Python のオブジェクト(PyList)を返す．
+  ///
+  /// conv は T を PyObject* に変換するファンクタクラス
+  template<class T, class Conv>
+  static
+  PyObject*
+  ToPyObject(
+    const vector<T>& val_list ///< [in] 値のリスト
+  )
+  {
+    PyListConv<T, Conv> conv;
+    return conv(val_list);
+  }
+
+  /// @brief PyObject から vector<T> を取り出す．
+  /// @return 正しく変換できた時に true を返す．
+  ///
+  /// deconv は PyObject* から T を取り出すファンクタクラス
+  template<class T, class Deconv>
+  static
+  bool
+  FromPyObject(
+    PyObject* obj,           ///< [in] Python のオブジェクト
+    std::vector<T>& val_list ///< [out] 結果を格納するリスト
+  )
+  {
+    PyListDeconv<T, Deconv> deconv;
+    return deconv(obj, val_list);
   }
 
 };
