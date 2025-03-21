@@ -18,67 +18,44 @@
 BEGIN_NAMESPACE_YM
 
 //////////////////////////////////////////////////////////////////////
-/// @class PyStringConv PyString.h "PyString.h"
-/// @brief string を PyObject* に変換するファンクタクラス
-///
-/// 実はただの関数
-//////////////////////////////////////////////////////////////////////
-class PyStringConv
-{
-public:
-  //////////////////////////////////////////////////////////////////////
-  // 外部インターフェイス
-  //////////////////////////////////////////////////////////////////////
-
-  /// @brief string を PyObject* に変換する．
-  PyObject*
-  operator()(
-    const string& val
-  )
-  {
-    return Py_BuildValue("s", val.c_str());
-  }
-
-};
-
-
-//////////////////////////////////////////////////////////////////////
-/// @class PyStringCheck PyString.h "PyString.h"
-/// @brief string に変換するファンクタクラス
-///
-/// 実はただの関数
-//////////////////////////////////////////////////////////////////////
-class PyStringDeconv
-{
-public:
-  //////////////////////////////////////////////////////////////////////
-  // 外部インターフェイス
-  //////////////////////////////////////////////////////////////////////
-
-  /// @brief string に変換する．
-  bool
-  operator()(
-    PyObject* obj,
-    string& val
-  )
-  {
-    if ( PyUnicode_Check(obj) ) {
-      auto obj2 = PyUnicode_EncodeLocale(obj, nullptr);
-      val = string{PyBytes_AsString(obj2)};
-      return true;
-    }
-    return false;
-  }
-
-};
-
-
-//////////////////////////////////////////////////////////////////////
 /// @class PyString PyString.h "PyString.h"
-/// @brief string の Python 拡張用の基底クラス
+/// @brief string と PyObject の間の変換を行うクラス
 //////////////////////////////////////////////////////////////////////
 class PyString
 {
+  using ElemType = string;
+
+public:
+
+  /// @brief string を PyObject* に変換するファンクタクラス
+  struct Conv {
+    PyObject*
+    operator()(
+      const ElemType& val
+    )
+    {
+      return Py_BuildValue("s", val.c_str());
+    }
+  };
+
+  /// @brief PyObject* を string に変換するファンクタクラス
+  struct Deconv {
+    bool
+    operator()(
+      PyObject* obj,
+      ElemType& val
+    )
+    {
+      if ( PyUnicode_Check(obj) ) {
+	auto obj2 = PyUnicode_EncodeLocale(obj, nullptr);
+	val = string{PyBytes_AsString(obj2)};
+	return true;
+      }
+      return false;
+    }
+  };
+
+
 public:
   //////////////////////////////////////////////////////////////////////
   // 外部インターフェイス
@@ -88,10 +65,10 @@ public:
   static
   PyObject*
   ToPyObject(
-    const string& val
+    const ElemType& val
   )
   {
-    PyStringConv conv;
+    Conv conv;
     return conv(val);
   }
 
@@ -103,10 +80,10 @@ public:
   bool
   FromPyObject(
     PyObject* obj, ///< [in] 対象のオブジェクト
-    string& val    ///< [out] 変換した値を格納するオブジェクト
+    ElemType& val  ///< [out] 変換した値を格納するオブジェクト
   )
   {
-    PyStringDeconv deconv;
+    Deconv deconv;
     return deconv(obj, val);
   }
 
@@ -114,10 +91,10 @@ public:
   static
   PyObject*
   ToPyList(
-    const vector<string>& val_list ///< [in] 値のリスト
+    const vector<ElemType>& val_list ///< [in] 値のリスト
   )
   {
-    return PyList::ToPyObject<string, PyStringConv>(val_list);
+    return PyList<ElemType, PyString>::ToPyObject(val_list);
   }
 
 };
