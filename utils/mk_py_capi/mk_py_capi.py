@@ -7,8 +7,8 @@
 :copyright: Copyright (C) 2025 Yusuke Matsunaga, All rights reserved.
 """
 
-from mk_py_capi.codegenbase import CodeGenBase
-from mk_py_capi.codeblock import CodeBlock, FuncBlock, ArrayBlock
+from .codeblock import CodeBlock, IfBlock, ElseBlock, ElseIfBlock, ForBlock
+from .codeblock import FuncBlock, ArrayBlock, StructBlock
 import re
 import os
 import datetime
@@ -174,15 +174,10 @@ class MkPyCapi:
                 self.gen_comment('このクラスは Conv を持たない．')
         else:
             self.gen_dox_comment(f'@brief {self.classname} を PyObject* に変換するファンクタクラス')
-            with CodeBlock(self,
-                           prefix='struct Conv ',
-                           postfix=';'):
-                self._write_line('PyObject*')
-                with CodeBlock(self,
-                               br_chars='()',
-                               prefix='operator()',
-                               postfix=';'):
-                    self._write_line('const ElemType& val')
+            with self.gen_struct_block('Conv'):
+                self.gen_func_declaration(return_type='PyObject*',
+                                          func_name='operator()',
+                                          args=['const ElemType& val'])
 
     def deconv_def_gen(self):
         if self.deconv_gen is None:
@@ -192,16 +187,11 @@ class MkPyCapi:
         else:
             self.gen_CRLF()
             self.gen_dox_comment(f'@brief PyObject* から {self.classname} を取り出すファンクタクラス')
-            with CodeBlock(self,
-                           prefix='struct Deconv ',
-                           postfix=';'):
-                self._write_line('bool')
-                with CodeBlock(self,
-                               br_chars='()',
-                               prefix='operator()',
-                               postfix=';'):
-                    self._write_line('PyObject* ovj,')
-                    self._write_line('ElemType& val')
+            with self.gen_struct_block('Deconv'):
+                self.gen_func_declaration(return_type='bool',
+                                          func_name='operator()',
+                                          args=['PyObject* obj',
+                                                'ElemType& val'])
 
     def to_def_gen(self):
         if self.conv_gen is not None:
@@ -210,27 +200,25 @@ class MkPyCapi:
             self.gen_dox_comment('@return 生成した PyObject を返す．')
             self.gen_dox_comment('')
             self.gen_dox_comment('返り値は新しい参照が返される．')
-            self._write_line('static')
-            with FuncBlock(self,
-                           return_type='PyObject*',
-                           func_name='ToPyObject',
-                           args=('const ElemType& val ///< [in] 値', )):
-                self._write_line('Conv conv;')
-                self._write_line('return conv(val);')
+            with self.gen_func_block(is_static=True,
+                                     return_type='PyObject*',
+                                     func_name='ToPyObject',
+                                     args=('const ElemType& val ///< [in] 値', )):
+                self.gen_declaration('Conv', 'conv')
+                self.gen_return('conv(val)')
 
     def from_def_gen(self):
         if self.deconv_gen is not None:
             self.gen_CRLF()
             self.gen_dox_comment(f'@brief PyObject から {self.classname} を取り出す．')
             self.gen_dox_comment('@return 正しく変換できた時に true を返す．')
-            self._write_line('static')
-            with FuncBlock(self,
-                           return_type='bool',
-                           func_name='FromPyObject',
-                           args=('PyObject* obj, ///< [in] Python のオブジェクト',
-                                 'ElemType& val  ///< [out] 結果を格納する変数')):
-                self._write_line('Deconv deconv;')
-                self._write_line('return deconv(obj, val);')
+            with self.gen_func_block(is_static=True,
+                                     return_type='bool',
+                                     func_name='FromPyObject',
+                                     args=('PyObject* obj, ///< [in] Python のオブジェクト',
+                                           'ElemType& val  ///< [out] 結果を格納する変数')):
+                self.gen_declaration('Deconv', 'deconv')
+                self.gen_return('deconv(obj, val)')
                 
     def make_source(self, fout=sys.stdout):
         """ソースファイルを出力する．"""
@@ -330,9 +318,8 @@ class MkPyCapi:
 
             self.gen_CRLF()
             self.gen_comment('メソッド定義')
-            with ArrayBlock(self,
-                            typename='PyMethodDef',
-                            arrayname=self.__method_name):
+            with self.gen_array_block(typename='PyMethodDef',
+                                      arrayname=self.__method_name):
                 for method in self.__method_list:
                     self._write_line(f'{{"{method.name}",')
                     self._indent_inc(1)
@@ -500,6 +487,105 @@ class MkPyCapi:
         line += ';'
         self._write_line(line)
 
+    def gen_func_declaration(self, *,
+                             description=None,
+                             is_static=False,
+                             return_type,
+                             func_name,
+                             args):
+        """関数宣言を出力する．
+        """
+        self._write_line(f'{return_type}')
+        with CodeBlock(self,
+                       br_chars='()',
+                       prefix=func_name,
+                       postfix=';'):
+            nargs = len(args)
+            for i, arg in enumerate(args):
+                line = arg
+                if i < nargs - 1:
+                    line += ','
+                self._write_line(line)
+            
+    def gen_func_block(self, *,
+                       description=None,
+                       is_static=False,
+                       return_type,
+                       func_name,
+                       args):
+        """関数定義を出力する．
+
+        with obj.gen_func_block(return_type=XX,
+                                func_name=XX,
+                                args=..):
+          ...
+        という風に用いる．
+        """
+        return FuncBlock(self,
+                         description=description,
+                         is_static=is_static,
+                         return_type=return_type,
+                         func_name=func_name,
+                         args=args)
+                       
+    def gen_if_block(self, condition):
+        """if 文を出力する
+
+        with obj.gen_if_block(condition):
+          ...
+        という風に用いる．
+        """
+        return IfBlock(self, condition)
+
+    def gen_else_block(self):
+        """else文を出力する
+
+        with obj.gen_else_block():
+          ...
+        という風に用いる．
+        """
+        return ElseBlock(self)
+
+    def gen_elseif_block(self, condition):
+        """else if 文を出力する
+
+        with obj.gen_elseif_block(condition):
+          ...
+        という風に用いる．
+        """
+        return ElseIfBlock(self, condition)
+
+    def gen_for_block(self,
+                      init_stmt,
+                      cond_expr,
+                      next_stmt):
+        """for 文を出力する．
+        """
+        return ForBlock(self, init_stmt, cond_expr, next_stmt)
+
+    def gen_array_block(self, *,
+                        typename,
+                        arrayname):
+        """initializer を持つ配列定義用ブロックを出力する．
+        """
+        return ArrayBlock(self, typename=typename, arrayname=arrayname)
+
+    def gen_struct_block(self, structname):
+        """struct ブロックを出力する．
+        """
+        return StructBlock(self, structname)
+
+    def gen_type_error(self, error_msg):
+        self.gen_error('PyExc_TypeError', error_msg)
+
+    def gen_value_error(self, error_msg):
+        self.gen_error('PyExc_ValueError', error_msg)
+        
+    def gen_error(self, error_type, error_msg):
+        """エラー出力
+        """
+        self._write_line(f'PyErr_SetString({error_type}, "{error_msg}");')
+        
     def gen_dox_comment(self, comment):
         """Doxygen 用のコメントを出力する．
         """

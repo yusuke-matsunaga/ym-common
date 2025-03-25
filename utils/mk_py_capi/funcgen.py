@@ -153,9 +153,9 @@ class BoolArg(ConvArg):
             line += ' = {self.cvardefault}'
         line += ';'
         setl._write_line(line)
-        with IfBlock(self.parent,
-                     condition=f'{self.tmpname} != -1'):
-            self._write_line(f'{self.cvarname} = static_cast<bool>({self.tmpname});')
+        with self.gen_if_block(f'{self.tmpname} != -1'):
+            self.gen_assign(f'{self.cvarname}',
+                            f'static_cast<bool>({self.tmpname})')
 
 
 class StringArg(ConvArg):
@@ -183,9 +183,9 @@ class StringArg(ConvArg):
             line += ' = {self.cvardefault}'
         line += ';'
         setl._write_line(line)
-        with IfBlock(self.parent,
-                     condition=f'{self.tmpname} != nullptr'):
-            self._write_line(f'{self.cvarname} = std::string({self.tmpname});')
+        with self.gen_if_block(f'{self.tmpname} != nullptr'):
+            self.gen_assign(f'{self.cvarname}',
+                            f'std::string({self.tmpname})')
 
 
 class ObjArg(ConvArg):
@@ -247,12 +247,10 @@ class TypedObjArg(ConvArg):
             line += ' = {self.cvardefault}'
         line += ';'
         self._write_line(line)
-        with IfBlock(self.parent,
-                     condition=f'{tmpname} != nullptr'):
-            with IfBlock(self.parent,
-                         condition=f'!{self.pyclassname}::FromPyObject({self.tmpname}, {self.cvarname})'):
+        with self.gen_if_block(f'{tmpname} != nullptr'):
+            with self.gen_if_block(f'!{self.pyclassname}::FromPyObject({self.tmpname}, {self.cvarname})'):
                 self._write_line('PyErr_SetString(PyExc_TypeError, "could not convert to {self.classname}')
-                self._write_line('return nullptr;')
+                self.gen_return('nullptr')
 
         
 class FuncBase(CodeGenBase):
@@ -336,7 +334,7 @@ class FuncBase(CodeGenBase):
                 self._write_line(line)
             self._indent_dec(delta)
             self._indent_inc()
-            self._write_line('return nullptr;')
+            self.gen_return('nullptr')
             self._indent_dec()
             self._write_line('}')
 
@@ -347,12 +345,14 @@ class FuncBase(CodeGenBase):
     def gen_obj_conv(self, varname):
         """self から自分の型に変換するコードを生成する．
         """
-        self._write_line(f'auto {varname} = reinterpret_cast<{self.objectname}*>(self);')
+        self.gen_auto_assign(f'{varname}',
+                             f'reinterpret_cast<{self.objectname}*>(self)')
 
     def gen_val_conv(self, varname):
         """self から値を取り出すコードを生成する．
         """
-        self._write_line(f'auto& {varname} = {self.pyclassname}::_get_ref(self);')
+        self.gen_assign(f'auto& {varname}',
+                        f'{self.pyclassname}::_get_ref(self)')
 
     
 class MethodGen(FuncBase):
@@ -387,11 +387,10 @@ class MethodGen(FuncBase):
             args = ( args0, arg1, arg2 )
         else:
             args = ( args0, arg1, )
-        with FuncBlock(self.parent,
-                       description=self.doc_str,
-                       return_type='PyObject*',
-                       func_name=func_name,
-                       args=args):
+        with self.gen_func_block(description=self.doc_str,
+                                 return_type='PyObject*',
+                                 func_name=func_name,
+                                 args=args):
             self.gen_preamble()
             self.gen_body()
 
@@ -412,10 +411,9 @@ class NewGen(FuncBase):
         args = ('PyTypeObject* type',
                 'PyObject* args',
                 'PyObject* kwds')
-        with FuncBlock(self.parent,
-                       return_type='PyObject*',
-                       func_name=func_name,
-                       args=args):
+        with self.gen_func_block(return_type='PyObject*',
+                                 func_name=func_name,
+                                 args=args):
             self.gen_preamble()
             self.gen_body()
 
@@ -430,11 +428,10 @@ class DeallocGen(FuncBase):
         super().__init__(parent)
 
     def __call__(self, func_name):
-        with FuncBlock(self.parent,
-                       description='終了関数',
-                       return_type='void',
-                       func_name=func_name,
-                       args=(('PyObject* self', ))):
+        with self.gen_func_block(description='終了関数',
+                                 return_type='void',
+                                 func_name=func_name,
+                                 args=(('PyObject* self', ))):
             self.gen_obj_conv('obj')
             self.gen_body()
             self._write_line('PyTYPE(self)->tp_free(self)')
@@ -453,11 +450,10 @@ class ReprGen(FuncBase):
         super().__init__(parent)
 
     def __call__(self, func_name):
-        with FuncBlock(self.parent,
-                       description='repr関数',
-                       return_type='PyObject*',
-                       func_name=func_name,
-                       args=(('PyObject* self', ))):
+        with self.gen_func_block(description='repr関数',
+                                 return_type='PyObject*',
+                                 func_name=func_name,
+                                 args=(('PyObject* self', ))):
             self.gen_val_conv('val')
             self.gen_body('val', 'repr_str')
             self._write_line(f'return PyString::ToPyObject(repr_str);')
@@ -481,11 +477,10 @@ class ConvGen(CodeGenBase):
         super().__init__(parent)
         
     def __call__(self):
-        with FuncBlock(self.parent,
-                       description=f'{self.classname} を PyObject に変換する．',
-                       return_type='PyObject*',
-                       func_name=f'{self.pyclassname}::Conv::operator()',
-                       args=(f'const {self.classname}& val', )):
+        with self.gen_func_block(description=f'{self.classname} を PyObject に変換する．',
+                                 return_type='PyObject*',
+                                 func_name=f'{self.pyclassname}::Conv::operator()',
+                                 args=(f'const {self.classname}& val', )):
             self.gen_auto_assign('type', f'{self.pyclassname}::_typeobject()')
             self.gen_auto_assign('obj', 'type->tp_alloc(type, 0)')
             self.gen_auto_assign('obj1', f'reinterpret_cast<{self.objectname}*>(obj)')
@@ -509,17 +504,15 @@ class DeconvGen(CodeGenBase):
         super().__init__(parent)
 
     def __call__(self):
-        with FuncBlock(self.parent,
-                       description='PyObject を {self.classname} に変換する．',
-                       return_type='bool',
-                       func_name=f'{self.pyclassname}::Deconv::operator()',
-                       args=('PyObject* obj',
-                             f'{self.classname}& val')):
+        with self.gen_func_block(description='PyObject を {self.classname} に変換する．',
+                                 return_type='bool',
+                                 func_name=f'{self.pyclassname}::Deconv::operator()',
+                                 args=('PyObject* obj',
+                                       f'{self.classname}& val')):
             self.gen_body()
 
     def gen_body(self):
-        with IfBlock(self.parent,
-                     condition=f'{self.pyclassname}::Check(obj)'):
+        with self.gen_if_block(f'{self.pyclassname}::Check(obj)'):
             self.gen_assign('val', f'{self.pyclassname}::_get_ref(obj)')
             self.gen_return('true')
         self.gen_return('false')

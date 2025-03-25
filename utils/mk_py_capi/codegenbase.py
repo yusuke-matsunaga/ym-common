@@ -64,6 +64,84 @@ class CodeGenBase:
         """
         self.__parent.gen_return(val)
 
+    def gen_func_block(self, *,
+                       description=None,
+                       is_static=False,
+                       return_type,
+                       func_name,
+                       args):
+        """関数定義を出力する．
+
+        with obj.gen_func_block(return_type=XX,
+                                func_name=XX,
+                                args=..):
+          ...
+        という風に用いる．
+        """
+        return self.__parent.gen_func_block(description=description,
+                                            is_static=is_static,
+                                            return_type=return_type,
+                                            func_name=func_name,
+                                            args=args)
+
+    def gen_if_block(self, condition):
+        """if 文を出力する
+
+        with obj.gen_if_block(condition):
+          ...
+        という風に用いる．
+        """
+        return self.__parent.gen_if_block(condition)
+
+    def gen_else_block(self):
+        """else文を出力する
+
+        with obj.gen_else_block():
+          ...
+        という風に用いる．
+        """
+        return self.__parent.gen_else_block()
+
+    def gen_elseif_block(self, condition):
+        """else if 文を出力する
+
+        with obj.gen_elseif_block(condition):
+          ...
+        という風に用いる．
+        """
+        return self.__parent.gen_elseif_block(condition)
+
+    def gen_array_block(self, *,
+                        typename,
+                        arrayname):
+        """initializer を持つ配列定義用ブロックを出力する．
+        """
+        return self.__parent.gen_array_block(typename=typename, arrayname=arrayname)
+
+    def gen_for_block(self,
+                      init_stmt,
+                      cond_expr,
+                      next_stmt):
+        """for 文を出力する．
+        """
+        return self.__parent.gen_for_block(init_stmt, cond_expr, next_stmt)
+
+    def gen_struct_block(self, structname):
+        """struct ブロックを出力する．
+        """
+        return self.__parent.gen_struct_block(structname)
+    
+    def gen_type_error(self, error_msg):
+        self.__parent.gen_type_error(error_msg)
+
+    def gen_value_error(self, error_msg):
+        self.__parent.gen_value_error(error_msg)
+        
+    def gen_error(self, error_type, error_msg):
+        """エラー出力
+        """
+        self.gen_error(error_type, error_msg)
+
     def gen_dox_comment(self, comment):
         """Doxygen 用のコメントを出力する．
         """

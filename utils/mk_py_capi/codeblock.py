@@ -44,19 +44,23 @@ class FuncBlock(CodeBlock):
 
     def __init__(self, parent, *,
                  description=None,
+                 is_static=False,
                  return_type,
                  func_name,
                  args):
         super().__init__(parent)
         self.description=description
+        self.is_static=is_static
         self.return_type=return_type
         self.func_name = func_name
         self.args = args
         
     def before_enter(self):
-        self._write_line('') # 空行
+        self.gen_CRLF()
         if self.description is not None:
             self._write_line(f'// @brief {self.description}')
+        if self.is_static:
+            self._write_line('static')
         self._write_line(f'{self.return_type}')
         with CodeBlock(self.parent,
                        br_chars='()',
@@ -67,12 +71,11 @@ class FuncBlock(CodeBlock):
                 if i < nargs - 1:
                     line += ','
                 self._write_line(line)
-
+                 
 
 class IfBlock(CodeBlock):
 
-    def __init__(self, parent, *,
-                 condition):
+    def __init__(self, parent, condition):
         super().__init__(parent,
                          prefix=f'if ( {condition} ) ')
 
@@ -86,20 +89,11 @@ class ElseBlock(CodeBlock):
         
 class ElseIfBlock(CodeBlock):
 
-    def __init__(self, parent, *,
-                 condition):
+    def __init__(self, parent, condition):
         super().__init__(parent,
                          prefix=f'else if ( {condition} ) ')
+
         
-class ArrayBlock(CodeBlock):
-
-    def __init__(self, parent, *,
-                 typename,
-                 arrayname):
-        super().__init__(parent,
-                         prefix=f'{typename} {arrayname}[] = ',
-                         postfix=';')
-
 class ForBlock(CodeBlock):
 
     def __init__(self, parent,
@@ -108,3 +102,19 @@ class ForBlock(CodeBlock):
                  next_stmt):
         super().__init__(parent,
                          prefix=f'for ( {init_stmt}; {cond_expr}; {next_stmt} ) ')
+
+
+class StructBlock(CodeBlock):
+
+    def __init__(self, parent, structname):
+        super().__init__(parent,
+                         prefix=f'struct {structname} ',
+                         postfix=';')
+        
+        
+class ArrayBlock(CodeBlock):
+
+    def __init__(self, parent, typename, arrayname):
+        super().__init__(parent,
+                         prefix=f'{typename} {arrayname}[] = ',
+                         postfix=';')
