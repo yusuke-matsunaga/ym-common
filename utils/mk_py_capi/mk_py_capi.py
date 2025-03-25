@@ -8,7 +8,7 @@
 """
 
 from mk_py_capi.codegenbase import CodeGenBase
-from mk_py_capi.codeblock import ArrayBlock
+from mk_py_capi.codeblock import CodeBlock, FuncBlock, ArrayBlock
 import re
 import os
 import datetime
@@ -117,7 +117,7 @@ class MkPyCapi:
                 if line == '%%INCLUDES%%':
                     # インクルードファイルの置換
                     for filename in self.header_include_files:
-                        self._write_line(f'#include "{filename}"')
+                        self.gen_include(filename)
                     continue
 
                 result = self.__conv_def_pat.match(line)
@@ -166,19 +166,19 @@ class MkPyCapi:
                 self._write_line(line)
 
     def conv_def_gen(self):
-        self._write_line('')
+        self.gen_CRLF()
         if self.conv_gen is None:
             if self.deconv_gen is None:
-                self._write_line('/// このクラスは Conv/Deconv を持たない．')
+                self.gen_comment('このクラスは Conv/Deconv を持たない．')
             else:
-                self._write_line('/// このクラスは Conv を持たない．')
+                self.gen_comment('このクラスは Conv を持たない．')
         else:
-            self._write_line(f'/// @brief {self.classname} を PyObject* に変換するファンクタクラス')
-            with CodeBlock(self.parent,
+            self.gen_dox_comment(f'@brief {self.classname} を PyObject* に変換するファンクタクラス')
+            with CodeBlock(self,
                            prefix='struct Conv ',
                            postfix=';'):
                 self._write_line('PyObject*')
-                with CodeBlock(self.parent,
+                with CodeBlock(self,
                                br_chars='()',
                                prefix='operator()',
                                postfix=';'):
@@ -187,16 +187,16 @@ class MkPyCapi:
     def deconv_def_gen(self):
         if self.deconv_gen is None:
             if self.conv_gen is not None:
-                self._write_line('')
-                self._write_line('/// このクラスは Deconv を持たない．')
+                self.gen_CRLF()
+                self.gen_comment('このクラスは Deconv を持たない．')
         else:
-            self._write_line('')
-            self._write_line(f'/// @brief PyObject* から {self.classname} を取り出すファンクタクラス')
-            with CodeBlock(self.parent,
+            self.gen_CRLF()
+            self.gen_dox_comment(f'@brief PyObject* から {self.classname} を取り出すファンクタクラス')
+            with CodeBlock(self,
                            prefix='struct Deconv ',
                            postfix=';'):
                 self._write_line('bool')
-                with CodeBlock(self.parent,
+                with CodeBlock(self,
                                br_chars='()',
                                prefix='operator()',
                                postfix=';'):
@@ -205,13 +205,13 @@ class MkPyCapi:
 
     def to_def_gen(self):
         if self.conv_gen is not None:
-            self._write_line('')
-            self._write_line(f'/// @brief {self.classname} を表す PyObject を作る．')
-            self._write_line('/// @return 生成した PyObject を返す．')
-            self._write_line('///')
-            self._write_line('/// 返り値は新しい参照が返される．')
+            self.gen_CRLF()
+            self.gen_dox_comment(f'@brief {self.classname} を表す PyObject を作る．')
+            self.gen_dox_comment('@return 生成した PyObject を返す．')
+            self.gen_dox_comment('')
+            self.gen_dox_comment('返り値は新しい参照が返される．')
             self._write_line('static')
-            with FuncBlock(self.parent,
+            with FuncBlock(self,
                            return_type='PyObject*',
                            func_name='ToPyObject',
                            args=('const ElemType& val ///< [in] 値', )):
@@ -220,11 +220,11 @@ class MkPyCapi:
 
     def from_def_gen(self):
         if self.deconv_gen is not None:
-            self._write_line('')
-            self._write_line(f'/// @brief PyObject から {self.classname} を取り出す．')
-            self._write_line('/// @return 正しく変換できた時に true を返す．')
+            self.gen_CRLF()
+            self.gen_dox_comment(f'@brief PyObject から {self.classname} を取り出す．')
+            self.gen_dox_comment('@return 正しく変換できた時に true を返す．')
             self._write_line('static')
-            with FuncBlock(self.parent,
+            with FuncBlock(self,
                            return_type='bool',
                            func_name='FromPyObject',
                            args=('PyObject* obj, ///< [in] Python のオブジェクト',
@@ -247,7 +247,7 @@ class MkPyCapi:
                 if line == '%%INCLUDES%%':
                     # インクルードファイルの置換
                     for filename in self.source_include_files:
-                        self._write_line(f'#include "{filename}"')
+                        self.gen_include(filename)
                     continue
 
                 if line == '%%EXTRA_CODE%%':
@@ -298,7 +298,7 @@ class MkPyCapi:
                 self._write_line(line)
 
     def make_extra_code(self):
-        self.gen_preamble(self)
+        self.gen_preamble()
         
         if self.dealloc_gen is not None:
             self.dealloc_gen(self.__dealloc_name)
@@ -328,8 +328,8 @@ class MkPyCapi:
             for method in self.__method_list:
                 method(method.func_name)
 
-            self._write_line('')
-            self._write_line('// @brief メソッド定義')
+            self.gen_CRLF()
+            self.gen_comment('メソッド定義')
             with ArrayBlock(self,
                             typename='PyMethodDef',
                             arrayname=self.__method_name):
@@ -357,7 +357,7 @@ class MkPyCapi:
                     line = f'PyDoc_STR("{method.doc_str}")}},'
                     self._write_line(line)
                     self._indent_dec(1)
-                self._write_line('// end-marker')
+                self.gen_comment('end-marker')
                 self._write_line('{nullptr, nullptr, 0, nullptr}')
 
         if self.getset_gen is not None:
@@ -373,40 +373,42 @@ class MkPyCapi:
         pass
     
     def make_tp_init(self):
-        self._write_tp_line('name', f'"{self.pyname}"')
-        self._write_tp_line('basicsize', f'sizeof({self.objectname})')
-        self._write_tp_line('itemsize', '0')
+        tp_list = []
+        tp_list.append(('name', f'"{self.pyname}"'))
+        tp_list.append(('basicsize', f'sizeof({self.objectname})'))
+        tp_list.append(('itemsize', '0'))
         if self.dealloc_gen is not None:
-            self._write_tp_line('dealloc', f'{self.__dealloc_name}')
+            tp_list.append(('dealloc', f'{self.__dealloc_name}'))
         if self.repr_gen is not None:
-            self._write_tp_line('repr', f'{self.__repr_name}')
+            tp_list.append(('repr', f'{self.__repr_name}'))
         if self.number_gen is not None:
-            self._write_tp_line('as_number', f'{self.__number_name}')
+            tp_list.append(('repr', f'{self.__repr_name}'))
+        if self.number_gen is not None:
+            tp_list.append(('as_number', f'{self.__number_name}'))
         if self.sequence_gen is not None:
-            self._write_tp_line('as_sequence', f'{self.__sequence_name}')
+            tp_list.append(('as_sequence', f'{self.__sequence_name}'))
         if self.mapping_gen is not None:
-            self._write_tp_line('as_mapping', f'{self.__mapping_name}')
+            tp_list.append(('as_mapping', f'{self.__mapping_name}'))
         if self.hash_gen is not None:
-            self._write_tp_line('hash', f'{self.__hash_name}')
+            tp_list.append(('hash', f'{self.__hash_name}'))
         if self.call_gen is not None:
-            self._write_tp_line('call', f'{self.__call_name}')
+            tp_list.append(('call', f'{self.__call_name}'))
         if self.str_gen is not None:
-            self._write_tp_line('str', f'{self.__str_name}')
-        self._write_tp_line('flags', 'Py_TPFLAGS_DEFAULT')
-        self._write_tp_line('doc', f'PyDoc_STR("{self.doc_str}")')
+            tp_list.append(('str', f'{self.__str_name}'))
+        tp_list.append(('flags', 'Py_TPFLAGS_DEFAULT'))
+        tp_list.append(('doc', f'PyDoc_STR("{self.doc_str}")'))
         if self.richcompare_gen is not None:
-            self._write_tp_line('richcompare', f'{self.__richcompare_name}')
+            tp_list.append(('richcompare', f'{self.__richcompare_name}'))
         if len(self.__method_list) > 0:
-            self._write_tp_line('methods', f'{self.__method_name}')
+            tp_list.append(('methods', f'{self.__method_name}'))
         if self.getset_gen is not None:
-            self._write_tp_line('getset', f'{self.__getset_name}')
+            tp_list.append(('getset', f'{self.__getset_name}'))
         if self.init_gen is not None:
-            self._write_tp_line('init', f'{self.__init_name}')
+            tp_list.append(('init', f'{self.__init_name}'))
         if self.new_gen is not None:
-            self._write_tp_line('new', f'{self.__new_name}')
-
-    def _write_tp_line(self, name, rval):
-        self._write_line(f'{self.typename}.tp_{name} = {rval};')
+            tp_list.append(('new', f'{self.__new_name}'))
+        for name, rval in tp_list:
+            self.gen_assign(f'{self.typename}.tp_{name}', f'{rval}')
         
     def make_ex_init(self):
         if self.ex_init_gen is not None:
@@ -443,6 +445,81 @@ class MkPyCapi:
         basedir = os.path.dirname(__file__)
         return os.path.join(basedir, filename)
 
+    def gen_include(self, filename, *,
+                    sysinclude=False):
+        """include 文を出力する．
+        """
+        line = '#include '
+        if sysinclude:
+            line += '<'
+        else:
+            line += '"'
+        line += filename
+        if sysinclude:
+            line += '>'
+        else:
+            line += '"'
+        self._write_line(line)
+
+    def gen_declaration(self, typename, varname):
+        """変数宣言を出力する．
+        """
+        self._write_line(f'{typename} {varname};')
+        
+    def gen_auto_assign(self, lval, rval):
+        """auto 宣言付きの代入文を出力する．
+        """
+        self.gen_assign(lval, rval, autodef=True)
+        
+    def gen_assign(self, lval, rval, *,
+                   autodef=False):
+        """代入文を出力する．
+        """
+        if autodef:
+            line = 'auto '
+        else:
+            line = ''
+        line += f'{lval} = {rval};'
+        self._write_line(line)
+
+    def gen_buildvalue_return(self, fmt, val_list):
+        """ Py_BuildValue() を用いた return 文を出力する．
+        """
+        line = f'return Py_BuildValue("{fmt}"'
+        for val in val_list:
+            line += f', {val}'
+        line += ';'
+        self._write_line(line)
+        
+    def gen_return(self, val):
+        """return 文を出力する．
+        """
+        line = 'return'
+        if val is not None:
+            line += f' {val}'
+        line += ';'
+        self._write_line(line)
+
+    def gen_dox_comment(self, comment):
+        """Doxygen 用のコメントを出力する．
+        """
+        self.gen_comment(comment, doxygen=True)
+
+    def gen_comment(self, comment, *, doxygen=False):
+        """コメントを出力する．
+        """
+        if doxygen:
+            line = '///'
+        else:
+            line = '//'
+        line += f' {comment}'
+        self._write_line(line)
+        
+    def gen_CRLF(self):
+        """空行を出力する．
+        """
+        self._write_line('')
+        
     def _write_line(self, line):
         spc = ' ' * self.__indent
         self.__fout.write(f'{spc}{line}\n')

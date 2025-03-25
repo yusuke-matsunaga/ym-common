@@ -38,11 +38,46 @@ class CodeGenBase:
     def objectname(self):
         return self.__parent.objectname
 
-    def _write_begin(self):
-        self.__parent._write_begin()
+    def gen_declaration(self, typename, varname):
+        """変数宣言を出力する．
+        """
+        self.__parent.gen_declaration(typename, varname);
+        
+    def gen_auto_assign(self, lval, rval):
+        """auto 宣言付きの代入文を出力する．
+        """
+        self.__parent.gen_auto_assign(lval, rval)
+        
+    def gen_assign(self, lval, rval, *,
+                   autodef=False):
+        """代入文を出力する．
+        """
+        self.__parent.gen_assign(lval, rval, autodef=autodef)
 
-    def _write_end(self):
-        self.__parent._write_end()
+    def gen_buildvalue_return(self, fmt, val_list):
+        """ Py_BuildValue() を用いた return 文を出力する．
+        """
+        self.__parent.gen_buildvalue_return(fmt, val_list)
+        
+    def gen_return(self, val):
+        """return 文を出力する．
+        """
+        self.__parent.gen_return(val)
+
+    def gen_dox_comment(self, comment):
+        """Doxygen 用のコメントを出力する．
+        """
+        self.__parent.gen_dox_comment(comment)
+        
+    def gen_comment(self, comment, *, doxygen=False):
+        """コメントを出力する．
+        """
+        self.__parent.gen_comment(comment, doxygen=doxygen)
+        
+    def gen_CRLF(self):
+        """空行を出力する．
+        """
+        self.__parent.gen_CRLF()
 
     def _write_line(self, line):
         self.__parent._write_line(line)

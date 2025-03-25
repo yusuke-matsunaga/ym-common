@@ -100,3 +100,11 @@ class ArrayBlock(CodeBlock):
                          prefix=f'{typename} {arrayname}[] = ',
                          postfix=';')
 
+class ForBlock(CodeBlock):
+
+    def __init__(self, parent,
+                 init_stmt,
+                 cond_expr,
+                 next_stmt):
+        super().__init__(parent,
+                         prefix=f'for ( {init_stmt}; {cond_expr}; {next_stmt} ) ')
