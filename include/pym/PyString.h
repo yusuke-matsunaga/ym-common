@@ -46,9 +46,8 @@ public:
       ElemType& val
     )
     {
-      if ( PyUnicode_Check(obj) ) {
-	auto obj2 = PyUnicode_EncodeLocale(obj, nullptr);
-	val = string{PyBytes_AsString(obj2)};
+      if ( PyString::Check(obj) ) {
+	val = PyString::_get(obj);
 	return true;
       }
       return false;
@@ -95,6 +94,29 @@ public:
   )
   {
     return PyList<ElemType, PyString>::ToPyObject(val_list);
+  }
+
+  /// @brief PyObject が文字列型か調べる．
+  static
+  bool
+  Check(
+    PyObject* obj ///< [in] 対象の PyObject
+  )
+  {
+    return PyUnicode_Check(obj);
+  }
+
+  /// @brief 文字列を取り出す．
+  ///
+  /// Check(obj) == true であると仮定している．
+  static
+  std::string
+  AsString(
+    PyObject* obj ///< [in] 対象の PyObject
+  )
+  {
+    auto obj2 = PyUnicode_EncodeLocale(obj, nullptr);
+    return std::string{PyBytes_AsString(obj2)};
   }
 
 };
