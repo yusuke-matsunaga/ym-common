@@ -47,6 +47,42 @@ class ArgInfo(CodeGenBase):
         pass
 
 
+class IntArg(ArgInfo):
+    """int 型の引数を表すクラス
+    """
+
+    def __init__(self, parent, *,
+                 name=None,
+                 option,
+                 cvarname,
+                 cvardefault=None):
+        super().__init__(parent,
+                         name=name,
+                         option=option,
+                         pchar='i',
+                         cvartype='int',
+                         cvarname=cvarname,
+                         cvardefault=cvardefault)
+
+
+class BoolArg(ArgInfo):
+    """bool 型の引数を表すクラス
+    """
+
+    def __init__(self, parent, *,
+                 name=None,
+                 option,
+                 cvarname,
+                 cvardefault=None):
+        super().__init__(parent,
+                         name=name,
+                         option=option,
+                         pchar='p',
+                         cvartype='bool',
+                         cvarname=cvarname,
+                         cvardefault=cvardefault)
+
+        
 class FuncBase(CodeGenBase):
     """関数を生成する基底クラス
 

@@ -298,6 +298,8 @@ class MkPyCapi:
                 self._write_line(line)
 
     def make_extra_code(self):
+        self.gen_preamble(self)
+        
         if self.dealloc_gen is not None:
             self.dealloc_gen(self.__dealloc_name)
 
@@ -366,6 +368,9 @@ class MkPyCapi:
 
         if self.new_gen is not None:
             self.new_gen(self.__new_name)
+
+    def gen_preamble(self):
+        pass
     
     def make_tp_init(self):
         self._write_tp_line('name', f'"{self.pyname}"')
