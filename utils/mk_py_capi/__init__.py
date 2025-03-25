@@ -8,8 +8,8 @@
 """
 
 from .mk_py_capi import MkPyCapi
+from .codegenbase import CodeGenBase
 from .codeblock import FuncBlock, IfBlock, ElseBlock, ElseIfBlock, ArrayBlock
 from .convgen import ConvGen
 from .deconvgen import DeconvGen
-from .deallocgen import DeallocGen
-from .funcgen import NewGen, MethodGen, ArgInfo
+from .funcgen import NewGen, DeallocGen, ReprGen, MethodGen, ArgInfo

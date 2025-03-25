@@ -9,9 +9,6 @@
 
 from mk_py_capi.codegenbase import CodeGenBase
 from mk_py_capi.codeblock import ArrayBlock
-from mk_py_capi.deallocgen import DeallocGen
-from mk_py_capi.convgen import ConvGen
-from mk_py_capi.deconvgen import DeconvGen
 import re
 import os
 import datetime
@@ -327,7 +324,7 @@ class MkPyCapi:
 
         if len(self.__method_list) > 0:
             for method in self.__method_list:
-                method.funcgen()
+                method(method.func_name)
 
             self._write_line('')
             self._write_line('// @brief メソッド定義')
@@ -336,6 +333,7 @@ class MkPyCapi:
                             arrayname=self.__method_name):
                 for method in self.__method_list:
                     self._write_line(f'{{"{method.name}",')
+                    self._indent_inc(1)
                     line = ''
                     if method.has_keywords:
                         line = 'reinterpret_cast<PyCFunction>('
@@ -356,6 +354,7 @@ class MkPyCapi:
                     self._write_line(line)
                     line = f'PyDoc_STR("{method.doc_str}")}},'
                     self._write_line(line)
+                    self._indent_dec(1)
                 self._write_line('// end-marker')
                 self._write_line('{nullptr, nullptr, 0, nullptr}')
 
