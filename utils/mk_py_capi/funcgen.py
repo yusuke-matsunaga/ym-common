@@ -18,10 +18,12 @@ class ArgInfo(CodeGenBase):
     - name: 名前
     - option: 省略可能の場合 True にする．
     - pchar: PyArg_Parse() で用いる型指定文字
-    - ptype: pchar が 'O!' の場合の Python の型オブジェクト
+    - ptype: pchar が 'O!' の場合の Python の型オブジェクト or None
+    - tmpname: 一時的な変数名 or None
+    - tmptype: 一時的な変数の型 or None
     - cvartype: C++ での型
     - cvarname: C++ に変換した時の変数名
-    - cvardefault: 省略された時のデフォルト値
+    - default_val: 省略された時のデフォルト値 or None
 
     オプションで PyObject* を C++ に変換するコードを生成する関数(gen_conv)を持つ．
     """
@@ -31,17 +33,21 @@ class ArgInfo(CodeGenBase):
                  option,
                  pchar,
                  ptype=None,
+                 tmpname=None,
+                 tmptype=None,
                  cvartype,
                  cvarname,
-                 cvardefault=None):
+                 default_val=None):
         super().__init__(parent)
         self.name = name
         self.option = option
         self.pchar = pchar
         self.ptype = ptype
+        self.tmpname = tmpname
+        self.tmptype = tmptype
         self.cvartype = cvartype
         self.cvarname = cvarname
-        self.cvardefault = cvardefault
+        self.default_val = default_val
 
     def gen_conv(self):
         pass
@@ -55,14 +61,14 @@ class IntArg(ArgInfo):
                  name=None,
                  option,
                  cvarname,
-                 cvardefault=None):
+                 default_val=None):
         super().__init__(parent,
                          name=name,
                          option=option,
                          pchar='i',
                          cvartype='int',
                          cvarname=cvarname,
-                         cvardefault=cvardefault)
+                         default_val=default_val)
 
 
 class BoolArg(ArgInfo):
@@ -73,15 +79,63 @@ class BoolArg(ArgInfo):
                  name=None,
                  option,
                  cvarname,
-                 cvardefault=None):
+                 default_val=None):
         super().__init__(parent,
                          name=name,
                          option=option,
                          pchar='p',
+                         tmpname=f'{cvarname}_tmp',
+                         tmptype='int',
                          cvartype='bool',
                          cvarname=cvarname,
-                         cvardefault=cvardefault)
+                         default_val=default_val)
 
+    def gen_conv(self):
+        self._write_line(f'{self.cvarname} = static_cast<bool>({self.tmpname});')
+
+
+class ObjArg{ArgInfo):
+    """PyObject* 型の引数を表すクラス
+    """
+
+    def __init__(self, parent, *,
+                 name=None,
+                 option,
+                 cvarname,
+                 cvartype):
+        super().__init__(parent,
+                         name=name,
+                         option=option,
+                         pchar='O',
+                         tmpname=f'{cvarname}_tmp',
+                         tmptype='PyObject*',
+                         cvarname=cvarname,
+                         cvartype=cvartype,
+                         default_val='nullptr')
+
+
+class TypedObjArg{ArgInfo):
+    """PyObject* 型の引数を表すクラス
+    """
+
+    def __init__(self, parent, *,
+                 name=None,
+                 option,
+                 ptype,
+                 cvarname,
+                 cvartype):
+        super().__init__(parent,
+                         name=name,
+                         option=option,
+                         pchar='O!',
+                         ptype=ptype,
+                         tmpname=f'{cvarname}_tmp',
+                         tmptype='PyObject*',
+                         cvarname=cvarname,
+                         cvartype=cvartype,
+                         default_val='nullptr')
+
+                 
         
 class FuncBase(CodeGenBase):
     """関数を生成する基底クラス
@@ -122,14 +176,14 @@ class FuncBase(CodeGenBase):
 
         # パーズ結果を格納する変数の宣言
         for arg in self.arg_list:
-            if arg.pchar == 'O' or arg.pchar == 'O!':
-                self._write_line(f'PyObject* {arg.cvarname}_obj = nullptr;')
+            if arg.tmpname is not None:
+                line = f'{arg.tmptype} {arg.tmpname}'
             else:
                 line = f'{arg.cvartype} {arg.cvarname}'
-                if arg.cvardefault is not None:
-                    line += f' = {arg.cvardefault}'
-                line += ';'
-                self._write_line(line)
+            if arg.default_val is not None:
+                line += f' = {arg.default_val}'
+            line += ';'
+            self._write_line(line)
 
         # PyArg_Parse() 用のフォーマット文字列の生成
         fmt_str = ""
@@ -164,11 +218,13 @@ class FuncBase(CodeGenBase):
             nargs = len(self.arg_list)
             for i, arg in enumerate(self.arg_list):
                 if arg.pchar == 'O!':
-                    line = f'{arg.ptype}, &{arg.cvarname}_obj'
-                elif arg.pchar == 'O':
-                    line = f'{arg.cvarname}_obj'
+                    line = f'{arg.ptype}, '
                 else:
-                    line = f'{arg.cvarname}'
+                    line = ''
+                if arg.tmpname is not None:
+                    line += f'&{arg.tmpname}'
+                else:
+                    line += f'&{arg.cvarname}'
                 if i < nargs - 1:
                     line += ','
                 else:
