@@ -44,7 +44,6 @@ class MkPyCapi:
         self.call_gen = None
         self.str_gen = None
         self.richcompare_gen = None
-        self.getset_gen = None
         self.init_gen = None
         self.new_gen = None
         self.ex_init_gen = None
@@ -68,6 +67,9 @@ class MkPyCapi:
         self.__init_name = self.__check_name('init_func')
         self.__new_name = self.__check_name('new_func')
         self.__method_list = []
+        self.__attr_list = []
+        self.__getter_list = []
+        self.__setter_list = []
         self.__indent = 0
         self.__conv_def_pat = re.compile('^(\s)*%%CONV_DEF%%$')
         self.__deconv_def_pat = re.compile('^(\s)*%%DECONV_DEF%%$')
@@ -82,6 +84,64 @@ class MkPyCapi:
         self.__check_name(method.func_name)
         self.__method_list.append(method)
 
+    def add_getter(self, getter):
+        """getter 定義を追加する．
+        """
+        self.__check_name(getter.func_name)
+        self.__getter_list.append(getter)
+
+    def add_setter(self, setter):
+        """setter 定義を追加する．
+        """
+        self.__check_name(setter.func_name)
+        self.__setter_list.append(setter)
+
+    def add_attr(self, name, *,
+                 getter_name=None,
+                 setter_name=None,
+                 closure=None,
+                 doc_str):
+        """属性定義を追加する．
+        """
+        if getter_name is None:
+            getter_name = 'nullptr'
+        else:
+            for getter in self.__getter_list:
+                if getter.func_name == getter_name:
+                    # found
+                    if closure is None:
+                        if getter.has_closure:
+                            raise ValueError(f'{getter_name} takes closure argument')
+                    else:
+                        if not getter.has_closure:
+                            raise ValueError(f'{getter_name} takes no closure argument')
+                    break
+            else:
+                # not found
+                raise ValueError(f'getter({getter_name}) is not registered')
+        if setter_name is None:
+            setter_name = 'nullptr'
+        else:
+            for setter in self.__setter_list:
+                if setter.func_name == setter_name:
+                    # found
+                    if closure is None:
+                        if setter.has_closure:
+                            raise ValueError(f'{setter_name} takes closure argument')
+                    else:
+                        if not setter.has_closure:
+                            raise ValueError(f'{setter_name} takes no closure argument')
+                    break
+            else:
+                # not found
+                raise ValueError(f'setter({setter_name}) is not registered')
+        if closure is None:
+            closure = 'nullptr'
+        for name1, g1, s1, c1, d1 in self.__attr_list:
+            if name1 == name:
+                raise ValueError(f'{name} has already been registered')
+        self.__attr_list.append((name, getter_name, setter_name, closure, doc_str))
+        
     def make_header(self, fout=sys.stdout):
         """ヘッダファイルを出力する．"""
 
@@ -300,42 +360,10 @@ class MkPyCapi:
             self.richcompare_gen(self.__richcompare_name)
 
         if len(self.__method_list) > 0:
-            for method in self.__method_list:
-                method(method.func_name)
-
-            self.gen_CRLF()
-            self.gen_comment('メソッド定義')
-            with self.gen_array_block(typename='PyMethodDef',
-                                      arrayname=self.__method_name):
-                for method in self.__method_list:
-                    self._write_line(f'{{"{method.name}",')
-                    self._indent_inc(1)
-                    line = ''
-                    if method.has_keywords:
-                        line = 'reinterpret_cast<PyCFunction>('
-                    line += method.func_name
-                    if method.has_keywords:
-                        line += ')'
-                    line += ','
-                    self._write_line(line)
-                    if method.has_args:
-                        line = 'METH_VARARGS'
-                        if method.has_keywords:
-                            line += ' | METH_KEYWORDS'
-                    else:
-                        line = 'METH_NOARGS'
-                    if method.is_static:
-                        line += ' | METH_STATIC'
-                    line += ','
-                    self._write_line(line)
-                    line = f'PyDoc_STR("{method.doc_str}")}},'
-                    self._write_line(line)
-                    self._indent_dec(1)
-                self.gen_comment('end-marker')
-                self._write_line('{nullptr, nullptr, 0, nullptr}')
-
-        if self.getset_gen is not None:
-            self.getset_gen(self.__getset_name)
+            self.gen_methods()
+            
+        if len(self.__attr_list) > 0:
+            self.gen_getset()
 
         if self.init_gen is not None:
             self.init_gen(self.__init_name)
@@ -345,7 +373,59 @@ class MkPyCapi:
 
     def gen_preamble(self):
         pass
-    
+
+    def gen_methods(self):
+        for method in self.__method_list:
+            method()
+
+        self.gen_CRLF()
+        self.gen_comment('メソッド定義')
+        with self.gen_array_block(typename='PyMethodDef',
+                                  arrayname=self.__method_name):
+            for method in self.__method_list:
+                self._write_line(f'{{"{method.name}",')
+                self._indent_inc(1)
+                line = ''
+                if method.has_keywords:
+                    line = 'reinterpret_cast<PyCFunction>('
+                line += method.func_name
+                if method.has_keywords:
+                    line += ')'
+                line += ','
+                self._write_line(line)
+                if method.has_args:
+                    line = 'METH_VARARGS'
+                    if method.has_keywords:
+                        line += ' | METH_KEYWORDS'
+                else:
+                    line = 'METH_NOARGS'
+                if method.is_static:
+                    line += ' | METH_STATIC'
+                line += ','
+                self._write_line(line)
+                line = f'PyDoc_STR("{method.doc_str}")}},'
+                self._write_line(line)
+                self._indent_dec(1)
+            self.gen_comment('end-marker')
+            self._write_line('{nullptr, nullptr, 0, nullptr}')
+
+    def gen_getset(self):
+        for getter in self.__getter_list:
+            getter()
+
+        for setter in self.__setter_list:
+            setter()
+
+        self.gen_CRLF()
+        self.gen_comment('getter/setter定義')
+        with self.gen_array_block(typename='PyGetSetDef',
+                                  arrayname=self.__getset_name):
+            for name, getter, setter, closure, doc_str in self.__attr_list:
+                line = f'{{"{name}", {getter}, {setter}, PyDoc_STR("{doc_str}"), {closure}}},'
+                self._write_line(line)
+                self.gen_comment('end-marker')
+                self._write_line('{nullptr, nullptr, nullptr, nullptr}')
+                
     def make_tp_init(self):
         tp_list = []
         tp_list.append(('name', f'"{self.pyname}"'))
@@ -375,7 +455,7 @@ class MkPyCapi:
             tp_list.append(('richcompare', f'{self.__richcompare_name}'))
         if len(self.__method_list) > 0:
             tp_list.append(('methods', f'{self.__method_name}'))
-        if self.getset_gen is not None:
+        if len(self.__attr_list) > 0:
             tp_list.append(('getset', f'{self.__getset_name}'))
         if self.init_gen is not None:
             tp_list.append(('init', f'{self.__init_name}'))
@@ -474,10 +554,30 @@ class MkPyCapi:
         line += ';'
         self._write_line(line)
 
-    def gen_py_return_none(self):
+    def gen_return_py_int(self, varname):
+        """int 値を表す PyObject を返す return 文を出力する．
+        """
+        self.gen_return(f'Py_BuildValue("i", {varname})')
+
+    def gen_return_py_float(self, varname):
+        """float 値を表す PyObject を返す return 文を出力する．
+        """
+        self.gen_return(f'Py_BuildValue("d", {varname})')
+
+    def gen_return_py_string(self, varname):
+        """string 値を表す PyObject を返す return 文を出力する．
+        """
+        self.gen_return(f'Py_BuildValue("s", {varname})')
+
+    def gen_return_py_bool(self, varname):
+        """bool 値を表す PyObject を返す return 文を出力する．
+        """
+        self.gen_return(f'PyBool_FromLong({varname})')
+        
+    def gen_return_py_none(self):
         """Py_RETURN_NONE を出力する．
         """
-        self._write_line('Py_RETURN_NONE')
+        self._write_line('Py_RETURN_NONE;')
         
     def gen_func_declaration(self, *,
                              description=None,
@@ -612,6 +712,7 @@ class MkPyCapi:
         """エラー出力
         """
         self._write_line(f'PyErr_SetString({error_type}, {error_msg});')
+        self.gen_return('nullptr')
         
     def gen_dox_comment(self, comment):
         """Doxygen 用のコメントを出力する．

@@ -60,10 +60,30 @@ class CodeGenBase:
         """
         self.__parent.gen_return(val)
 
-    def gen_py_return_none(self):
+    def gen_return_py_int(self, varname):
+        """int 値を表す PyObject を返す return 文を出力する．
+        """
+        self.__parent.gen_return_py_int(varname)
+
+    def gen_return_py_float(self, varname):
+        """float 値を表す PyObject を返す return 文を出力する．
+        """
+        self.__parent.gen_return_py_float(varname)
+
+    def gen_return_py_string(self, varname):
+        """string 値を表す PyObject を返す return 文を出力する．
+        """
+        self.__parent.gen_return_py_string(varname)
+
+    def gen_return_py_bool(self, varname):
+        """bool 値を表す PyObject を返す return 文を出力する．
+        """
+        self.__parent.gen_return_py_bool(varname)
+
+    def gen_return_py_none(self):
         """Py_RETURN_NONE を出力する．
         """
-        self.__parent.gen_py_return_none()
+        self.__parent.gen_return_py_none()
         
     def gen_func_declaration(self, *,
                              description=None,

@@ -117,37 +117,109 @@ class MethodGen(FuncBase):
 
     def __init__(self, parent, *,
                  name,
-                 func_name,
-                 arg_list,
+                 func_name=None,
+                 arg_list=[],
                  is_static=False,
                  doc_str):
         super().__init__(parent,
                          arg_list=arg_list,
                          doc_str=doc_str)
         self.name = name
-        self.func_name = func_name
+        if func_name is None:
+            self.func_name = name
+        else:
+            self.func_name = func_name
         self.is_static = is_static
         parent.add_method(self)
     
-    def __call__(self, func_name):
+    def __call__(self):
         if self.is_static:
-            args0 = 'PyObject* Py_UNUSED(self)'
+            arg0 = 'PyObject* Py_UNUSED(self)'
         else:
-            args0 = 'PyObject* self'
+            arg0 = 'PyObject* self'
         if self.has_args:
             arg1 = 'PyObject* args'
         else:
             arg1 = 'PyObject* Py_UNUSED(args)'
         if self.has_keywords:
             arg2 = 'PyObject* kwds'
-            args = [ args0, arg1, arg2 ]
+            args = [ arg0, arg1, arg2 ]
         else:
-            args = [ args0, arg1 ]
+            args = [ arg0, arg1 ]
         with self.gen_func_block(description=self.doc_str,
                                  return_type='PyObject*',
-                                 func_name=func_name,
+                                 func_name=self.func_name,
                                  args=args):
             self.gen_preamble()
+            self.gen_body()
+
+    def gen_body(self):
+        pass
+
+    
+class GetterGen(FuncBase):
+    """getter 関数を実装するためのC++コードを生成するクラス
+
+    継承クラスを作り gen_body() を実装する必要がある．
+    """
+
+    def __init__(self, parent, *,
+                 func_name,
+                 has_closure=False,
+                 doc_str=None):
+        super().__init__(parent,
+                         doc_str=doc_str)
+        self.func_name = func_name
+        self.has_closure = has_closure
+        parent.add_getter(self)
+    
+    def __call__(self):
+        arg0 = 'PyObject* self'
+        if self.has_closure:
+            arg1 = 'void* closure'
+        else:
+            arg1 = 'void* Py_UNUSED(closure)'
+        args = [ arg0, arg1 ]
+        with self.gen_func_block(description=self.doc_str,
+                                 return_type='PyObject*',
+                                 func_name=self.func_name,
+                                 args=args):
+            self.gen_val_conv('val')
+            self.gen_body()
+
+    def gen_body(self):
+        pass
+
+    
+class SetterGen(FuncBase):
+    """setter 関数を実装するためのC++コードを生成するクラス
+
+    継承クラスを作り gen_body() を実装する必要がある．
+    """
+
+    def __init__(self, parent, *,
+                 func_name,
+                 has_closure=False,
+                 doc_str=None):
+        super().__init__(parent,
+                         doc_str=doc_str)
+        self.func_name = func_name
+        self.has_closure = has_closure
+        parent.add_setter(self)
+    
+    def __call__(self):
+        arg0 = 'PyObject* self'
+        arg1 = 'PyObject* obj'
+        if self.has_closure:
+            arg2 = 'void* closure'
+        else:
+            arg2 = 'void* Py_UNUSED(closure)'
+        args = [ arg0, arg1, arg2 ]
+        with self.gen_func_block(description=self.doc_str,
+                                 return_type='int',
+                                 func_name=self.func_name,
+                                 args=args):
+            self.gen_val_conv('val')
             self.gen_body()
 
     def gen_body(self):
@@ -168,7 +240,8 @@ class NewGen(FuncBase):
         args = ('PyTypeObject* type',
                 'PyObject* args',
                 'PyObject* kwds')
-        with self.gen_func_block(return_type='PyObject*',
+        with self.gen_func_block(description='生成関数',
+                                 return_type='PyObject*',
                                  func_name=func_name,
                                  args=args):
             self.gen_preamble()
@@ -201,11 +274,12 @@ class DeallocGen(FuncBase):
 class ReprGen(FuncBase):
     """repr 関数を生成するクラス
 
-    必ず継承クラスを作り gen_body() をオーバーロードすること
+    repr_str(varname) という関数を self.repr_str にセットする必要がある．
     """
     
-    def __init__(self, parent):
+    def __init__(self, parent, repr_str):
         super().__init__(parent)
+        self.repr_str = repr_str
         parent.repr_gen = self
 
     def __call__(self, func_name):
@@ -214,13 +288,8 @@ class ReprGen(FuncBase):
                                  func_name=func_name,
                                  args=(('PyObject* self', ))):
             self.gen_val_conv('val')
-            self.gen_body('val', 'repr_str')
-            self._write_line(f'return PyString::ToPyObject(repr_str);')
-
-    def gen_body(self, varname, strname):
-        """C++ 上の変数 varname の内容を表す文字列を作るコードを生成する．
-        """
-        raise TypeError('gen_body() is not implemented')
+            self.gen_auto_assign('repr_str', self.repr_str('val'))
+            self.gen_return(f'PyString::ToPyObject(repr_str)')
 
 
 class ConvGen(CodeGenBase):
