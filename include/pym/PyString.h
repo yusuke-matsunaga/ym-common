@@ -47,7 +47,7 @@ public:
     )
     {
       if ( PyString::Check(obj) ) {
-	val = PyString::_get(obj);
+	val = PyString::AsString(obj);
 	return true;
       }
       return false;
