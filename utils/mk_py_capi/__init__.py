@@ -7,9 +7,6 @@
 :copyright: Copyright (C) 2025 Yusuke Matsunaga, All rights reserved.
 """
 
-from .mk_py_capi import MkPyCapi
-from .funcgen import PreambleGen, NewGen, DeallocGen, ReprGen
-from .funcgen import MethodGen, GetterGen, SetterGen
-from .funcgen import ConvGen, DeconvGen
+from .mk_py_capi import MkPyCapi, FuncDef
 from .arg import RawArg, IntArg, DoubleArg
 from .arg import ConvArg, BoolArg, StringArg, ObjArg, TypedObjArg

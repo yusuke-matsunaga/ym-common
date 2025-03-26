@@ -13,6 +13,64 @@ import re
 import os
 import datetime
 import sys
+from collections import namedtuple
+
+
+# 関数定義を表す型
+FuncDef = namedtuple('FuncDef',
+                     ['name',
+                      'func',
+                      'arg_list'])
+
+FuncDef.__new__.__defaults__ = (None, None, [])
+
+# sequence 構造体を表す型
+Sequence = namedtuple('Sequence',
+                      ['length',
+                       'concat',
+                       'repeat',
+                       'item',
+                       'ass_item',
+                       'contains',
+                       'inplace_concat',
+                       'inplace_repeat'])
+
+# メソッドを表す型
+Method = namedtuple('Method',
+                    ['name',
+                     'func_def',
+                     'is_static',
+                     'has_args',
+                     'has_keywords',
+                     'doc_str'])
+
+# getter/setterを表す型
+GetSet = namedtuple('GetSet',
+                    ['func_def',
+                     'has_closure'])
+
+# 属性を表す型
+Attr = namedtuple('Attr',
+                  ['name',
+                   'getter_name',
+                   'setter_name',
+                   'closure',
+                   'doc_str'])
+
+
+def analyze_args(arg_list):
+    """引数のリストから特徴を解析する．
+
+    has_args, has_keywords のタプルを返す．
+    """
+    has_args = False
+    has_keywords = False
+    if len(arg_list) > 0:
+        has_args = True
+        for arg in arg_list:
+            if arg.name is not None:
+                has_keywords = True
+    return has_args, has_keywords
 
 
 class MkPyCapi:
@@ -34,67 +92,151 @@ class MkPyCapi:
         self.pyname = pyname
         self.header_include_files = header_include_files
         self.source_include_files = source_include_files
-        self.preamble_gen = None
-        self.dealloc_gen = None
-        self.repr_gen = None
-        self.number_gen = None
-        self.sequence_gen = None
-        self.mapping_gen = None
-        self.hash_gen = None
-        self.call_gen = None
-        self.str_gen = None
-        self.richcompare_gen = None
-        self.init_gen = None
-        self.new_gen = None
-        self.ex_init_gen = None
-        self.conv_gen = None
-        self.deconv_gen = None
-        self.doc_str = f'{self.classname} object'
 
         self.__fout = None
+
         self.__name_dict = set()
-        self.__dealloc_name = self.__check_name('dealloc')
-        self.__repr_name = self.__check_name('repr')
-        self.__number_name = self.__check_name('number')
-        self.__sequence_name = self.__check_name('sequence')
-        self.__mapping_name = self.__check_name('mapping')
-        self.__hash_name = self.__check_name('hash')
-        self.__call_name = self.__check_name('call')
-        self.__str_name = self.__check_name('str')
-        self.__richcompare_name = self.__check_name('richcompare')
-        self.__method_name = self.__check_name('method_table')
-        self.__getset_name = self.__check_name('getset_table')
-        self.__init_name = self.__check_name('init_func')
-        self.__new_name = self.__check_name('new_func')
+
+        self.__preamble_gen = None
+        self.__dealloc = None
+        self.__repr = None
+
+        self.__number_name = None
+        self.number_gen = None
+
+        self.__sequence_name = None
+        self.__sequence_tbl = None
+        
+        self.__mapping_name = None
+        self.mapping_gen = None
+
+        self.__hash = None
+        self.__call = None
+        self.__str = None
+        self.__richcompare = None
+        self.__init = None
+        self.__new = None
+        self.__new = None
+
+        self.__ex_init_gen = None
+        self.__conv_gen = None
+        self.__deconv_gen = None
+        self.doc_str = f'{self.classname} object'
+
+        self.__method_name = None
         self.__method_list = []
+
+        self.__getset_name = None
         self.__attr_list = []
         self.__getter_list = []
         self.__setter_list = []
-        self.__indent = 0
-        self.__conv_def_pat = re.compile('^(\s)*%%CONV_DEF%%$')
-        self.__deconv_def_pat = re.compile('^(\s)*%%DECONV_DEF%%$')
-        self.__to_def_pat = re.compile('^(\s)*%%TOPYOBJECT%%$')
-        self.__from_def_pat = re.compile('^(\s)*%%FROMPYOBJECT%%$')
-        self.__tp_init_pat = re.compile('^(\s)*%%TP_INIT_CODE%%$')
-        self.__ex_init_pat = re.compile('^(\s)*%%EX_INIT_CODE%%$')
 
-    def add_method(self, method):
+        self.__indent = 0
+        self.__conv_def_pat = re.compile('^(\s*)%%CONV_DEF%%$')
+        self.__deconv_def_pat = re.compile('^(\s*)%%DECONV_DEF%%$')
+        self.__to_def_pat = re.compile('^(\s*)%%TOPYOBJECT%%$')
+        self.__from_def_pat = re.compile('^(\s*)%%FROMPYOBJECT%%$')
+        self.__tp_init_pat = re.compile('^(\s*)%%TP_INIT_CODE%%$')
+        self.__ex_init_pat = re.compile('^(\s*)%%EX_INIT_CODE%%$')
+
+    def add_preamble(self, gen_body):
+        self.__preamble_gen = gen_body
+        
+    def add_dealloc(self, *,
+                    func_name=None,
+                    gen_body=None):
+        """dealloc 関数定義を追加する．
+        """
+        if func_name is None:
+            func_name = 'dealloc_func'
+        self.__dealloc_name = self.__check_name(func_name)
+        if gen_body is None:
+            # デフォルト実装
+            def dealloc_gen(gen):
+                gen._write_line(f'obj->mVal.~{gen.classname}()')
+            gen_body = dealloc_gen
+        self.__dealloc = FuncDef(func_name, gen_body, [])
+
+    def add_repr(self, *,
+                 func_name=None,
+                 repr_func):
+        """repr 関数定義を追加する．
+        """
+        if func_name is None:
+            func_name = 'repr_func'
+        self.__repr = FuncDef(func_name, repr_func, [])
+
+    def add_sequence(self, *,
+                     name=None,
+                     length=None,
+                     concat=None,
+                     repeat=None,
+                     item=None,
+                     ass_item=None,
+                     contains=None,
+                     inplace_concat=None,
+                     inplace_repeat=None):
+        if name is None:
+            name = 'sequence'
+        self.__sequence_name = name
+        length = self.__complete(length, 'sq_length')
+        concat = self.__complete(concat, 'sq_concat')
+        repeat = self.__complete(repeat, 'sq_repeat')
+        item = self.__complete(item, 'sq_item')
+        ass_item = self.__complete(ass_item, 'sq_ass_item')
+        contains = self.__complete(contains, 'sq_contains')
+        inplace_concat = self.__complete(inplace_concat, 'sq_inplace_concat')
+        inplace_repeat = self.__complete(inplace_repeat, 'sq_inplace_repeat')
+        self.__sequence_tbl = Sequence(length, concat, repeat, item, ass_item,
+                                       contains, inplace_concat, inplace_repeat)
+        
+    def add_new(self, *,
+                func_name=None,
+                arg_list=[],
+                gen_body):
+        """new 関数定義を追加する．
+        """
+        if func_name is None:
+            func_name = 'new_func'
+        self.__new = FuncDef(func_name, gen_body, arg_list)
+        
+    def add_method(self, name, *,
+                   func_name=None,
+                   arg_list=[],
+                   is_static=False,
+                   gen_body,
+                   doc_str=''):
         """メソッド定義を追加する．
         """
-        self.__check_name(method.func_name)
+        if func_name is None:
+            func_name = name
+        self.__check_name(func_name)
+        has_args, has_keywords = analyze_args(arg_list)
+        func_def = FuncDef(func_name, gen_body, arg_list)
+        method = Method(name, func_def,
+                        is_static, has_args, has_keywords,
+                        doc_str)
         self.__method_list.append(method)
 
-    def add_getter(self, getter):
+    def add_getter(self, func_name, *,
+                   has_closure=False,
+                   gen_body):
         """getter 定義を追加する．
         """
-        self.__check_name(getter.func_name)
-        self.__getter_list.append(getter)
+        self.__check_name(func_name)
+        func_def = FuncDef(func_name, gen_body)
+        getset = GetSet(func_def, has_closure)
+        self.__getter_list.append(getset)
 
-    def add_setter(self, setter):
+    def add_setter(self, func_name, *,
+                   has_closure=False,
+                   gen_body):
         """setter 定義を追加する．
         """
-        self.__check_name(setter.func_name)
-        self.__setter_list.append(setter)
+        self.__check_name(func_name)
+        func_def = FuncDef(func_name, gen_body)
+        getset = GetSet(func_def, has_closure)
+        self.__setter_list.append(getset)
 
     def add_attr(self, name, *,
                  getter_name=None,
@@ -107,7 +249,7 @@ class MkPyCapi:
             getter_name = 'nullptr'
         else:
             for getter in self.__getter_list:
-                if getter.func_name == getter_name:
+                if getter.func_def.name == getter_name:
                     # found
                     if closure is None:
                         if getter.has_closure:
@@ -123,7 +265,7 @@ class MkPyCapi:
             setter_name = 'nullptr'
         else:
             for setter in self.__setter_list:
-                if setter.func_name == setter_name:
+                if setter.func_def.name == setter_name:
                     # found
                     if closure is None:
                         if setter.has_closure:
@@ -137,11 +279,31 @@ class MkPyCapi:
                 raise ValueError(f'setter({setter_name}) is not registered')
         if closure is None:
             closure = 'nullptr'
-        for name1, g1, s1, c1, d1 in self.__attr_list:
-            if name1 == name:
+        for attr in self.__attr_list:
+            if attr.name == name:
                 raise ValueError(f'{name} has already been registered')
-        self.__attr_list.append((name, getter_name, setter_name, closure, doc_str))
-        
+        attr = Attr(name, getter_name, setter_name, closure, doc_str)
+        self.__attr_list.append(attr)
+
+    def add_conv(self, gen_body=None):
+        if gen_body is None:
+            # デフォルト実装
+            def conv_gen(gen):
+                gen._write_line(f'new (&obj1->mVal) {self.classname}(val);')
+            gen_body = conv_gen
+        self.__conv_gen = gen_body
+
+    def add_deconv(self, gen_body=None):
+        if gen_body is None:
+            # デフォルト実装
+            def deconv_gen(gen):
+                with gen.gen_if_block(f'{gen.pyclassname}::Check(obj)'):
+                    gen.gen_assign('val', f'{gen.pyclassname}::_get_ref(obj)')
+                    gen.gen_return('true')
+                gen.gen_return('false')
+            gen_body = deconv_gen
+        self.__deconv_gen = gen_body
+                
     def make_header(self, fout=sys.stdout):
         """ヘッダファイルを出力する．"""
 
@@ -213,8 +375,8 @@ class MkPyCapi:
 
     def conv_def_gen(self):
         self.gen_CRLF()
-        if self.conv_gen is None:
-            if self.deconv_gen is None:
+        if self.__conv_gen is None:
+            if self.__deconv_gen is None:
                 self.gen_comment('このクラスは Conv/Deconv を持たない．')
             else:
                 self.gen_comment('このクラスは Conv を持たない．')
@@ -226,8 +388,8 @@ class MkPyCapi:
                                           args=['const ElemType& val'])
 
     def deconv_def_gen(self):
-        if self.deconv_gen is None:
-            if self.conv_gen is not None:
+        if self.__deconv_gen is None:
+            if self.__conv_gen is not None:
                 self.gen_CRLF()
                 self.gen_comment('このクラスは Deconv を持たない．')
         else:
@@ -240,7 +402,7 @@ class MkPyCapi:
                                                 'ElemType& val'])
 
     def to_def_gen(self):
-        if self.conv_gen is not None:
+        if self.__conv_gen is not None:
             self.gen_CRLF()
             self.gen_dox_comment(f'@brief {self.classname} を表す PyObject を作る．')
             self.gen_dox_comment('@return 生成した PyObject を返す．')
@@ -254,7 +416,7 @@ class MkPyCapi:
                 self.gen_return('conv(val)')
 
     def from_def_gen(self):
-        if self.deconv_gen is not None:
+        if self.__deconv_gen is not None:
             self.gen_CRLF()
             self.gen_dox_comment(f'@brief PyObject から {self.classname} を取り出す．')
             self.gen_dox_comment('@return 正しく変換できた時に true を返す．')
@@ -297,21 +459,23 @@ class MkPyCapi:
                     continue
 
                 result = self.__ex_init_pat.match(line)
-                if result:
+                if result and self.__ex_init_gen is not None:
                     # 追加の初期化コードの置換
                     self.indent = len(result.group(1))
-                    self.make_ex_init()
+                    self.__ex_init_gen()
                     self.indent = 0
                     continue
 
                 if line == '%%CONV_CODE%%':
                     # Conv 関数の置換
-                    self.make_conv()
+                    if self.__conv_gen is not None:
+                        self.make_conv()
                     continue
 
                 if line == '%%DECONV_CODE%%':
                     # Deconv 関数の置換
-                    self.make_deconv()
+                    if self.__deconv_gen is not None:
+                        self.make_deconv()
                     continue
                 
                 # 年の置換
@@ -332,32 +496,44 @@ class MkPyCapi:
                 self._write_line(line)
 
     def make_extra_code(self):
-        if self.preamble_gen is not None:
-            self.preamble_gen()
+        if self.__preamble_gen is not None:
+            self.__preamble_gen(self)
         
-        if self.dealloc_gen is not None:
-            self.dealloc_gen(self.__dealloc_name)
+        if self.__dealloc is not None:
+            with self.gen_func_block(description='終了関数',
+                                     return_type='void',
+                                     func_name=self.__dealloc.name,
+                                     args=(('PyObject* self', ))):
+                self.gen_obj_conv('obj')
+                self.__dealloc.func(self)
+                self._write_line('PyTYPE(self)->tp_free(self)')
 
-        if self.repr_gen is not None:
-            self.repr_gen(self.__repr_name)
+        if self.__repr is not None:
+            with self.gen_func_block(description='repr関数',
+                                     return_type='PyObject*',
+                                     func_name=self.__repr.name,
+                                     args=(('PyObject* self', ))):
+                self.gen_val_conv('val')
+                self.gen_auto_assign('repr_str', self.__repr.func('val'))
+                self.gen_return(f'PyString::ToPyObject(repr_str)')
 
         if self.number_gen is not None:
             self.number_gen(self.__number_name)
 
-        if self.sequence_gen is not None:
-            self.sequence_gen(self.__sequence_name)
+        if self.__sequence_tbl is not None:
+            self.gen_sequence()
 
         if self.mapping_gen is not None:
             self.mapping_gen(self.__mapping_name)
 
-        if self.hash_gen is not None:
-            self.hash_gen(self.__hash_name)
+        if self.__hash is not None:
+            self.__hash.func(self.__hash.name)
 
-        if self.str_gen is not None:
-            self.str_gen(self.__str_name)
+        if self.__str is not None:
+            self.__str.func(self.__str.name)
 
-        if self.richcompare_gen is not None:
-            self.richcompare_gen(self.__richcompare_name)
+        if self.__richcompare is not None:
+            self.__richcompare.func(self.__richcompare.name)
 
         if len(self.__method_list) > 0:
             self.gen_methods()
@@ -365,18 +541,162 @@ class MkPyCapi:
         if len(self.__attr_list) > 0:
             self.gen_getset()
 
-        if self.init_gen is not None:
-            self.init_gen(self.__init_name)
+        if self.__init is not None:
+            self.__init.func(self.__init.name)
 
-        if self.new_gen is not None:
-            self.new_gen(self.__new_name)
+        if self.__new is not None:
+            args = ('PyTypeObject* type',
+                    'PyObject* args',
+                    'PyObject* kwds')
+            with self.gen_func_block(description='生成関数',
+                                     return_type='PyObject*',
+                                     func_name=self.__new.name,
+                                     args=args):
+                self.gen_func_preamble(self.__new.arg_list)
+                self.__new.func(self)
 
-    def gen_preamble(self):
-        pass
-
+    def gen_sequence(self):
+        length = self.__sequence_tbl.length
+        if length is not None:
+            args = ('PyObject* self',)
+            with self.gen_func_block(return_type='Py_ssize_t',
+                                     func_name=length.name,
+                                     args=args):
+                length.func(self)
+        concat = self.__sequence_tbl.concat
+        if  concat is not None:
+            args = ('PyObject* self',
+                    'PyObject* obj2')
+            with self.gen_func_block(return_type='PyObject*',
+                                     func_name=concat.name,
+                                     args=args):
+                concat.func(self)
+        repeat = self.__sequence_tbl.repeat
+        if repeat is not None:
+            args = ('PyObject* self',
+                    'Py_ssize_t obj2')
+            with self.gen_func_block(return_type='PyObject*',
+                                     func_name=repeat.name,
+                                     args=args):
+                repeat.func(self)
+        item = self.__sequence_tbl.item
+        if item is not None:
+            args = ('PyObject* self',
+                    'Py_ssize_t obj2')
+            with self.gen_func_block(return_type='PyObject*',
+                                     func_name=item.name,
+                                     args=args):
+                item.func(self)
+        ass_item = self.__sequence_tbl.ass_item
+        if ass_item is not None:
+            args = ('PyObject* self',
+                    'Py_ssize_t obj2',
+                    'PyObject* obj3')
+            with self.gen_func_block(return_type='int',
+                                     func_name=ass_item.name,
+                                     args=args):
+                ass_item.func(self)
+        contains = self.__sequence_tbl.contains
+        if contains is not None:
+            args = ('PyObject* self',
+                    'PyObject* obj2')
+            with self.gen_func_block(return_type='int',
+                                     func_name=contains.name,
+                                     args=args):
+                contains.func(self)
+        inplace_concat = self.__sequence_tbl.inplace_concat
+        if inplace_concat is not None:
+            args = ('PyObject* self',
+                    'PyObject* obj2')
+            with self.gen_func_block(return_type='PyObject*',
+                                     func_name=inplace_concat.name,
+                                     args=args):
+                inplace_concat.func(self)
+        inplace_repeat = self.__sequence_tbl.inplace_repeat
+        if inplace_repeat is not None:
+            args = ('PyObject* self',
+                    'Py_ssize_t obj2')
+            with self.gen_func_block(return_type='PyObject*',
+                                     func_name=inplace_repeat.name,
+                                     args=args):
+                inplace_repeat.func(self)
+            
+        self.gen_CRLF()
+        self.gen_comment('シーケンスオブジェクト構造体')
+        with self.gen_array_block(typename='PySequenceMethods',
+                                  arrayname=self.__sequence_name):
+            line = None
+            length = self.__sequence_tbl.length
+            if length is not None:
+                if line is not None:
+                    line += ','
+                    self._write_line(line)
+                line = f'.sq_length = {length.name}'
+            concat = self.__sequence_tbl.concat
+            if concat is not None:
+                if line is not None:
+                    line += ','
+                    self._write_line(line)
+                line = f'.sq_concat = {concat.name}'
+            repeat = self.__sequence_tbl.repeat
+            if repeat is not None:
+                if line is not None:
+                    line += ','
+                    self._write_line(line)
+                line = f'.sq_repeat = {repeat.name}'
+            item = self.__sequence_tbl.item
+            if item is not None:
+                if line is not None:
+                    line += ','
+                    self._write_line(line)
+                line = f'.sq_item = {item.name}'
+            ass_item = self.__sequence_tbl.ass_item
+            if ass_item is not None:
+                if line is not None:
+                    line += ','
+                    self._write_line(line)
+                line = f'.sq_ass_item = {ass_item.name}'
+            contains = self.__sequence_tbl.contains
+            if contains is not None:
+                if line is not None:
+                    line += ','
+                    self._write_line(line)
+                line = f'.sq_contains = {contains.name}'
+            inplace_concat = self.__sequence_tbl.inplace_concat
+            if inplace_concat is not None:
+                if line is not None:
+                    line += ','
+                    self._write_line(line)
+                line = f'.sq_inplace_concat = {inplace_concat.name}'
+            inplace_repeat = self.__sequence_tbl.inplace_repeat
+            if inplace_repeat is not None:
+                if line is not None:
+                    line += ','
+                    self._write_line(line)
+                line = f'.sq_inplace_repeat = {inplace_repeat.name}'
+            self._write_line(line)
+    
     def gen_methods(self):
         for method in self.__method_list:
-            method()
+            if method.is_static:
+                arg0 = 'PyObject* Py_UNUSED(self)'
+            else:
+                arg0 = 'PyObject* self'
+            if method.has_args:
+                arg1 = 'PyObject* args'
+            else:
+                arg1 = 'PyObject* Py_UNUSED(args)'
+            if method.has_keywords:
+                arg2 = 'PyObject* kwds'
+                args = [ arg0, arg1, arg2 ]
+            else:
+                args = [ arg0, arg1 ]
+            with self.gen_func_block(description=method.doc_str,
+                                     return_type='PyObject*',
+                                     func_name=method.func_def.name,
+                                     args=args):
+                self.gen_func_preamble(method.func_def.arg_list)
+                method.func_def.func(self)
 
         self.gen_CRLF()
         self.gen_comment('メソッド定義')
@@ -388,7 +708,7 @@ class MkPyCapi:
                 line = ''
                 if method.has_keywords:
                     line = 'reinterpret_cast<PyCFunction>('
-                line += method.func_name
+                line += method.func_def.name
                 if method.has_keywords:
                     line += ')'
                 line += ','
@@ -410,18 +730,42 @@ class MkPyCapi:
             self._write_line('{nullptr, nullptr, 0, nullptr}')
 
     def gen_getset(self):
-        for getter in self.__getter_list:
-            getter()
+        # getter 関数の生成
+        for func_def, has_closure in self.__getter_list:
+            arg0 = 'PyObject* self'
+            if has_closure:
+                arg1 = 'void* closure'
+            else:
+                arg1 = 'void* Py_UNUSED(closure)'
+            args = [ arg0, arg1 ]
+            with self.gen_func_block(return_type='PyObject*',
+                                     func_name=func_def.name,
+                                     args=args):
+                self.gen_val_conv('val')
+                func_def.func(self)
+                
+        # setter 関数の生成
+        for func_def, has_closure in self.__setter_list:
+            arg0 = 'PyObject* self'
+            arg1 = 'PyObject* obj'
+            if has_closure:
+                arg2 = 'void* closure'
+            else:
+                arg2 = 'void* Py_UNUSED(closure)'
+            args = [ arg0, arg1, arg2 ]
+            with self.gen_func_block(return_type='int',
+                                     func_name=func_def.name,
+                                     args=args):
+                self.gen_val_conv('val')
+                func_def.func(self)
 
-        for setter in self.__setter_list:
-            setter()
-
+        # getset テーブルの生成
         self.gen_CRLF()
         self.gen_comment('getter/setter定義')
         with self.gen_array_block(typename='PyGetSetDef',
                                   arrayname=self.__getset_name):
-            for name, getter, setter, closure, doc_str in self.__attr_list:
-                line = f'{{"{name}", {getter}, {setter}, PyDoc_STR("{doc_str}"), {closure}}},'
+            for attr in self.__attr_list:
+                line = f'{{"{attr.name}", {attr.getter_name}, {attr.setter_name}, PyDoc_STR("{attr.doc_str}"), {attr.closure}}},'
                 self._write_line(line)
                 self.gen_comment('end-marker')
                 self._write_line('{nullptr, nullptr, nullptr, nullptr}')
@@ -431,50 +775,70 @@ class MkPyCapi:
         tp_list.append(('name', f'"{self.pyname}"'))
         tp_list.append(('basicsize', f'sizeof({self.objectname})'))
         tp_list.append(('itemsize', '0'))
-        if self.dealloc_gen is not None:
-            tp_list.append(('dealloc', f'{self.__dealloc_name}'))
-        if self.repr_gen is not None:
-            tp_list.append(('repr', f'{self.__repr_name}'))
-        if self.number_gen is not None:
-            tp_list.append(('repr', f'{self.__repr_name}'))
-        if self.number_gen is not None:
+        if self.__dealloc is not None:
+            tp_list.append(('dealloc', f'{self.__dealloc.name}'))
+        if self.__repr is not None:
+            tp_list.append(('repr', f'{self.__repr.name}'))
+        if self.__number_name is not None:
             tp_list.append(('as_number', f'{self.__number_name}'))
-        if self.sequence_gen is not None:
+        if self.__sequence_name is not None:
             tp_list.append(('as_sequence', f'{self.__sequence_name}'))
-        if self.mapping_gen is not None:
+        if self.__mapping_name is not None:
             tp_list.append(('as_mapping', f'{self.__mapping_name}'))
-        if self.hash_gen is not None:
-            tp_list.append(('hash', f'{self.__hash_name}'))
-        if self.call_gen is not None:
-            tp_list.append(('call', f'{self.__call_name}'))
-        if self.str_gen is not None:
-            tp_list.append(('str', f'{self.__str_name}'))
+        if self.__hash is not None:
+            tp_list.append(('hash', f'{self.__hash.name}'))
+        if self.__call is not None:
+            tp_list.append(('call', f'{self.__call.name}'))
+        if self.__str is not None:
+            tp_list.append(('str', f'{self.__str.name}'))
         tp_list.append(('flags', 'Py_TPFLAGS_DEFAULT'))
         tp_list.append(('doc', f'PyDoc_STR("{self.doc_str}")'))
-        if self.richcompare_gen is not None:
-            tp_list.append(('richcompare', f'{self.__richcompare_name}'))
+        if self.__richcompare is not None:
+            tp_list.append(('richcompare', f'{self.__richcompare.name}'))
         if len(self.__method_list) > 0:
             tp_list.append(('methods', f'{self.__method_name}'))
         if len(self.__attr_list) > 0:
             tp_list.append(('getset', f'{self.__getset_name}'))
-        if self.init_gen is not None:
-            tp_list.append(('init', f'{self.__init_name}'))
-        if self.new_gen is not None:
-            tp_list.append(('new', f'{self.__new_name}'))
+        if self.__init is not None:
+            tp_list.append(('init', f'{self.__init.name}'))
+        if self.__new is not None:
+            tp_list.append(('new', f'{self.__new.name}'))
         for name, rval in tp_list:
             self.gen_assign(f'{self.typename}.tp_{name}', f'{rval}')
-        
-    def make_ex_init(self):
-        if self.ex_init_gen is not None:
-            self.ex_init_gen()
 
     def make_conv(self):
-        if self.conv_gen is not None:
-            self.conv_gen()
+        description = f'{self.classname} を PyObject に変換する．'
+        with self.gen_func_block(description=description,
+                                 return_type='PyObject*',
+                                 func_name=f'{self.pyclassname}::Conv::operator()',
+                                 args=(f'const {self.classname}& val', )):
+            self.gen_auto_assign('type', f'{self.pyclassname}::_typeobject()')
+            self.gen_auto_assign('obj', 'type->tp_alloc(type, 0)')
+            self.gen_auto_assign('obj1', f'reinterpret_cast<{self.objectname}*>(obj)')
+            self.__conv_gen(self)
+            self.gen_return('obj')
 
     def make_deconv(self,):
-        if self.deconv_gen is not None:
-            self.deconv_gen()
+        description = f'PyObject を {self.classname} に変換する．'
+        with self.gen_func_block(description=description,
+                                 return_type='bool',
+                                 func_name=f'{self.pyclassname}::Deconv::operator()',
+                                 args=('PyObject* obj',
+                                       f'{self.classname}& val')):
+            self.__deconv_gen(self)
+            
+    def __complete(self, func_def, default_name):
+        """名前がない場合に名前を補完する．
+
+        新しい FuncDef を返す．
+        """
+        if func_def is None:
+            return None
+        name = func_def.name
+        if name is None:
+            name = default_name
+        self.__check_name(name)
+        return FuncDef(name, func_def.func)
 
     def __check_name(self, name):
         """名前が重複していないかチェックする．
@@ -499,6 +863,74 @@ class MkPyCapi:
         basedir = os.path.dirname(__file__)
         return os.path.join(basedir, filename)
 
+    def gen_func_preamble(self, arg_list):
+        """引数を解釈する前処理のコードを生成する．
+        """
+        has_args, has_keywords = analyze_args(arg_list)
+        if has_keywords:
+            # キーワードテーブルの定義
+            kwds_table = 'kwlist'
+            with self.gen_array_block(typename='static const char*',
+                                      arrayname=kwds_table):
+                for arg in arg_list:
+                    if arg.name is None:
+                        self._write_line('"",')
+                    else:
+                        self._write_line(f'"{arg.name}",')
+                self._write_line('nullptr')
+
+        # パーズ結果を格納する変数の宣言
+        for arg in arg_list:
+            arg.gen_vardef()
+
+        # PyArg_Parse() 用のフォーマット文字列の生成
+        fmt_str = ""
+        mode = "init" # init|option|keyword の3つ
+        for arg in arg_list:
+            if arg.option:
+                if mode == "init":
+                    fmt_str += "|"
+                    mode = "option"
+            if arg.name is None:
+                if mode == "keyword":
+                    raise ValueError('nameless argument is not allowed here')
+            else:
+                if mode == "option":
+                    fmt_str += "$"
+                    mode = "keyword"
+            fmt_str += f'{arg.pchar}'
+                    
+        # パーズ関数の呼び出し
+        if has_args:
+            if has_keywords:
+                line = f'if ( !PyArg_ParseTupleAndKeywords(args, kwds, "{fmt_str}",'
+                self._write_line(line)
+                fpos = line.find('(')
+                delta = line.find('(', fpos + 1) + 1
+                self._indent_inc(delta)
+                self._write_line(f'const_cast<char**>({kwds_table}),')
+            else:
+                line = f'if ( !PyArg_Parse(args, "{fmt_str}",'
+                fpos = line.find('(')
+                delta = line.find('(', fpos + 1) + 1
+            nargs = len(arg_list)
+            for i, arg in enumerate(arg_list):
+                line = arg.gen_varref()
+                if i < nargs - 1:
+                    line += ','
+                else:
+                    line += ') ) {'
+                self._write_line(line)
+            self._indent_dec(delta)
+            self._indent_inc()
+            self.gen_return('nullptr')
+            self._indent_dec()
+            self._write_line('}')
+
+        # PyObject から C++ の変数へ変換する．
+        for arg in arg_list:
+            arg.gen_conv()
+
     def gen_include(self, filename, *,
                     sysinclude=False):
         """include 文を出力する．
@@ -514,6 +946,18 @@ class MkPyCapi:
         else:
             line += '"'
         self._write_line(line)
+
+    def gen_obj_conv(self, varname):
+        """self から自分の型に変換するコードを生成する．
+        """
+        self.gen_auto_assign(f'{varname}',
+                             f'reinterpret_cast<{self.objectname}*>(self)')
+
+    def gen_val_conv(self, varname):
+        """self から値を取り出すコードを生成する．
+        """
+        self.gen_assign(f'auto& {varname}',
+                        f'{self.pyclassname}::_get_ref(self)')
 
     def gen_declaration(self, typename, varname):
         """変数宣言を出力する．
@@ -702,17 +1146,18 @@ class MkPyCapi:
         """
         return CatchBlock(self, expr)
     
-    def gen_type_error(self, error_msg):
-        self.gen_error('PyExc_TypeError', error_msg)
+    def gen_type_error(self, error_msg, *, noexit=False):
+        self.gen_error('PyExc_TypeError', error_msg, noexit=noexit)
 
-    def gen_value_error(self, error_msg):
-        self.gen_error('PyExc_ValueError', error_msg)
+    def gen_value_error(self, error_msg, *, noexit=False):
+        self.gen_error('PyExc_ValueError', error_msg, noexit=noexit)
         
-    def gen_error(self, error_type, error_msg):
+    def gen_error(self, error_type, error_msg, *, noexit=False):
         """エラー出力
         """
         self._write_line(f'PyErr_SetString({error_type}, {error_msg});')
-        self.gen_return('nullptr')
+        if not noexit:
+            self.gen_return('nullptr')
         
     def gen_dox_comment(self, comment):
         """Doxygen 用のコメントを出力する．

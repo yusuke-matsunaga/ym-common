@@ -34,6 +34,21 @@ class CodeGenBase:
     def objectname(self):
         return self.__parent.objectname
 
+    def gen_func_preamble(self, arg_list):
+        """引数を解釈する前処理のコードを生成する．
+        """
+        self.__parent.gen_func_preamble(arg_list)
+
+    def gen_obj_conv(self, varname):
+        """self から自分の型に変換するコードを生成する．
+        """
+        self.__parent.gen_obj_conv(varname)
+
+    def gen_val_conv(self, varname):
+        """self から値を取り出すコードを生成する．
+        """
+        self.__parent.gen_val_conv(varname)
+
     def gen_declaration(self, typename, varname):
         """変数宣言を出力する．
         """
@@ -192,16 +207,16 @@ class CodeGenBase:
         """
         return self.__parent.gen_catch_block(expr)
     
-    def gen_type_error(self, error_msg):
-        self.__parent.gen_type_error(error_msg)
+    def gen_type_error(self, error_msg, *, noexit=False):
+        self.__parent.gen_type_error(error_msg, noexit=noexit)
 
-    def gen_value_error(self, error_msg):
-        self.__parent.gen_value_error(error_msg)
+    def gen_value_error(self, error_msg, *, noexit=False):
+        self.__parent.gen_value_error(error_msg, noexit=nodexit)
         
-    def gen_error(self, error_type, error_msg):
+    def gen_error(self, error_type, error_msg, *, noexit=False):
         """エラー出力
         """
-        self.gen_error(error_type, error_msg)
+        self.gen_error(error_type, error_msg, noexit=nodexit)
 
     def gen_dox_comment(self, comment):
         """Doxygen 用のコメントを出力する．
