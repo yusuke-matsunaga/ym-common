@@ -56,21 +56,12 @@ class FuncBlock(CodeBlock):
         self.args = args
         
     def before_enter(self):
-        self.gen_CRLF()
-        if self.description is not None:
-            self._write_line(f'// @brief {self.description}')
-        if self.is_static:
-            self._write_line('static')
-        self._write_line(f'{self.return_type}')
-        with CodeBlock(self.parent,
-                       br_chars='()',
-                       prefix=self.func_name):
-            nargs = len(self.args)
-            for i, arg in enumerate(self.args):
-                line = arg
-                if i < nargs - 1:
-                    line += ','
-                self._write_line(line)
+        self.gen_func_header(description=self.description,
+                             is_static=self.is_static,
+                             is_declaration=False,
+                             return_type=self.return_type,
+                             func_name=self.func_name,
+                             args=self.args)
                  
 
 class IfBlock(CodeBlock):
@@ -118,3 +109,18 @@ class ArrayBlock(CodeBlock):
         super().__init__(parent,
                          prefix=f'{typename} {arrayname}[] = ',
                          postfix=';')
+        
+        
+class TryBlock(CodeBlock):
+
+    def __init__(self, parent):
+        super().__init__(parent,
+                         prefix='try ')
+
+        
+class CatchBlock(CodeBlock):
+
+    def __init__(self, parent, expr):
+        super().__init__(parent,
+                         prefix=f'catch ( {expr} ) ')
+

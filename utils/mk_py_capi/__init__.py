@@ -8,6 +8,7 @@
 """
 
 from .mk_py_capi import MkPyCapi
-from .funcgen import NewGen, DeallocGen, ReprGen, MethodGen, ConvGen, DeconvGen
-from .funcgen import ArgBase, RawArg, IntArg
-from .funcgen import ConvArg, BoolArg, StringArg, ObjArg, TypedObjArg
+from .funcgen import PreambleGen, NewGen, DeallocGen, ReprGen, MethodGen
+from .funcgen import ConvGen, DeconvGen
+from .arg import RawArg, IntArg, DoubleArg
+from .arg import ConvArg, BoolArg, StringArg, ObjArg, TypedObjArg

@@ -13,10 +13,6 @@ class CodeGenBase:
 
     def __init__(self, parent):
         self.__parent = parent
-
-    @property
-    def parent(self):
-        return self.__parent
     
     @property
     def classname(self):
@@ -64,6 +60,41 @@ class CodeGenBase:
         """
         self.__parent.gen_return(val)
 
+    def gen_py_return_none(self):
+        """Py_RETURN_NONE を出力する．
+        """
+        self.__parent.gen_py_return_none()
+        
+    def gen_func_declaration(self, *,
+                             description=None,
+                             is_static=False,
+                             return_type,
+                             func_name,
+                             args):
+        """関数宣言を出力する．
+        """
+        self.__parent.gen_func_declaration(descrition=description,
+                                           is_static=is_static,
+                                           return_type=return_type,
+                                           func_name=func_name,
+                                           args=args)
+
+    def gen_func_header(self, *,
+                        description=None,
+                        is_static=False,
+                        is_declaration,
+                        return_type,
+                        func_name,
+                        args):
+        """関数ヘッダを出力する．
+        """
+        self.__parent.gen_func_header(description=description,
+                                      is_static=is_static,
+                                      is_declaration=is_declaration,
+                                      return_type=return_type,
+                                      func_name=func_name,
+                                      args=args)
+        
     def gen_func_block(self, *,
                        description=None,
                        is_static=False,
@@ -130,6 +161,16 @@ class CodeGenBase:
         """struct ブロックを出力する．
         """
         return self.__parent.gen_struct_block(structname)
+
+    def gen_try_block(self):
+        """try ブロックを出力する．
+        """
+        return self.__parent.gen_try_block()
+
+    def gen_catch_block(self, expr):
+        """catch ブロックを出力する．
+        """
+        return self.__parent.gen_catch_block(expr)
     
     def gen_type_error(self, error_msg):
         self.__parent.gen_type_error(error_msg)

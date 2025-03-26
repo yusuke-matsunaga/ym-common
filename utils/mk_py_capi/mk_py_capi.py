@@ -8,7 +8,7 @@
 """
 
 from .codeblock import CodeBlock, IfBlock, ElseBlock, ElseIfBlock, ForBlock
-from .codeblock import FuncBlock, ArrayBlock, StructBlock
+from .codeblock import FuncBlock, ArrayBlock, StructBlock, TryBlock, CatchBlock
 import re
 import os
 import datetime
@@ -25,22 +25,7 @@ class MkPyCapi:
                  namespace,
                  pyname,
                  header_include_files=[],
-                 source_include_files=[],
-                 dealloc_gen=None,
-                 repr_gen=None,
-                 number_gen=None,
-                 sequence_gen=None,
-                 mapping_gen=None,
-                 hash_gen=None,
-                 call_gen=None,
-                 str_gen=None,
-                 richcompare_gen=None,
-                 getset_gen=None,
-                 init_gen=None,
-                 new_gen=None,
-                 ex_init_gen=None,
-                 conv_gen=None,
-                 deconv_gen=None):
+                 source_include_files=[]):
         self.classname = classname
         self.pyclassname = pyclassname
         self.namespace = namespace
@@ -49,21 +34,22 @@ class MkPyCapi:
         self.pyname = pyname
         self.header_include_files = header_include_files
         self.source_include_files = source_include_files
-        self.dealloc_gen = dealloc_gen
-        self.repr_gen = repr_gen
-        self.number_gen = number_gen
-        self.sequence_gen = sequence_gen
-        self.mapping_gen = mapping_gen
-        self.hash_gen = hash_gen
-        self.call_gen = call_gen
-        self.str_gen = str_gen
-        self.richcompare_gen = richcompare_gen
-        self.getset_gen = getset_gen
-        self.init_gen = init_gen
-        self.new_gen = new_gen
-        self.ex_init_gen = ex_init_gen
-        self.conv_gen = conv_gen
-        self.deconv_gen = deconv_gen
+        self.preamble_gen = None
+        self.dealloc_gen = None
+        self.repr_gen = None
+        self.number_gen = None
+        self.sequence_gen = None
+        self.mapping_gen = None
+        self.hash_gen = None
+        self.call_gen = None
+        self.str_gen = None
+        self.richcompare_gen = None
+        self.getset_gen = None
+        self.init_gen = None
+        self.new_gen = None
+        self.ex_init_gen = None
+        self.conv_gen = None
+        self.deconv_gen = None
         self.doc_str = f'{self.classname} object'
 
         self.__fout = None
@@ -286,7 +272,8 @@ class MkPyCapi:
                 self._write_line(line)
 
     def make_extra_code(self):
-        self.gen_preamble()
+        if self.preamble_gen is not None:
+            self.preamble_gen()
         
         if self.dealloc_gen is not None:
             self.dealloc_gen(self.__dealloc_name)
@@ -487,6 +474,11 @@ class MkPyCapi:
         line += ';'
         self._write_line(line)
 
+    def gen_py_return_none(self):
+        """Py_RETURN_NONE を出力する．
+        """
+        self._write_line('Py_RETURN_NONE')
+        
     def gen_func_declaration(self, *,
                              description=None,
                              is_static=False,
@@ -495,18 +487,43 @@ class MkPyCapi:
                              args):
         """関数宣言を出力する．
         """
+        self.gen_func_header(description=description,
+                             is_static=is_static,
+                             is_declaration=True,
+                             return_type=return_type,
+                             func_name=func_name,
+                             args=args)
+
+    def gen_func_header(self, *,
+                        description=None,
+                        is_static=False,
+                        is_declaration,
+                        return_type,
+                        func_name,
+                        args):
+        """関数ヘッダを出力する．
+        """
+        self.gen_CRLF()
+        if description is not None:
+            self.gen_comment(f'@brief {description}')
+        if is_static:
+            self._write_line('static')
         self._write_line(f'{return_type}')
+        if is_declaration:
+            postfix=';'
+        else:
+            postfix=''
         with CodeBlock(self,
                        br_chars='()',
                        prefix=func_name,
-                       postfix=';'):
+                       postfix=postfix):
             nargs = len(args)
             for i, arg in enumerate(args):
                 line = arg
                 if i < nargs - 1:
                     line += ','
                 self._write_line(line)
-            
+                        
     def gen_func_block(self, *,
                        description=None,
                        is_static=False,
@@ -575,6 +592,16 @@ class MkPyCapi:
         """
         return StructBlock(self, structname)
 
+    def gen_try_block(self):
+        """try ブロックを出力する．
+        """
+        return TryBlock(self)
+
+    def gen_catch_block(self, expr):
+        """catch ブロックを出力する．
+        """
+        return CatchBlock(self, expr)
+    
     def gen_type_error(self, error_msg):
         self.gen_error('PyExc_TypeError', error_msg)
 
@@ -584,7 +611,7 @@ class MkPyCapi:
     def gen_error(self, error_type, error_msg):
         """エラー出力
         """
-        self._write_line(f'PyErr_SetString({error_type}, "{error_msg}");')
+        self._write_line(f'PyErr_SetString({error_type}, {error_msg});')
         
     def gen_dox_comment(self, comment):
         """Doxygen 用のコメントを出力する．
