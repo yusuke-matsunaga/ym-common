@@ -112,6 +112,13 @@ def analyze_args(arg_list):
                 has_keywords = True
     return has_args, has_keywords
 
+def add_member_def(line_list, mumber_name, func_def):
+    """メンバ関数定義用の記述を作る．
+    """
+    if func_def is not None:
+        line = f'.{member_name} = {func_def.name}'
+        line_list.append(line)
+
 
 class MkPyCapi:
     """Python 拡張用のヘッダ/ソースファイルを生成するためのクラス
@@ -154,14 +161,14 @@ class MkPyCapi:
         self.__preamble_gen = None
 
         # 組み込み関数生成器
-        self.__dealloc = None
-        self.__repr = None
-        self.__hash = None
-        self.__call = None
-        self.__str = None
-        self.__richcompare = None
-        self.__init = None
-        self.__new = None
+        self.__dealloc_def = None
+        self.__repr_def = None
+        self.__hash_def = None
+        self.__call_def = None
+        self.__str_def = None
+        self.__richcompare_def = None
+        self.__init_def = None
+        self.__new_def = None
 
         # Number 構造体の定義
         self.__number_name = None
@@ -214,21 +221,25 @@ class MkPyCapi:
                     gen_body=None):
         """dealloc 関数定義を追加する．
         """
+        if self.__dealloc_def is not None:
+            raise ValueError('dealloc has been already defined')
         func_name = self.__complete(func_name, 'dealloc_func')
         if gen_body is None:
             # デフォルト実装
             def dealloc_gen(gen):
                 gen._write_line(f'obj->mVal.~{gen.classname}()')
             gen_body = dealloc_gen
-        self.__dealloc = FuncDef(func_name, gen_body)
+        self.__dealloc_def = FuncDef(func_name, gen_body)
 
     def add_repr(self, *,
                  func_name=None,
                  repr_func):
         """repr 関数定義を追加する．
         """
+        if self.__repr_def is not None:
+            raise ValueError('repr has been already defined')
         func_name = self.__complete(func_name, 'repr_func')
-        self.__repr = FuncDef(func_name, repr_func)
+        self.__repr_def = FuncDef(func_name, repr_func)
 
     def add_number(self, *,
                    name=None,
@@ -269,6 +280,8 @@ class MkPyCapi:
                    nb_inplace_matrix_multiply=None):
         """Number 構造体の定義を追加する．
         """
+        if self.__number_tbl is not None:
+            raise ValueError('number has been already defined')
         self.__number_name = self.__complete(name, 'number')
         self.__number_tbl = Number(
             nb_add=self.__complete_funcdef(nb_add, 'nb_add'),
@@ -327,6 +340,8 @@ class MkPyCapi:
                      sq_inplace_repeat=None):
         """Sequence 構造体の定義を追加する．
         """
+        if self.__sequence_tbl is not None:
+            raise ValueError('sequence has been already defined')
         self.__sequence_name = self.__complete(name, 'sequence')
         self.__sequence_tbl = Sequence(
             sq_length=self.__complete_funcdef(sq_length, 'sq_length'),
@@ -347,8 +362,10 @@ class MkPyCapi:
                 gen_body):
         """new 関数定義を追加する．
         """
+        if self.__new_def is not None:
+            raise ValueError('new has been already defined')
         func_name = self.__complete(func_name, 'new_func')
-        self.__new = FuncDefWithArgs(func_name, gen_body, arg_list)
+        self.__new_def = FuncDefWithArgs(func_name, gen_body, arg_list)
         
     def add_method(self, name, *,
                    func_name=None,
@@ -647,11 +664,12 @@ class MkPyCapi:
         if self.__preamble_gen is not None:
             self.__preamble_gen(self)
         
-        if self.__dealloc is not None:
+        if self.__dealloc_def is not None:
             self.gen_dealloc()
 
-        if self.__repr is not None:
-            self.gen_repr()
+        if self.__repr_def is not None:
+            self.gen_reprfunc(self.__repr_def.name, self.__repr_def.func,
+                              description='repr 関数')
             
         if self.__number_tbl is not None:
             self.gen_number()
@@ -662,14 +680,17 @@ class MkPyCapi:
         if self.__mapping_tbl is not None:
             self.gen_mapping()
 
-        if self.__hash is not None:
-            self.gen_hash()
+        if self.__hash_def is not None:
+            self.gen_hashfunc(self.__hash_def,
+                              description='hash 関数')
             
-        if self.__str is not None:
-            self.gen_str()
+        if self.__str_def is not None:
+            self.gen_reprfunc(self.__str_def.name, self.__str_def.func,
+                              descption='str 関数')
             
-        if self.__richcompare is not None:
-            self.gen_richicompre()
+        if self.__richcompare_def is not None:
+            self.gen_richcmpfunc(self.__richcompare_def,
+                                 description='richcompare 関数')
             
         if len(self.__method_list) > 0:
             self.gen_methods()
@@ -677,33 +698,57 @@ class MkPyCapi:
         if len(self.__attr_list) > 0:
             self.gen_getset()
 
-        if self.__init is not None:
-            self.gen_init()
+        if self.__init_def is not None:
+            self.gen_initproc()
             
-        if self.__new is not None:
-            self.gen_new()
-            
-    def gen_dealloc(self):
-        with self.gen_func_block(description='終了関数',
-                                 return_type='void',
-                                 func_name=self.__dealloc.name,
-                                 args=(('PyObject* self', ))):
-            self.gen_obj_conv('obj')
-            self.__dealloc.func(self)
-            self._write_line('PyTYPE(self)->tp_free(self)')
-
-    def gen_repr(self):
-        with self.gen_func_block(description='repr関数',
-                                 return_type='PyObject*',
-                                 func_name=self.__repr.name,
-                                 args=(('PyObject* self', ))):
-            self.gen_val_conv('val')
-            self.gen_auto_assign('repr_str', self.__repr.func('val'))
-            self.gen_return(f'PyString::ToPyObject(repr_str)')
+        if self.__new_def is not None:
+            self.gen_newfunc()
         
     def gen_number(self):
-        pass
-    
+        self.gen_binaryfunc(self.__number_tbl.nb_add)
+        self.gen_binaryfunc(self.__number_tbl.nb_subtract)
+        self.gen_binaryfunc(self.__number_tbl.nb_multiply)
+        self.gen_binaryfunc(self.__number_tbl.nb_remainder)
+        self.gen_binaryfunc(self.__number_tbl.nb_divmod)
+        self.gen_ternaryfunc(self.__number_tbl.nb_power)
+        self.gen_unaryfunc(self.__number_tbl.nb_negative)
+        self.gen_unaryfunc(self.__number_tbl.nb_positive)
+        self.gen_unaryfunc(self.__number_tbl.nb_absolute)
+        self.gen_inquiry(self.__number_tbl.nb_bool)
+        self.gen_unaryfunc(self.__number_tbl.nb_invert)
+        self.gen_binaryfunc(self.__number_tbl.nb_lshift)
+        self.gen_binaryfunc(self.__number_tbl.nb_rshift)
+        self.gen_binaryfunc(self.__number_tbl.nb_and)
+        self.gen_binaryfunc(self.__number_tbl.nb_xor)
+        self.gen_binaryfunc(self.__number_tbl.nb_or)
+        self.gen_unaryfunc(self.__number_tbl.nb_int)
+        self.gen_unaryfunc(self.__number_tbl.nb_float)
+        self.gen_binaryfunc(self.__number_tbl.nb_inplace_add)
+        self.gen_binaryfunc(self.__number_tbl.nb_inplace_subtract)
+        self.gen_binaryfunc(self.__number_tbl.nb_inplace_multiply)
+        self.gen_binaryfunc(self.__number_tbl.nb_inplace_remainder)
+        self.gen_ternaryfunc(self.__number_tbl.nb_inplace_power)
+        self.gen_binaryfunc(self.__number_tbl.nb_inplace_lshift)
+        self.gen_binaryfunc(self.__number_tbl.nb_inplace_rshift)
+        self.gen_binaryfunc(self.__number_tbl.nb_inplace_and)
+        self.gen_binaryfunc(self.__number_tbl.nb_inplace_xor)
+        self.gen_binaryfunc(self.__number_tbl.nb_inplace_or)
+        self.gen_binaryfunc(self.__number_tbl.nb_floor_divide)
+        self.gen_binaryfunc(self.__number_tbl.nb_true_divide)
+        self.gen_binaryfunc(self.__number_tbl.nb_inplace_floor_divide)
+        self.gen_binaryfunc(self.__number_tbl.nb_inplace_true_divide)
+        self.gen_binaryfunc(self.__number_tbl.nb_index)
+        self.gen_binaryfunc(self.__number_tbl.nb_matrix_multiply)
+        self.gen_binaryfunc(self.__number_tbl.nb_inplace_matrix_multiply)
+
+        self.gen_CRLF()
+        self.gen_comment('Numberオブジェクト構造体')
+        with self.gen_struct_block(typename='PyNumberMethods',
+                                   structname=self.__number_name):
+            nb_lines = []
+            add_member_def(nb_lines, '.nb_add', self.__number_tbl.nb_add)
+            
+        
     def gen_sequence(self):
         # 個々の関数を生成する．
         self.gen_lenfunc(self.__sequence_tbl.sq_length)
@@ -716,126 +761,22 @@ class MkPyCapi:
         self.gen_ssizeargfunc(self.__sequence_tbl.sq_inplace_repeat)
             
         self.gen_CRLF()
-        self.gen_comment('シーケンスオブジェクト構造体')
-        with self.gen_array_block(typename='PySequenceMethods',
-                                  arrayname=self.__sequence_name):
-            line = None
-            length = self.__sequence_tbl.length
-            if length is not None:
-                if line is not None:
-                    line += ','
-                    self._write_line(line)
-                line = f'.sq_length = {length.name}'
-            concat = self.__sequence_tbl.concat
-            if concat is not None:
-                if line is not None:
-                    line += ','
-                    self._write_line(line)
-                line = f'.sq_concat = {concat.name}'
-            repeat = self.__sequence_tbl.repeat
-            if repeat is not None:
-                if line is not None:
-                    line += ','
-                    self._write_line(line)
-                line = f'.sq_repeat = {repeat.name}'
-            item = self.__sequence_tbl.item
-            if item is not None:
-                if line is not None:
-                    line += ','
-                    self._write_line(line)
-                line = f'.sq_item = {item.name}'
-            ass_item = self.__sequence_tbl.ass_item
-            if ass_item is not None:
-                if line is not None:
-                    line += ','
-                    self._write_line(line)
-                line = f'.sq_ass_item = {ass_item.name}'
-            contains = self.__sequence_tbl.contains
-            if contains is not None:
-                if line is not None:
-                    line += ','
-                    self._write_line(line)
-                line = f'.sq_contains = {contains.name}'
-            inplace_concat = self.__sequence_tbl.inplace_concat
-            if inplace_concat is not None:
-                if line is not None:
-                    line += ','
-                    self._write_line(line)
-                line = f'.sq_inplace_concat = {inplace_concat.name}'
-            inplace_repeat = self.__sequence_tbl.inplace_repeat
-            if inplace_repeat is not None:
-                if line is not None:
-                    line += ','
-                    self._write_line(line)
-                line = f'.sq_inplace_repeat = {inplace_repeat.name}'
-            self._write_line(line)
-
-    def gen_lenfunc(self, func_def):
-        """'lenfunc' 型の関数を生成する．
-        """
-        if func_def is not None:
-            args = ('PyObject* self',)
-            with self.gen_func_block(return_type='Py_ssize_t',
-                                     func_name=func_def.name,
-                                     args=args):
-                func_def.func(self)
-                
-    def gen_binaryfunc(self, func_def):
-        """'binaryfunc' 型の関数を生成する．
-        """
-        if func_def is not None:
-            args = ('PyObject* self',
-                    'PyObject* obj2')
-            with self.gen_func_block(return_type='PyObject*',
-                                     func_name=func_def.name,
-                                     args=args):
-                func_def.func(self)
-
-    def gen_ssizeargfunc(self, func_def):
-        """'ssizeargfunc' 型の関数を生成する．
-        """
-        if func_def is not None:
-            args = ('PyObject* self',
-                    'Py_ssize_t obj2')
-            with self.gen_func_block(return_type='PyObject*',
-                                     func_name=func_def.name,
-                                     args=args):
-                func_def.func(self)
-
-    def gen_ssizeobjargproc(self, func_def):
-        """'ssizeobjargproc' 型の関数を生成する．
-        """
-        if func_def is not None:
-            args = ('PyObject* self',
-                    'Py_ssize_t obj2',
-                    'PyObject* obj3')
-            with self.gen_func_block(return_type='int',
-                                     func_name=func_def.name,
-                                     args=args):
-                func_def.func(self)
-
-    def gen_objobjproc(self, func_def):
-        """'objobjproc' 型の関数を生成する．
-        """
-        if func_def is not None:
-            args = ('PyObject* self',
-                    'PyObject* obj2')
-            with self.gen_func_block(return_type='int',
-                                     func_name=func_def.name,
-                                     args=args):
-                func_def.func(self)
+        self.gen_comment('Sequenceオブジェクト構造体')
+        with self.gen_struct_block(typename='PySequenceMethods',
+                                   structname=self.__sequence_name):
+            sq_lines = []
+            add_member_def(sq_lines, '.sq_length', self.__sequence_tbl.sq_length)
+            add_member_def(sq_lines, '.sq_concat', self.__sequence_tbl.sq_concat)
+            add_member_def(sq_lines, '.sq_repeat', self.__sequence_tbl.sq_repeat)
+            add_member_def(sq_lines, '.sq_item', self.__sequence_tbl.sq_item)
+            add_member_def(sq_lines, '.sq_ass_item', self.__sequence_tbl.sq_ass_item)
+            add_member_def(sq_lines, '.sq_contains', self.__sequence_tbl.sq_contains)
+            add_member_def(sq_lines, '.sq_inplace_concat', self.__sequence_tbl.sq_inplace_concat)
+            add_member_def(sq_lines, '.sq_inplace_repeat', self.__sequence_tbl.sq_inplace_repeat)
+            self._write_lines(sq_lines, delim=',')
         
     def gen_mapping(self):
         pass
-    
-    def gen_hash(self):
-        self.__hash.func(self.__hash.name)
-
-    def gen_str(self):
-        self.__str.func(self.__str.name)
-
-    def gen_richcompare(self):
-        self.__richcompare.func(self.__richcompare.name)
     
     def gen_methods(self):
         for method in self.__method_list:
@@ -930,28 +871,14 @@ class MkPyCapi:
             for attr in self.__attr_list:
                 line = f'{{"{attr.name}", {attr.getter_name}, {attr.setter_name}, PyDoc_STR("{attr.doc_str}"), {attr.closure}}},'
                 self._write_line(line)
-                self.gen_comment('end-marker')
-                self._write_line('{nullptr, nullptr, nullptr, nullptr}')
-        
-    def gen_init(self):
-        self.__init.func(self.__init.name)
-        
-    def gen_new(self):
-        args = ('PyTypeObject* type',
-                'PyObject* args',
-                'PyObject* kwds')
-        with self.gen_func_block(description='生成関数',
-                                 return_type='PyObject*',
-                                 func_name=self.__new.name,
-                                 args=args):
-            self.gen_func_preamble(self.__new.arg_list)
-            self.__new.func(self)
+            self.gen_comment('end-marker')
+            self._write_line('{nullptr, nullptr, nullptr, nullptr}')
         
     def make_tp_init(self):
         tp_list = []
         tp_list.append(('name', f'"{self.pyname}"'))
-        tp_list.append(('basicsize', f'sizeof({self.objectname})'))
-        tp_list.append(('itemsize', '0'))
+        tp_list.append(('basicsize', self.basicsize))
+        tp_list.append(('itemsize', self.itemsize))
         if self.__dealloc is not None:
             tp_list.append(('dealloc', f'{self.__dealloc.name}'))
         if self.__repr is not None:
@@ -968,7 +895,7 @@ class MkPyCapi:
             tp_list.append(('call', f'{self.__call.name}'))
         if self.__str is not None:
             tp_list.append(('str', f'{self.__str.name}'))
-        tp_list.append(('flags', 'Py_TPFLAGS_DEFAULT'))
+        tp_list.append(('flags', self.flags))
         tp_list.append(('doc', f'PyDoc_STR("{self.doc_str}")'))
         if self.__richcompare is not None:
             tp_list.append(('richcompare', f'{self.__richcompare.name}'))
@@ -1003,6 +930,155 @@ class MkPyCapi:
                                  args=('PyObject* obj',
                                        f'{self.classname}& val')):
             self.__deconv_gen(self)
+            
+    def gen_dealloc(self):
+        with self.gen_func_block(description='終了関数',
+                                 return_type='void',
+                                 func_name=self.__dealloc_def.name,
+                                 args=(('PyObject* self', ))):
+            self.gen_obj_conv('obj')
+            self.__dealloc_def.func(self)
+            self._write_line('PyTYPE(self)->tp_free(self)')
+
+    def gen_reprfunc(self, name, valfunc, *,
+                     description=None,
+                     arg1name='self'):
+        args = (f'PyObject* {arg1name}', )
+        with self.gen_func_block(description=description,
+                                 return_type='PyObject*',
+                                 func_name=name,
+                                 args=args):
+            self.gen_val_conv('val')
+            self.gen_auto_assign('str_val', valfunc('val'))
+            self.gen_return(f'PyString::ToPyObject(str_val)')
+    
+    def gen_hashfunc(self, fun_cdef, *,
+                     description=None,
+                     arg1name='self'):
+        args = (f'PyObject* {arg1name}', )
+        with self.gen_func_block(description=description,
+                                 return_type='Py_hash_t',
+                                 func_name=func_def.name,
+                                 args=args):
+            func_def.func(self)
+
+    def gen_richcmpfunc(self, func_def, *,
+                        description=None,
+                        arg1name='self',
+                        arg2name='other'):
+        args = (f'PyObject* {arg1name}',
+                f'PyObject* {arg2name}')
+        with self.gen_func_block(description=description,
+                                 return_type='PyObject*',
+                                 func_name=func_def.name,
+                                 args=args):
+            func_def.func(self)
+            
+    def gen_initproc(self, *,
+                     description='init 関数',
+                     arg1name='self',
+                     arg2name='args',
+                     arg3name='kwds'):
+        args = (f'PyObject* {arg1name}',
+                f'PyObject* {arg2name}',
+                f'PyObject* {arg3name}')
+        with self.gen_func_block(desctiption=description,
+                                 return_type='int',
+                                 func_name=self.__init.name,
+                                 args=args):
+            self.gen_func_preamble(self.__init.arg_list)
+            self.__init.func(self)
+        
+    def gen_newfunc(self, *,
+                    description='new 関数',
+                    arg1name='type',
+                    arg2name='args',
+                    arg3name='kwds'):
+                    ):
+        args = (f'PyTypeObject* {arg1name}',
+                f'PyObject* {arg2name}',
+                f'PyObject* {arg3name}')
+        with self.gen_func_block(description=description,
+                                 return_type='PyObject*',
+                                 func_name=self.__new.name,
+                                 args=args):
+            self.gen_func_preamble(self.__new.arg_list)
+            self.__new.func(self)
+
+    def gen_lenfunc(self, func_def, *,
+                    desctiption=None,
+                    arg1name='self'):
+        """'lenfunc' 型の関数を生成する．
+        """
+        if func_def is not None:
+            args = (f'PyObject* {arg1name}', )
+            with self.gen_func_block(description=description,
+                                     return_type='Py_ssize_t',
+                                     func_name=func_def.name,
+                                     args=args):
+                func_def.func(self)
+                
+    def gen_binaryfunc(self, func_def, *,
+                       description=None,
+                       arg1name='self',
+                       arg2name='obj2'):
+        """'binaryfunc' 型の関数を生成する．
+        """
+        if func_def is not None:
+            args = (f'PyObject* {arg1name}',
+                    f'PyObject* {arg2name}')
+            with self.gen_func_block(description=description,
+                                     return_type='PyObject*',
+                                     func_name=func_def.name,
+                                     args=args):
+                func_def.func(self)
+
+    def gen_ssizeargfunc(self, func_def, *,
+                         description=None,
+                         arg1name='self',
+                         arg2name='obj2'):
+        """'ssizeargfunc' 型の関数を生成する．
+        """
+        if func_def is not None:
+            args = (f'PyObject* {arg1name}',
+                    f'Py_ssize_t {arg2name}')
+            with self.gen_func_block(description=description,
+                                     return_type='PyObject*',
+                                     func_name=func_def.name,
+                                     args=args):
+                func_def.func(self)
+
+    def gen_ssizeobjargproc(self, func_def, *,
+                            description=None,
+                            arg1name='self',
+                            arg2name='obj2',
+                            arg3name='obj3'):
+        """'ssizeobjargproc' 型の関数を生成する．
+        """
+        if func_def is not None:
+            args = (f'PyObject* {arg1name}',
+                    f'Py_ssize_t {arg2name}',
+                    f'PyObject* {arg3name}')
+            with self.gen_func_block(description=description,
+                                     return_type='int',
+                                     func_name=func_def.name,
+                                     args=args):
+                func_def.func(self)
+
+    def gen_objobjproc(self, func_def, *,
+                       description=None,
+                       arg1name='self',
+                       arg2name='obj2'):
+        """'objobjproc' 型の関数を生成する．
+        """
+        if func_def is not None:
+            args = (f'PyObject* {arg1name}',
+                    f'PyObject* {arg2name}')
+            with self.gen_func_block(description=description,
+                                     return_type='int',
+                                     func_name=func_def.name,
+                                     args=args):
+                func_def.func(self)
 
     def __complete_funcdef(self, funcdef, default_name):
         """FuncDef の名前を補完する．
@@ -1240,12 +1316,7 @@ class MkPyCapi:
                        br_chars='()',
                        prefix=func_name,
                        postfix=postfix):
-            nargs = len(args)
-            for i, arg in enumerate(args):
-                line = arg
-                if i < nargs - 1:
-                    line += ','
-                self._write_line(line)
+            self._write_lines(args, delim=',')
                         
     def gen_func_block(self, *,
                        description=None,
@@ -1357,7 +1428,15 @@ class MkPyCapi:
         """空行を出力する．
         """
         self._write_line('')
-        
+
+    def _write_lines(self, lines, *,
+                     delim=None):
+        n = len(lines)
+        for i, line in enumerate(lines):
+            if i < n - 1:
+                line += delim
+            self._write_line(line)
+            
     def _write_line(self, line):
         spc = ' ' * self.__indent
         self.__fout.write(f'{spc}{line}\n')
