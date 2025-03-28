@@ -17,6 +17,7 @@ FuncDef = namedtuple('FuncDef',
 
 FuncDef.__new__.__defaults__ = (None, None)
 
+        
 # 引数付きの関数定義を表す型
 FuncDefWithArgs = namedtuple('FuncDefWithArgs',
                              FuncDef._fields + ('arg_list', ))
@@ -36,6 +37,12 @@ def analyze_args(arg_list):
                 has_keywords = True
     return has_args, has_keywords
 
+
+def gen_func(func_gen, writer, *,
+             description=None):
+    if func_gen is not None:
+        func_gen(writer, description=description)
+        
 
 def add_member_def(line_list, member_name, func_def):
     """メンバ関数定義用の記述を作る．

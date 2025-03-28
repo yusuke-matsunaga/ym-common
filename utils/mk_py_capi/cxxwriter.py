@@ -219,7 +219,7 @@ class CxxWriter(CodeGen):
         line += f'{lval} = {rval};'
         self.write_line(line)
 
-    def gen_buildvalue_return(self, fmt, val_list):
+    def gen_return_buildvalue(self, fmt, val_list):
         """ Py_BuildValue() を用いた return 文を出力する．
         """
         line = f'return Py_BuildValue("{fmt}"'
@@ -240,17 +240,17 @@ class CxxWriter(CodeGen):
     def gen_return_py_int(self, varname):
         """int 値を表す PyObject を返す return 文を出力する．
         """
-        self.gen_return(f'Py_BuildValue("i", {varname})')
+        self.gen_return_buildvalue("i", [varname])
 
     def gen_return_py_float(self, varname):
         """float 値を表す PyObject を返す return 文を出力する．
         """
-        self.gen_return(f'Py_BuildValue("d", {varname})')
+        self.gen_return_buildvalue("d", [varname])
 
     def gen_return_py_string(self, varname):
         """string 値を表す PyObject を返す return 文を出力する．
         """
-        self.gen_return(f'Py_BuildValue("s", {varname})')
+        self.gen_return_buildvalue("s", [varname])
 
     def gen_return_py_bool(self, varname):
         """bool 値を表す PyObject を返す return 文を出力する．
@@ -261,204 +261,6 @@ class CxxWriter(CodeGen):
         """Py_RETURN_NONE を出力する．
         """
         self.write_line('Py_RETURN_NONE;')
-            
-    def gen_dealloc(self, func_def, *,
-                    arg1name='self',
-                    description=None):
-        if func_def is None:
-            return
-        with self.gen_dealloc_block(func_def.name,
-                                    arg1name=arg1name,
-                                    description=description):
-            func_def.func(self)
-
-    def gen_reprfunc(self, func_def, *,
-                     arg1name='self',
-                     description=None):
-        if func_def is None:
-            return
-        with self.gen_reprfunc_block(func_def.name,
-                                     arg1name=arg1name,
-                                     description=description):
-            func_def.func(self)
-    
-    def gen_hashfunc(self, func_def, *,
-                     arg1name='self',
-                     description=None):
-        if func_def is None:
-            return
-        with self.gen_hashfunc_block(func_def.name,
-                                     arg1name=arg1name,
-                                     description=description):
-            func_def.func(self)
-
-    def gen_richcmpfunc(self, func_def, *,
-                        arg1name='self',
-                        arg2name='other',
-                        description=None):
-        if func_def is None:
-            return
-        with self.gen_richcmpfunc_block(func_def.name,
-                                        arg1name=arg1name,
-                                        arg2name=arg2name,
-                                        description=description):
-            func_def.func(self)
-            
-    def gen_initproc(self, func_def, *,
-                     arg1name='self',
-                     arg2name='args',
-                     arg3name='kwds',
-                     description=None):
-        if func_def is None:
-            return
-        with self.gen_initproc_block(func_def.name,
-                                     arg1name=arg1name,
-                                     arg2name=arg2name,
-                                     arg3name=arg3name,
-                                     description=description):
-            self.gen_func_preamble(func_def.arg_list)
-            func_def.func(self)
-        
-    def gen_newfunc(self, func_def, *,
-                    arg1name='type',
-                    arg2name='args',
-                    arg3name='kwds',
-                    description=None):
-        if func_def is None:
-            return
-        with self.gen_newfunc_block(func_def.name,
-                                    arg1name=arg1name,
-                                    arg2name=arg2name,
-                                    arg3name=arg3name,
-                                    description=description):
-            self.gen_func_preamble(func_def.arg_list)
-            func_def.func(self)
-
-    def gen_lenfunc(self, func_def, *,
-                    description=None,
-                    arg1name='self'):
-        """'lenfunc' 型の関数を生成する．
-        """
-        if func_def is None:
-            return
-        with self.gen_lenfunc_block(func_def.name,
-                                    arg1name=arg1name,
-                                    description=description):
-            func_def.func(self)
-
-    def gen_inquiry(self, func_def, *,
-                    arg1name='self',
-                    description=None):
-        """'inquiry' 型の関数を生成する．
-        """
-        if func_def is None:
-            return
-        with self.gen_inquiry_block(func_def.name,
-                                    arg1name=arg1name,
-                                    description=description):
-            func_def.func(self)
-                
-    def gen_unaryfunc(self, func_def, *,
-                      arg1name='self',
-                      description=None):
-        """'unaryfunc' 型の関数を生成する．
-        """
-        if func_def is None:
-            return
-        with self.gen_unaryfunc_block(func_def.name,
-                                      arg1name=arg1name,
-                                      description=description):
-            func_def.func(self)
-                
-    def gen_binaryfunc(self, func_def, *,
-                       arg1name='self',
-                       arg2name='obj2',
-                       description=None):
-        """'binaryfunc' 型の関数を生成する．
-        """
-        if func_def is None:
-            return
-        with self.gen_binaryfunc_block(func_def.name,
-                                       arg1name=arg1name,
-                                       arg2name=arg2name,
-                                       description=description):
-            func_def.func(self)
-                
-    def gen_ternaryfunc(self, func_def, *,
-                        arg1name='self',
-                        arg2name='obj2',
-                        arg3name='obj3',
-                       description=None):
-        """'ternaryfunc' 型の関数を生成する．
-        """
-        if func_def is None:
-            return
-        with self.gen_ternaryfunc_block(func_def.name,
-                                        arg1name=arg1name,
-                                        arg2name=arg2name,
-                                        arg3name=arg3name,
-                                        description=description):
-            func_def.func(self)
-
-    def gen_ssizeargfunc(self, func_def, *,
-                         arg1name='self',
-                         arg2name='obj2',
-                         description=None):
-        """'ssizeargfunc' 型の関数を生成する．
-        """
-        if func_def is None:
-            return
-        with self.gen_ssizeargfunc_block(func_def.name,
-                                         arg1name=arg1name,
-                                         arg2name=arg2name,
-                                         description=description):
-            func_def.func(self)
-
-    def gen_ssizeobjargproc(self, func_def, *,
-                            arg1name='self',
-                            arg2name='obj2',
-                            arg3name='obj3',
-                            description=None):
-        """'ssizeobjargproc' 型の関数を生成する．
-        """
-        if func_def is None:
-            return
-        with self.gen_func_block(func_def.name,
-                                 arg1name=arg1name,
-                                 arg2name=arg2name,
-                                 arg3name=arg3name,
-                                 description=description):
-            func_def.func(self)
-
-    def gen_objobjproc(self, func_def, *,
-                       arg1name='self',
-                       arg2name='obj2',
-                       description=None):
-        """'objobjproc' 型の関数を生成する．
-        """
-        if func_def is None:
-            return
-        with self.gen_objobjproc_block(func_def.name,
-                                       arg1name=arg1name,
-                                       arg2name=arg2name,
-                                       description=description):
-            func_def.func(self)
-
-    def gen_objobjargproc(self, func_def, *,
-                       arg1name='self',
-                       arg2name='obj2',
-                       arg3name='obj3',
-                       description=None):
-        """'objobjargproc' 型の関数を生成する．
-        """
-        if func_def is None:
-            return
-        with self.gen_objobjargproc_block(func_def.name,
-                                          arg1name=arg1name,
-                                          arg2name=arg2name,
-                                          arg3name=arg3name,
-                                          description=description):
-            func_def.func(self)
         
     def gen_func_declaration(self, *,
                              description=None,
@@ -499,170 +301,6 @@ class CxxWriter(CodeGen):
                        prefix=func_name,
                        postfix=postfix):
             self.write_lines(args, delim=',')
-
-    # Python CAPI で用いられる関数の型定義に基づいた関数ブロックを
-    # 作る関数
-    def gen_dealloc_block(self, name, *,
-                          arg1name,
-                          description=None):
-        args = (f'PyObject* {arg1name}', )
-        return self.gen_func_block(description=description,
-                                   return_type='void',
-                                   func_name=name,
-                                   args=args)
-
-    def gen_reprfunc_block(self, name, *,
-                           arg1name,
-                           description=None):
-        args = (f'PyObject* {arg1name}', )
-        return self.gen_func_block(description=description,
-                                   return_type='PyObject*',
-                                   func_name=name,
-                                   args=args)
-
-    def gen_hashfunc_block(self, name, *,
-                           arg1name,
-                           description=None):
-        args = (f'PyObject* {arg1name}', )
-        return self.gen_func_block(description=description,
-                                   return_type='Py_hash_t',
-                                   func_name=name,
-                                   args=args)
-
-    def gen_richcmpfunc_block(self, name, *,
-                              arg1name,
-                              arg2name,
-                              description=None):
-        args = (f'PyObject* {arg1name}',
-                f'PyObject* {arg2name}')
-        return self.gen_func_block(description=description,
-                                   return_type='PyObject*',
-                                   func_name=name,
-                                   args=args)
-
-    def gen_initproc_block(self, name, *,
-                           arg1name,
-                           arg2name,
-                           arg3name,
-                           description=None):
-        args = (f'PyObject* {arg1name}',
-                f'PyObject* {arg2name}',
-                f'PyObject* {arg3name}')
-        return self.gen_func_block(desctiption=description,
-                                   return_type='int',
-                                   func_name=name,
-                                   args=args)
-    def gen_newfunc_block(self, name, *,
-                          arg1name,
-                          arg2name,
-                          arg3name,
-                          description=None):
-        args = (f'PyTypeObject* {arg1name}',
-                f'PyObject* {arg2name}',
-                f'PyObject* {arg3name}')
-        return self.gen_func_block(description=description,
-                                   return_type='PyObject*',
-                                   func_name=name,
-                                   args=args)
-    
-    def gen_lenfunc_block(self, name, *,
-                          arg1name,
-                          description=None):
-        args = (f'PyObject* {arg1name}', )
-        return self.gen_func_block(description=description,
-                                   return_type='Py_ssize_t',
-                                   func_name=name,
-                                   args=args)
-
-    def gen_inquiry_block(self, name, *,
-                          arg1name,
-                          description=None):
-        args = (f'PyObject* {arg1name}', )
-        return self.gen_func_block(description=description,
-                                   return_type='int',
-                                   func_name=name,
-                                   args=args)
-                          
-    def gen_unaryfunc_block(self, name, *,
-                            arg1name,
-                            description=None):
-        args = (f'PyObject* {arg1name}', )
-        return self.gen_func_block(description=description,
-                                   return_type='PyObject*',
-                                   func_name=name,
-                                   args=args)
-
-    def gen_binaryfunc_block(self, name, *,
-                             arg1name,
-                             arg2name,
-                             description=None):
-        args = (f'PyObject* {arg1name}',
-                f'PyObject* {arg2name}')
-        return self.gen_func_block(description=description,
-                                   return_type='PyObject*',
-                                   func_name=name,
-                                   args=args)
-
-    def gen_ternaryfunc_block(self, name, *,
-                              arg1name,
-                              arg2name,
-                              arg3name,
-                              description=None):
-        args = (f'PyObject* {arg1name}',
-                f'PyObject* {arg2name}',
-                f'PyObject* {arg3name}')
-        return self.gen_func_block(description=description,
-                                   return_type='PyObject*',
-                                   func_name=name,
-                                   args=args)
-
-    def gen_ssizeargfunc_block(self, name, *,
-                               arg1name,
-                               arg2name,
-                               description=None):
-        args = (f'PyObject* {arg1name}',
-                f'Py_ssize_t {arg2name}')
-        return self.gen_func_block(description=description,
-                                   return_type='PyObject*',
-                                   func_name=name,
-                                   args=args)
-
-    def gen_ssizeobjargproc_block(self, name, *,
-                                  arg1name,
-                                  arg2name,
-                                  arg3name,
-                                  description=None):
-        args = (f'PyObject* {arg1name}',
-                f'Py_ssize_t {arg2name}',
-                f'PyObject* {arg3name}')
-        return self.gen_func_block(description=description,
-                                   return_type='int',
-                                   func_name=name,
-                                   args=args)
-
-    def gen_objobjproc_block(self, name, *,
-                             arg1name,
-                             arg2name,
-                             description=None):
-        args = (f'PyObject* {arg1name}',
-                f'PyObject* {arg2name}')
-        return self.gen_func_block(description=description,
-                                   return_type='int',
-                                   func_name=name,
-                                   args=args)
-
-    def gen_objobjargproc_block(self, name, *,
-                                arg1name,
-                                arg2name,
-                                arg3name,
-                                description=None):
-        args = (f'PyObject* {arg1name}',
-                f'PyObject* {arg2name}',
-                f'PyObject* {arg3name}')
-        return self.gen_func_block(description=description,
-                                   return_type='int',
-                                   func_name=name,
-                                   args=args)
         
     def gen_func_block(self, *,
                        description=None,
@@ -824,4 +462,3 @@ class CxxWriter(CodeGen):
         """インデント量をセットする．
         """
         self.__indent = val
-            

@@ -8,6 +8,5 @@
 """
 
 from .mk_py_capi import MkPyCapi, FuncDef
-from .funcgen import FuncGen
 from .arg import IntArg, DoubleArg, RawObjArg
 from .arg import BoolArg, StringArg, ObjArg, TypedObjArg

@@ -8,13 +8,18 @@
 """
 
 from .codegen import CodeGen
+from .funcgen import DeallocGen
+from .funcgen import ReprFuncGen
+from .funcgen import HashFuncGen
+from .funcgen import InitProcGen
+from .funcgen import NewFuncGen
 from .number_gen import NumberGen
 from .sequence_gen import SequenceGen
 from .mapping_gen import MappingGen
 from .method_gen import MethodGen
 from .getset_gen import GetSetGen
 from .utils import FuncDef, FuncDefWithArgs
-from .utils import analyze_args
+from .utils import gen_func, analyze_args
 from .cxxwriter import CxxWriter
 import re
 import os
@@ -66,14 +71,14 @@ class MkPyCapi(CodeGen):
         self.__preamble_gen = None
 
         # 組み込み関数生成器
-        self.__dealloc_def = None
-        self.__repr_def = None
-        self.__hash_def = None
-        self.__call_def = None
-        self.__str_def = None
-        self.__richcompare_def = None
-        self.__init_def = None
-        self.__new_def = None
+        self.__dealloc_gen = None
+        self.__repr_gen = None
+        self.__hash_gen = None
+        self.__call_gen = None
+        self.__str_gen = None
+        self.__richcompare_gen = None
+        self.__init_gen = None
+        self.__new_gen = None
 
         # Number 構造体の定義
         self.__number_name = None
@@ -128,7 +133,7 @@ class MkPyCapi(CodeGen):
                     dealloc_func=None):
         """dealloc 関数定義を追加する．
         """
-        if self.__dealloc_def is not None:
+        if self.__dealloc_gen is not None:
             raise ValueError('dealloc has been already defined')
         func_name = self.__complete(func_name, 'dealloc_func')
         if dealloc_func is None:
@@ -136,26 +141,58 @@ class MkPyCapi(CodeGen):
             def default_func(writer):
                 writer.write_line(f'obj->mVal.~{self.classname}()')
             dealloc_func = default_func
-        def dealloc_body(writer):
-            writer.gen_obj_conv(varname='obj')
-            dealloc_func(writer)
-            writer.write_line('PyTYPE(self)->tp_free(self)')
-        self.__dealloc_def = FuncDef(func_name, dealloc_body)
+        self.__dealloc_gen = DeallocGen(func_name, dealloc_func)
 
     def add_repr(self, *,
                  func_name=None,
                  repr_func):
         """repr 関数定義を追加する．
         """
-        if self.__repr_def is not None:
+        if self.__repr_gen is not None:
             raise ValueError('repr has been already defined')
         func_name = self.__complete(func_name, 'repr_func')
-        def repr_body(writer):
-            writer.gen_ref_conv(refname='val')
-            writer.gen_auto_assign('str_val', repr_func('val'))
-            writer.gen_return_py_string('str_val')
-        self.__repr_def = FuncDef(func_name, repr_body)
+        self.__repr_gen = ReprFuncGen(func_name, repr_func)
 
+    def add_hash(self, *,
+                 func_name=None,
+                 hash_func):
+        """hash 関数定義を追加する．
+        """
+        if self.__hash_gen is not None:
+            raise ValueError('hash has been already defined')
+        func_name = self.__complete(func_name, 'hash_func')
+        self.__hash_gen = HashFuncGen(func_name, hash_func)
+
+    def add_call(self, *,
+                 func_name=None,
+                 call_func):
+        """call 関数定義を追加する．
+        """
+        if self.__call_gen is not None:
+            raise ValueError('hash has been already defined')
+        func_name = self.__complete(func_name, 'call_func')
+        self.__call_gen = TernaryFuncGen(func_name, call_func)
+
+    def add_str(self, *,
+                func_name=None,
+                str_func):
+        """str 関数定義を追加する．
+        """
+        if self.__str_gen is not None:
+            raise ValueError('str has been already defined')
+        func_name = self.__complete(func_name, 'str_func')
+        self.__str_gen = ReprFuncGen(func_name, str_func)
+
+    def add_richcompare(self, *,
+                        func_name=None,
+                        cmp_func):
+        """richcompare 関数定義を追加する．
+        """
+        if self.__richcompare_gen is not None:
+            raise ValueError('richcompare has been already defined')
+        func_name = self.__complete(func_name, 'richcompare_func')
+        self.__richcompare_gen = RichcmpFuncGen(func_name, cmp_func)
+        
     def add_number(self, *,
                    name=None,
                    nb_add=None,
@@ -199,49 +236,37 @@ class MkPyCapi(CodeGen):
             raise ValueError('number has been already defined')
         self.__number_name = self.__complete(name, 'number')
         self.__number_gen = NumberGen(
-            nb_add=self.__complete_funcdef(nb_add, 'nb_add'),
-            nb_subtract=self.__complete_funcdef(nb_subtract, 'nb_subtract'),
-            nb_multiply=self.__complete_funcdef(nb_multiply, 'nb_multiply'),
-            nb_remainder=self.__complete_funcdef(nb_remainder, 'nb_remainder'),
-            nb_divmod=self.__complete_funcdef(nb_divmod, 'nb_divmod'),
-            nb_power=self.__complete_funcdef(nb_power, 'nb_power'),
-            nb_negative=self.__complete_funcdef(nb_negative, 'nb_negative'),
-            nb_positive=self.__complete_funcdef(nb_positive, 'nb_positive'),
-            nb_absolute=self.__complete_funcdef(nb_absolute, 'nb_absolute'),
-            nb_bool=self.__complete_funcdef(nb_bool, 'nb_bool'),
-            nb_invert=self.__complete_funcdef(nb_invert, 'nb_invert'),
-            nb_lshift=self.__complete_funcdef(nb_lshift, 'nb_lshift'),
-            nb_rshift=self.__complete_funcdef(nb_rshift, 'nb_rshift'),
-            nb_and=self.__complete_funcdef(nb_and, 'nb_and'),
-            nb_xor=self.__complete_funcdef(nb_xor, 'nb_xor'),
-            nb_or=self.__complete_funcdef(nb_or, 'nb_or'),
-            nb_int=self.__complete_funcdef(nb_int, 'nb_int'),
-            nb_float=self.__complete_funcdef(nb_float, 'nb_float'),
-            nb_inplace_add=self.__complete_funcdef(nb_inplace_add,
-                                                   'nb_inplace_add'),
-            nb_inplace_subtract=self.__complete_funcdef(nb_subtract,
-                                                        'nb_inplace_subtract'),
-            nb_inplace_multiply=self.__complete_funcdef(nb_inplace_multiply,
-                                                        'nb_multiply'),
-            nb_inplace_remainder=self.__complete_funcdef(nb_inplace_remainder,
-                                                         'nb_remainder'),
-            nb_inplace_power=self.__complete_funcdef(nb_inplace_power,
-                                                     'nb_inplace_power'),
-            nb_inplace_lshift=self.__complete_funcdef(nb_inplace_lshift,
-                                                      'nb_inplace_lshift'),
-            nb_inplace_rshift=self.__complete_funcdef(nb_inplace_rshift,
-                                                      'nb_inplace_rshift'),
-            nb_inplace_and=self.__complete_funcdef(nb_inplace_and,
-                                                   'nb_inplace_and'),
-            nb_inplace_xor=self.__complete_funcdef(nb_inplace_xor,
-                                                   'nb_inplace_xor'),
-            nb_inplace_or=self.__complete_funcdef(nb_inplace_or,
-                                                  'nb_inplace_or'),
-            nb_index=self.__complete_funcdef(nb_index, 'nb_index'),
-            nb_matrix_multiply=self.__complete_funcdef(nb_matrix_multiply,
-                                                       'nb_matrix_multiply'),
-            nb_inplace_matrix_multiply=self.__complete_funcdef(nb_inplace_matrix_multiply, 'nb_inplace_matrix_multiply')
-            )
+            nb_add=nb_add,
+            nb_subtract=nb_subtract,
+            nb_multiply=nb_multiply,
+            nb_remainder=nb_remainder, 
+            nb_divmod=nb_divmod,
+            nb_power=nb_power,
+            nb_negative=nb_negative,
+            nb_positive=nb_positive,
+            nb_absolute=nb_absolute,
+            nb_bool=nb_bool,
+            nb_invert=nb_invert, 
+            nb_lshift=nb_lshift, 
+            nb_rshift=nb_rshift, 
+            nb_and=nb_and,
+            nb_xor=nb_xor,
+            nb_or=nb_or,
+            nb_int=nb_int,
+            nb_float=nb_float,
+            nb_inplace_add=nb_inplace_add,
+            nb_inplace_subtract=nb_subtract,
+            nb_inplace_multiply=nb_inplace_multiply,
+            nb_inplace_remainder=nb_inplace_remainder,
+            nb_inplace_power=nb_inplace_power,
+            nb_inplace_lshift=nb_inplace_lshift,
+            nb_inplace_rshift=nb_inplace_rshift,
+            nb_inplace_and=nb_inplace_and,
+            nb_inplace_xor=nb_inplace_xor,
+            nb_inplace_or=nb_inplace_or,
+            nb_index=nb_index,
+            nb_matrix_multiply=nb_matrix_multiply,
+            nb_inplace_matrix_multiply=nb_inplace_matrix_multiply)
         
     def add_sequence(self, *,
                      name=None,
@@ -258,18 +283,15 @@ class MkPyCapi(CodeGen):
         if self.__sequence_gen is not None:
             raise ValueError('sequence has been already defined')
         self.__sequence_name = self.__complete(name, 'sequence')
-        self.__sequence_gen = SequenceGen(
-            sq_length=self.__complete_funcdef(sq_length, 'sq_length'),
-            sq_concat=self.__complete_funcdef(sq_concat, 'sq_concat'),
-            sq_repeat=self.__complete_funcdef(sq_repeat, 'sq_repeat'),
-            sq_item=self.__complete_funcdef(sq_item, 'sq_item'),
-            sq_ass_item=self.__complete_funcdef(sq_ass_item, 'sq_ass_item'),
-            sq_contains=self.__complete_funcdef(sq_contains, 'sq_contains'),
-            sq_inplace_concat=self.__complete_funcdef(sq_inplace_concat,
-                                                      'sq_inplace_concat'),
-            sq_inplace_repeat=self.__complete_funcdef(sq_inplace_repeat,
-                                                      'sq_inplace_repeat'),
-            )
+        self.__sequence_gen = SequenceGen(            
+            sq_length=sq_length,
+            sq_concat=sq_concat,
+            sq_repeat=sq_repeat,
+            sq_item=sq_item,
+            sq_ass_item=sq_ass_item,
+            sq_contains=sq_contains,
+            sq_inplace_concat=sq_inplace_concat,
+            sq_inplace_repeat=sq_inplace_repeat)
 
     def add_mapping(self, *,
                     name=None,
@@ -282,21 +304,31 @@ class MkPyCapi(CodeGen):
             raise ValueError('mapping has been already defined')
         self.__mapping_name = self.__complete(name, 'mapping')
         self.__mapping_gen = MappingGen(
-            mp_length=self.__complete_funcdef(mp_length, 'mp_length'),
-            mp_subscript=self.__omplete_funcdef(mp_subscript, 'mp_subscript'),
-            mp_ass_subscript=self.__complete_funcdef(mp_ass_subscript, 'mp_ass_subscript')
-            )
+            mp_length=mp_length,
+            mp_subscript=mp_subscript,
+            mp_ass_subscript=mp_ass_subscript)
+        
+    def add_init(self, *,
+                 func_name=None,
+                 gen_body,
+                 arg_list=[]):
+        """init 関数定義を追加する．
+        """
+        if self.__init_gen is not None:
+            raise ValueError('init has been already defined')
+        func_name = self.__complete(func_name, 'init_func')
+        self.__init_gen = InitProcGen(func_name, gen_body, arg_list)
         
     def add_new(self, *,
                 func_name=None,
-                arg_list=[],
-                gen_body):
+                gen_body,
+                arg_list=[]):
         """new 関数定義を追加する．
         """
-        if self.__new_def is not None:
+        if self.__new_gen is not None:
             raise ValueError('new has been already defined')
         func_name = self.__complete(func_name, 'new_func')
-        self.__new_def = FuncDefWithArgs(func_name, gen_body, arg_list)
+        self.__new_gen = NewFuncGen(func_name, gen_body, arg_list)
         
     def add_method(self, name, *,
                    func_name=None,
@@ -566,58 +598,59 @@ class MkPyCapi(CodeGen):
     def make_extra_code(self, writer):
         if self.__preamble_gen is not None:
             self.__preamble_gen(writer)
-        
-        writer.gen_dealloc(self.__dealloc_def,
-                           description='終了関数')
-        writer.gen_reprfunc(self.__repr_def,
-                            description='repr 関数')
+        gen_func(self.__dealloc_gen, writer,
+                 description='終了関数')
+        gen_func(self.__repr_gen, writer, 
+                 description='repr 関数')
         writer.gen_number(self.__number_gen, self.__number_name)
         writer.gen_sequence(self.__sequence_gen, self.__sequence_name)
         writer.gen_mapping(self.__mapping_gen, self.__mapping_name)
-        writer.gen_hashfunc(self.__hash_def,
-                            description='hash 関数')
-        writer.gen_reprfunc(self.__str_def,
-                            description='str 関数')
-        writer.gen_richcmpfunc(self.__richcompare_def,
-                               description='richcompare 関数')
+        gen_func(self.__hash_gen, writer, 
+                 description='hash 関数')
+        gen_func(self.__call_gen, writer,
+                 description='call 関数')
+        gen_func(self.__str_gen, writer, 
+                 description='str 関数')
+        gen_func(self.__richcompare_gen, writer,
+                 description='richcompare 関数')
         writer.gen_methods(self.__method_gen, self.__method_name)
         writer.gen_getset(self.__getset_gen, self.__getset_name)
-        writer.gen_initproc(self.__init_def,
-                            description='init 関数')
-        writer.gen_newfunc(self.__new_def,
-                           description='new 関数')
+        gen_func(self.__init_gen, writer,
+                 description='init 関数')
+        gen_func(self.__new_gen, writer,
+                 description='new 関数')
         
     def make_tp_init(self, writer):
         tp_list = []
         tp_list.append(('name', f'"{self.pyname}"'))
         tp_list.append(('basicsize', self.basicsize))
         tp_list.append(('itemsize', self.itemsize))
-        if self.__dealloc_def is not None:
-            tp_list.append(('dealloc', f'{self.__dealloc_def.name}'))
-        if self.__repr_def is not None:
-            tp_list.append(('repr', f'{self.__repr_def.name}'))
+        if self.__dealloc_gen is not None:
+            tp_list.append(('dealloc', self.__dealloc_gen.name))
+        if self.__repr_gen is not None:
+            tp_list.append(('repr', self.__repr_gen.name))
         if self.__number_name is not None:
-            tp_list.append(('as_number', f'{self.__number_name}'))
+            tp_list.append(('as_number', self.__number_name))
         if self.__sequence_name is not None:
-            tp_list.append(('as_sequence', f'{self.__sequence_name}'))
+            tp_list.append(('as_sequence', self.__sequence_name))
         if self.__mapping_name is not None:
-            tp_list.append(('as_mapping', f'{self.__mapping_name}'))
-        if self.__hash_def is not None:
-            tp_list.append(('hash', f'{self.__hash_def.name}'))
-        if self.__call_def is not None:
-            tp_list.append(('call', f'{self.__call_def.name}'))
-        if self.__str_def is not None:
-            tp_list.append(('str', f'{self.__str_def.name}'))
+            tp_list.append(('as_mapping', self.__mapping_name))
+        if self.__hash_gen is not None:
+            tp_list.append(('hash', self.__hash_gen.name))
+        if self.__call_gen is not None:
+            tp_list.append(('call', self.__call_gen.name))
+        if self.__str_gen is not None:
+            tp_list.append(('str', self.__str_gen.name))
         tp_list.append(('flags', self.flags))
         tp_list.append(('doc', f'PyDoc_STR("{self.doc_str}")'))
-        if self.__richcompare_def is not None:
-            tp_list.append(('richcompare', f'{self.__richcompare_def.name}'))
-        tp_list.append(('methods', f'{self.__method_name}'))
-        tp_list.append(('getset', f'{self.__getset_name}'))
-        if self.__init_def is not None:
-            tp_list.append(('init', f'{self.__init_def.name}'))
-        if self.__new_def is not None:
-            tp_list.append(('new', f'{self.__new_def.name}'))
+        if self.__richcompare_gen is not None:
+            tp_list.append(('richcompare', self.__richcompare_gen.name))
+        tp_list.append(('methods', self.__method_name))
+        tp_list.append(('getset', self.__getset_name))
+        if self.__init_gen is not None:
+            tp_list.append(('init', self.__init_gen.name))
+        if self.__new_gen is not None:
+            tp_list.append(('new', self.__new_gen.name))
         for name, rval in tp_list:
             writer.gen_assign(f'{self.typename}.tp_{name}', f'{rval}')
 
