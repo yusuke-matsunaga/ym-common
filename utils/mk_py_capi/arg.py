@@ -7,29 +7,34 @@
 :copyright: Copyright (C) 2025 Yusuke Matsunaga, All rights reserved.
 """
 
-from mk_py_capi.codegenbase import CodeGenBase
 
+def make_vardef(vartype, varname, vardefault):
+    vardef = f'{vartype} {varname}'
+    if vardefault is not None:
+        vardef += f' = {vardefault}'
+    return vardef
 
-class ArgBase(CodeGenBase):
+def make_varref(varname):
+    return f'&{varname}'
+
+    
+class ArgBase:
     """引数の基底クラス
     """
 
-    def __init__(self, parent, *,
+    def __init__(self, *,
                  name=None,
                  option=False,
                  pchar,
-                 cvarname,
-                 cvartype,
-                 cvardefault=None):
-        super().__init__(parent)
+                 vardef,
+                 varref):
         self.name = name
         self.option = option
         self.pchar = pchar
-        self.cvarname = cvarname
-        self.cvartype = cvartype
-        self.cvardefault = cvardefault
+        self.vardef = vardef
+        self.varref = varref
     
-    def gen_conv(self):
+    def gen_conv(self, gen):
         pass
 
 
@@ -37,47 +42,30 @@ class RawArg(ArgBase):
     """PyArg_Parse で直接変換するタイプの引数を表すクラス
     """
 
-    def __init__(self, parent, *,
+    def __init__(self, *,
                  name=None,
                  option=False,
                  pchar,
-                 cvarname,
                  cvartype,
+                 cvarname,
                  cvardefault=None):
-        super().__init__(parent,
-                         name=name,
+        super().__init__(name=name,
                          option=option,
                          pchar=pchar,
-                         cvarname=cvarname,
-                         cvartype=cvartype,
-                         cvardefault=cvardefault)
-
-    def gen_vardef(self):
-        """変数の宣言を行う．
-        """
-        line = f'{self.cvartype} {self.cvarname}'
-        if self.cvardefault is not None:
-            line += f' = {self.cvardefault}'
-        line += ';'
-        self._write_line(line)
-
-    def gen_varref(self):
-        """PyArg_Parse() 用の変数の参照を返す．
-        """
-        return f'&{self.cvarname}'
+                         vardef=make_vardef(cvartype, cvarname, cvardefault),
+                         varref=make_varref(cvarname))
 
     
 class IntArg(RawArg):
     """int 型の引数を表すクラス
     """
 
-    def __init__(self, parent, *,
+    def __init__(self, *,
                  name=None,
                  option=False,
                  cvarname,
                  cvardefault=None):
-        super().__init__(parent,
-                         name=name,
+        super().__init__(name=name,
                          option=option,
                          pchar='i',
                          cvartype='int',
@@ -89,13 +77,12 @@ class DoubleArg(RawArg):
     """double 型の引数を表すクラス
     """
 
-    def __init__(self, parent, *,
+    def __init__(self, *,
                  name=None,
                  option=False,
                  cvarname,
                  cvardefault=None):
-        super().__init__(parent,
-                         name=name,
+        super().__init__(name=name,
                          option=option,
                          pchar='d',
                          cvartype='double',
@@ -103,157 +90,210 @@ class DoubleArg(RawArg):
                          cvardefault=cvardefault)
 
 
+class RawObjArg(RawArg):
+    """PyObject* 型の引数を表すクラス
+    """
+
+    def __init__(self, *,
+                 name=None,
+                 option=False,
+                 cvarname,
+                 cvardefault='nullptr'):
+        super().__init__(parent,
+                         name=name,
+                         option=option,
+                         pchar='O',
+                         cvartype='PyObject*',
+                         cvarname=cvarname,
+                         cvardefault=cvardefault)
+
+
+class ConvFunc:
+    """変換を行う関数
+    """
+    
+    def __init__(self,
+                 cvartype,
+                 cvarname,
+                 cvardefault):
+        self.cvartype = cvartype
+        self.cvarname = cvarname
+        self.cvardefault = cvardefault
+        
+    def __call__(self, writer):
+        line = make_vardef(self.cvartype, self.cvarname, self.cvardefault) + ';'
+        writer.write_line(line)
+        self.conv_body(writer)
+
+        
 class ConvArg(ArgBase):
     """一旦読み込んだ値を変換するタイプの引数を表すクラス
     """
 
-    def __init__(self, parent, *,
+    def __init__(self, *,
                  name=None,
                  option=False,
                  pchar,
-                 cvarname,
                  cvartype,
+                 cvarname,
                  cvardefault=None,
-                 tmpname=None,
                  tmptype,
-                 tmpdefault=None):
-        super().__init__(parent,
-                         name=name,
+                 tmpname,
+                 tmpdefault=None,
+                 conv_func):
+        super().__init__(name=name,
                          option=option,
                          pchar=pchar,
-                         cvarname=cvarname,
-                         cvartype=cvartype,
-                         cvardefault=cvardefault)
-        if tmpname is None:
-            tmpname = f'{cvarname}_tmp'
-        self.tmpname = tmpname
-        self.tmptype = tmptype
-        self.tmpdefault = tmpdefault
+                         vardef=make_vardef(tmptype, tmpname, tmpdefault),
+                         varref=make_varref(tmpname))
+        self.conv_func = conv_func
 
-    def gen_vardef(self):
-        """変数の宣言を行う．
-        """
-        line = f'{self.tmptype} {self.tmpname}'
-        if self.tmpdefault is not None:
-            line += f' = {self.tmpdefault}'
-        line += ';'
-        self._write_line(line)
-
-    def gen_varref(self):
-        """PyArg 用の変数参照を返す．
-        """
-        return f'&{self.tmpname}'
-
-    def gen_conv(self):
-        line = f'{self.cvartype} {self.cvarname}'
-        if self.cvardefault is not None:
-            line += f' = {self.cvardefault}'
-        line += ';'
-        self._write_line(line)
-        self.gen_conv_body()
+    def gen_conv(self, writer):
+        self.conv_func(writer)
         
 
 class BoolArg(ConvArg):
     """bool 型の引数を表すクラス
     """
 
-    def __init__(self, parent, *,
+    @staticmethod
+    def make_tmpname(cvarname):
+        return f'{cvarname}_tmp'
+    
+    class ConvFunc(ConvFunc):
+
+        def __init__(self, *,
+                     cvarname,
+                     cvardefault):
+            super().__init__(cvartype='bool',
+                             cvarname=cvarname,
+                             cvardefault=cvardefault)
+
+        def conv_body(self, writer):
+            tmpname = BoolArg.make_tmpname(self.cvarname)
+            with writer.gen_if_block(f'{tmpname} != -1'):
+                writer.gen_assign(f'{self.cvarname}',
+                                  f'static_cast<bool>({tmpname})')
+                     
+    def __init__(self, *,
                  name=None,
                  option=False,
                  cvarname,
                  cvardefault=None):
-        super().__init__(parent,
-                         name=name,
+        tmpname = BoolArg.make_tmpname(cvarname)
+        super().__init__(name=name,
                          option=option,
                          pchar='p',
                          cvartype='bool',
                          cvarname=cvarname,
                          cvardefault=cvardefault,
                          tmptype='int',
-                         tmpdefault='-1')
-
-    def gen_conv_body(self):
-        with self.gen_if_block(f'{self.tmpname} != -1'):
-            self.gen_assign(f'{self.cvarname}',
-                            f'static_cast<bool>({self.tmpname})')
+                         tmpname=tmpname,
+                         tmpdefault='-1',
+                         conv_func=BoolArg.ConvFunc(cvarname=cvarname,
+                                                    cvardefault=cvardefault))
 
 
 class StringArg(ConvArg):
     """string 型の引数を表すクラス
     """
 
-    def __init__(self, parent, *,
+    @staticmethod
+    def make_tmpname(cvarname):
+        return f'{cvarname}_tmp'
+    
+    class ConvFunc(ConvFunc):
+
+        def __init__(self, *,
+                     cvarname,
+                     cvardefault):
+            super().__init__(cvartype='std::string',
+                             cvarname=cvarname,
+                             cvardefault=cvardefault)
+
+        def conv_body(self, writer):
+            tmpname = StringArg.make_tmpname(self.cvarname)
+            with writer.gen_if_block(f'{tmpname} != nullptr'):
+                writer.gen_assign(f'{self.cvarname}',
+                                  f'std::string({tmpname})')
+            
+    def __init__(self, *,
                  name=None,
                  option=False,
                  cvarname,
                  cvardefault=None):
-        super().__init__(parent,
-                         name=name,
+        tmpname = StringArg.make_tmpname(cvarname)
+        super().__init__(name=name,
                          option=option,
                          pchar='s',
                          cvartype='std::string',
                          cvarname=cvarname,
                          cvardefault=cvardefault,
                          tmptype='const char*',
-                         tmpdefault='nullptr')
-
-    def gen_conv_body(self):
-        with self.gen_if_block(f'{self.tmpname} != nullptr'):
-            self.gen_assign(f'{self.cvarname}',
-                            f'std::string({self.tmpname})')
-
-
-class ObjArg(ConvArg):
-    """PyObject* 型の引数を表すクラス
-    """
-
-    def __init__(self, parent, *,
-                 name=None,
-                 option=False,
-                 cvarname,
-                 cvartype,
-                 cvardefault=None):
-        super().__init__(parent,
-                         name=name,
-                         option=option,
-                         pchar='O',
-                         cvarname=cvarname,
-                         cvartype=cvartype,
-                         cvardefault=cvardefault,
-                         tmptype='PyObject*',
-                         tmpdefault='nullptr')
-        
-    def gen_conv_body(self):
-        with self.gen_if_block(f'{self.tmpname} != nullptr'):
-            self.gen_obj_conv()
+                         tmpname=tmpname,
+                         tmpdefault='nullptr',
+                         conv_func=StringArg.ConvFunc(cvarname=cvarname,
+                                                      cvardefault=cvardefault))
             
 
-class TypedObjArg(ConvArg):
+class ObjArg(ArgBase):
     """PyObject* 型の引数を表すクラス
     """
-
-    def __init__(self, parent, *,
+                             
+    def __init__(self, *,
                  name=None,
                  option=False,
-                 ptype,
+                 cvartype,
                  cvarname,
-                 cvartype):
-        super().__init__(parent,
-                         name=name,
+                 cvardefault,
+                 pyclassname):
+        tmptype = 'PyObject*'
+        tmpname = f'{cvarname}_obj'
+        super().__init__(name=name,
+                         option=option,
+                         pchar='O',
+                         vardef=make_vardef(tmptype, tmpname, 'nullptr'),
+                         varref=make_varref(tmpname))
+        self.cvartype = cvartype
+        self.cvarname = cvarname
+        self.cvardefault = cvardefault
+        self.tmpname = tmpname
+        self.pyclassname = pyclassname
+        
+    def gen_conv(self, writer):
+        line = make_vardef(self.cvartype, self.cvarname, self.cvardefault) + ';'
+        writer.write_line(line)
+        with writer.gen_if_block(f'{self.tmpname} != nullptr'):
+            with writer.gen_if_block(f'!{self.pyclassname}::FromPyObject({self.tmpname}, {self.cvarname})'):
+                writer.gen_type_error(f'could not convert to {self.cvartype}')
+            
+
+class TypedObjArg(ArgBase):
+    """PyObject* 型の引数を表すクラス
+    """
+                             
+    def __init__(self, *,
+                 name=None,
+                 option=False,
+                 cvartype,
+                 cvarname,
+                 cvardefault,
+                 pyclassname):
+        tmptype = 'PyObject*'
+        tmpname = f'{cvarname}_obj'
+        super().__init__(name=name,
                          option=option,
                          pchar='O!',
-                         ptype=ptype,
-                         cvarname=cvarname,
-                         cvartype=cvartype,
-                         cvarefault=cvardefault,
-                         tmptype='PyObject*',
-                         tmpdefault='nullptr')
-
-    def gen_varref(self):
-        return f'{self.ptype}, &{self.tmpname}'
+                         vardef=make_vardef(tmptype, tmpname, 'nullptr'),
+                         varref=f'{pyclassname}::_typeobject(), &{tmpname}')
+        self.cvartype = cvartype
+        self.cvarname = cvarname
+        self.cvardefault = cvardefault
+        self.tmpname = tmpname
         
-    def gen_conv_body(self):
-        with self.gen_if_block(f'{self.tmpname} != nullptr'):
-            with self.gen_if_block(f'!{self.pyclassname}::FromPyObject({self.tmpname}, {self.cvarname})'):
-                self.gen_type_error(f'could not convert to {self.classname}')
-                self.gen_return('nullptr')
+    def gen_conv(self, writer):
+        line = make_vardef(self.cvartype, self.cvarname, self.cvardefault) + ';'
+        writer.write_line(line)
+        with writer.gen_if_block(f'{self.tmpname} != nullptr'):
+            with writer.gen_if_block(f'!{self.pyclassname}::FromPyObject({self.tmpname}, {self.cvarname})'):
+                writer.gen_type_error(f'could not convert to {self.cvartype}')
