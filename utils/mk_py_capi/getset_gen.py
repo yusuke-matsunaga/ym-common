@@ -35,17 +35,17 @@ class GetSetGen:
         
     def add_getter(self, func_name, *,
                    has_closure=False,
-                   gen_body):
+                   func_body):
         """getter 定義を追加する．
         """
-        self.__getter_list.append(GetSet(func_name, gen_body, has_closure))
+        self.__getter_list.append(GetSet(func_name, func_body, has_closure))
 
     def add_setter(self, func_name, *,
                    has_closure=False,
-                   gen_body):
+                   func_body):
         """setter 定義を追加する．
         """
-        self.__setter_list.append(GetSet(func_name, gen_body, has_closure))
+        self.__setter_list.append(GetSet(func_name, func_body, has_closure))
 
     def add_attr(self, name, *,
                  getter_name=None,

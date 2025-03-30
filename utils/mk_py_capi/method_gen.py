@@ -8,15 +8,18 @@
 """
 
 from collections import namedtuple
+from .utils import analyze_args
 
 
 # メソッドを表す型
 Method = namedtuple('Method',
                     ['name',
-                     'func_def',
+                     'func_name',
+                     'arg_list',
                      'is_static',
                      'has_args',
                      'has_keywords',
+                     'func_body',
                      'doc_str'])
 
 class MethodGen:
@@ -28,16 +31,19 @@ class MethodGen:
 
     def add(self, *,
             name,
-            func_def,
+            func_name,
+            arg_list,
             is_static,
-            has_args,
-            has_keywords,
+            func_body,
             doc_str):
+        has_args, has_keywords = analyze_args(arg_list)
         self.__method_list.append(Method(name=name,
-                                         func_def=func_def,
+                                         func_name=func_name,
+                                         arg_list=arg_list,
                                          is_static=is_static,
                                          has_args=has_args,
                                          has_keywords=has_keywords,
+                                         func_body=func_body,
                                          doc_str=doc_str))
                                          
     def __call__(self, writer, name):
@@ -56,13 +62,12 @@ class MethodGen:
                 args = [ arg0, arg1, arg2 ]
             else:
                 args = [ arg0, arg1 ]
-            func_def = method.func_def
             with writer.gen_func_block(description=method.doc_str,
                                        return_type='PyObject*',
-                                       func_name=func_def.name,
+                                       func_name=method.func_name,
                                        args=args):
-                writer.gen_func_preamble(func_def.arg_list)
-                func_def.func(writer)
+                writer.gen_func_preamble(method.arg_list)
+                method.func_body(writer)
 
         # メソッドテーブルを生成する．
         writer.gen_CRLF()
@@ -75,7 +80,7 @@ class MethodGen:
                 line = ''
                 if method.has_keywords:
                     line = 'reinterpret_cast<PyCFunction>('
-                line += method.func_def.name
+                line += method.func_name
                 if method.has_keywords:
                     line += ')'
                 line += ','

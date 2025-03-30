@@ -19,7 +19,7 @@ from .mapping_gen import MappingGen
 from .method_gen import MethodGen
 from .getset_gen import GetSetGen
 from .utils import FuncDef, FuncDefWithArgs
-from .utils import gen_func, analyze_args
+from .utils import gen_func
 from .cxxwriter import CxxWriter
 import re
 import os
@@ -125,8 +125,8 @@ class MkPyCapi(CodeGen):
         self.__tp_init_pat = re.compile('^(\s*)%%TP_INIT_CODE%%$')
         self.__ex_init_pat = re.compile('^(\s*)%%EX_INIT_CODE%%$')
 
-    def add_preamble(self, gen_body):
-        self.__preamble_gen = gen_body
+    def add_preamble(self, func_body):
+        self.__preamble_gen = func_body
         
     def add_dealloc(self, *,
                     func_name=None,
@@ -310,64 +310,62 @@ class MkPyCapi(CodeGen):
         
     def add_init(self, *,
                  func_name=None,
-                 gen_body,
+                 func_body,
                  arg_list=[]):
         """init 関数定義を追加する．
         """
         if self.__init_gen is not None:
             raise ValueError('init has been already defined')
         func_name = self.__complete(func_name, 'init_func')
-        self.__init_gen = InitProcGen(func_name, gen_body, arg_list)
+        self.__init_gen = InitProcGen(func_name, func_body, arg_list)
         
     def add_new(self, *,
                 func_name=None,
-                gen_body,
+                func_body,
                 arg_list=[]):
         """new 関数定義を追加する．
         """
         if self.__new_gen is not None:
             raise ValueError('new has been already defined')
         func_name = self.__complete(func_name, 'new_func')
-        self.__new_gen = NewFuncGen(func_name, gen_body, arg_list)
+        self.__new_gen = NewFuncGen(func_name, func_body, arg_list)
         
     def add_method(self, name, *,
                    func_name=None,
                    arg_list=[],
                    is_static=False,
-                   gen_body,
+                   func_body,
                    doc_str=''):
         """メソッド定義を追加する．
         """
         # デフォルトの関数名は Python のメソッド名をそのまま用いる．
         func_name = self.__complete(func_name, name)
-        func_def = FuncDefWithArgs(func_name, gen_body, arg_list)
-        has_args, has_keywords = analyze_args(arg_list)
         self.__method_gen.add(name=name,
-                              func_def=func_def,
+                              func_name=func_name,
+                              arg_list=arg_list,
                               is_static=is_static,
-                              has_args=has_args,
-                              has_keywords=has_keywords,
+                              func_body=func_body,
                               doc_str=doc_str)
 
     def add_getter(self, func_name, *,
                    has_closure=False,
-                   gen_body):
+                   func_body):
         """getter 定義を追加する．
         """
         self.__check_name(func_name)
         self.__getset_gen.add_getter(func_name,
                                      has_closure=has_closure,
-                                     gen_body=gen_body)
+                                     func_body=func_body)
 
     def add_setter(self, func_name, *,
                    has_closure=False,
-                   gen_body):
+                   func_body):
         """setter 定義を追加する．
         """
         self.__check_name(func_name)
         self.__getset_gen.add_setter(func_name,
                                      has_closure=has_closure,
-                                     gen_body=gen_body)
+                                     func_body=func_body)
 
     def add_attr(self, name, *,
                  getter_name=None,
@@ -382,24 +380,24 @@ class MkPyCapi(CodeGen):
                                    closure=closure,
                                    doc_str=doc_str)
 
-    def add_conv(self, gen_body=None):
-        if gen_body is None:
+    def add_conv(self, func_body=None):
+        if func_body is None:
             # デフォルト実装
             def conv_gen(writer):
                 writer.write_line(f'new (&obj1->mVal) {self.classname}(val);')
-            gen_body = conv_gen
-        self.__conv_gen = gen_body
+            func_body = conv_gen
+        self.__conv_gen = func_body
 
-    def add_deconv(self, gen_body=None):
-        if gen_body is None:
+    def add_deconv(self, func_body=None):
+        if func_body is None:
             # デフォルト実装
             def deconv_gen(writer):
                 with writer.gen_if_block(f'{gen.pyclassname}::Check(obj)'):
                     writer.gen_assign('val', f'{gen.pyclassname}::_get_ref(obj)')
                     writer.gen_return('true')
                 writer.gen_return('false')
-            gen_body = deconv_gen
-        self.__deconv_gen = gen_body
+            func_body = deconv_gen
+        self.__deconv_gen = func_body
                 
     def make_header(self, fout=sys.stdout):
         """ヘッダファイルを出力する．"""
@@ -480,9 +478,10 @@ class MkPyCapi(CodeGen):
         else:
             writer.gen_dox_comment(f'@brief {self.classname} を PyObject* に変換するファンクタクラス')
             with writer.gen_struct_block('Conv'):
+                args = ('const ElemType& val', )
                 writer.gen_func_declaration(return_type='PyObject*',
                                             func_name='operator()',
-                                            args=['const ElemType& val'])
+                                            args=args)
 
     def deconv_def_gen(self, writer):
         if self.__deconv_gen is None:
@@ -493,10 +492,11 @@ class MkPyCapi(CodeGen):
             writer.gen_CRLF()
             writer.gen_dox_comment(f'@brief PyObject* から {self.classname} を取り出すファンクタクラス')
             with writer.gen_struct_block('Deconv'):
+                args = ('PyObject* obj',
+                        'ElemType& val')
                 writer.gen_func_declaration(return_type='bool',
                                             func_name='operator()',
-                                            args=['PyObject* obj',
-                                                  'ElemType& val'])
+                                            args=args)
                 
     def to_def_gen(self, writer):
         if self.__conv_gen is not None:
@@ -656,10 +656,12 @@ class MkPyCapi(CodeGen):
 
     def make_conv(self, writer):
         description = f'{self.classname} を PyObject に変換する．'
+        func_name = f'{self.pyclassname}::Conv::operator()'
+        args = (f'const {self.classname}& val', )
         with writer.gen_func_block(description=description,
                                    return_type='PyObject*',
-                                   func_name=f'{self.pyclassname}::Conv::operator()',
-                                   args=(f'const {self.classname}& val', )):
+                                   func_name=func_name,
+                                   args=args):
             writer.gen_auto_assign('type', f'{self.pyclassname}::_typeobject()')
             writer.gen_auto_assign('obj', 'type->tp_alloc(type, 0)')
             writer.gen_auto_assign('obj1', f'reinterpret_cast<{self.objectname}*>(obj)')
@@ -668,20 +670,14 @@ class MkPyCapi(CodeGen):
 
     def make_deconv(self, writer):
         description = f'PyObject を {self.classname} に変換する．'
+        func_name = f'{self.pyclassname}::Deconv::operator()'
+        args = ('PyObject* obj',
+                f'{self.classname}& val')
         with writer.gen_func_block(description=description,
                                    return_type='bool',
-                                   func_name=f'{self.pyclassname}::Deconv::operator()',
-                                   args=('PyObject* obj',
-                                         f'{self.classname}& val')):
+                                   func_name=func_name,
+                                   args=args):
             self.__deconv_gen(writer)
-
-    def __complete_funcdef(self, funcdef, default_name):
-        """FuncDef の名前を補完する．
-        """
-        if funcdef is None:
-            return None
-        name = self.__complete(funcdef.name, default_name)
-        return FuncDef(name, funcdef.func)
     
     def __complete(self, name, default_name):
         """名前がない場合に名前を補完する．
