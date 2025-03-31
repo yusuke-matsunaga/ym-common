@@ -25,9 +25,7 @@ class DeallocGen(FuncDef):
                                    return_type='void',
                                    func_name=self.name,
                                    args=args):
-            writer.gen_obj_conv(varname='obj')
             self.func(writer)
-            writer.write_line('PyTYPE(self)->tp_free(self)')
 
 
 class ReprFuncGen(FuncDef):
@@ -45,9 +43,7 @@ class ReprFuncGen(FuncDef):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=args):
-            writer.gen_ref_conv(refname='val')
-            writer.gen_auto_assign('str_val', self.func('val'))
-            writer.gen_return_py_string('str_val')
+            self.func(writer)
 
 
 class HashFuncGen(FuncDef):
@@ -65,9 +61,7 @@ class HashFuncGen(FuncDef):
                                    return_type='Py_hash_t',
                                    func_name=self.name,
                                    args=args):
-            writer.gen_ref_conv(refname='val')
-            writer.gen_auto_assign('hash_val', self.func('val'))
-            writer.gen_return_buildvalue('k', ['hash_val'])
+            self.func(writer)
 
 
 class RichcmpFuncGen(FuncDef):
@@ -146,7 +140,6 @@ class LenFuncGen(FuncDef):
                                    return_type='Py_ssize_t',
                                    func_name=self.name,
                                    args=args):
-            writer.gen_ref_conv(refname='val')
             self.func(writer)
 
 
@@ -165,7 +158,6 @@ class InquiryGen(FuncDef):
                                    return_type='int',
                                    func_name=self.name,
                                    args=args):
-            writer.gen_ref_conv(refname='val')
             self.func(writer)
 
 

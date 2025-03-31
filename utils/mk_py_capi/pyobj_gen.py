@@ -1,13 +1,17 @@
 #! /usr/bin/env python3
 
-""" MkPyCapi のクラス定義ファイル
+""" PyObjGen のクラス定義ファイル
 
-:file: mk_py_capi.py
+:file: pyobj_gen.py
 :author: Yusuke Matsunaga (松永 裕介)
 :copyright: Copyright (C) 2025 Yusuke Matsunaga, All rights reserved.
 """
 
-from .codegen import CodeGen
+from collections import namedtuple
+import re
+import os
+import datetime
+import sys
 from .funcgen import DeallocGen
 from .funcgen import ReprFuncGen
 from .funcgen import HashFuncGen
@@ -21,16 +25,22 @@ from .getset_gen import GetSetGen
 from .utils import FuncDef, FuncDefWithArgs
 from .utils import gen_func
 from .cxxwriter import CxxWriter
-import re
-import os
-import datetime
-import sys
 
 
-class MkPyCapi(CodeGen):
-    """Python 拡張用のヘッダ/ソースファイルを生成するためのクラス
+# 基本情報
+PyObjInfo = namedtuple('PyObjInfo',
+                       ['classname',
+                        'pyclassname',
+                        'namespace',
+                        'typename',
+                        'objectname',
+                        'pyname'])
+
+
+class PyObjGen(PyObjInfo):
+    """PyObject の拡張クラスを生成するクラス
     """
-
+    
     def __new__(cls, *,
                 classname,
                 pyclassname=None,
@@ -40,14 +50,19 @@ class MkPyCapi(CodeGen):
                 pyname,
                 header_include_files=[],
                 source_include_files=[]):
-        self = super().__new__(cls,
-                               classname=classname,
-                               pyclassname=pyclassname,
-                               namespace=namespace,
-                               typename=typename,
-                               objectname=objectname,
-                               pyname=pyname)
-        return self
+        if pyclassname is None:
+            pyclassname = f'Py{classname}'
+        if typename is None:
+            typename = f'{classname}_Type'
+        if objectname is None:
+            objectname = f'{classname}_Object'
+        return super().__new__(cls,
+                               classname,
+                               pyclassname,
+                               namespace,
+                               typename,
+                               objectname,
+                               pyname)
     
     def __init__(self, *,
                  classname,
@@ -139,8 +154,9 @@ class MkPyCapi(CodeGen):
         if dealloc_func is None:
             # デフォルト実装
             def default_func(writer):
-                self.gen_obj_conv(varname='obj')
+                self.gen_obj_conv(writer, varname='obj')
                 writer.write_line(f'obj->mVal.~{self.classname}()')
+                writer.write_line('PyTYPE(self)->tp_free(self)')
             dealloc_func = default_func
         self.__dealloc_gen = DeallocGen(func_name, dealloc_func)
 
@@ -152,7 +168,11 @@ class MkPyCapi(CodeGen):
         if self.__repr_gen is not None:
             raise ValueError('repr has been already defined')
         func_name = self.__complete(func_name, 'repr_func')
-        self.__repr_gen = ReprFuncGen(func_name, repr_func)
+        def repr_gen(writer):
+            self.gen_ref_conv(writer, refname='val')
+            writer.gen_auto_assign('str_val', repr_func('val'))
+            writer.gen_return_py_string('str_val')
+        self.__repr_gen = ReprFuncGen(func_name, repr_gen)
 
     def add_hash(self, *,
                  func_name=None,
@@ -162,7 +182,11 @@ class MkPyCapi(CodeGen):
         if self.__hash_gen is not None:
             raise ValueError('hash has been already defined')
         func_name = self.__complete(func_name, 'hash_func')
-        self.__hash_gen = HashFuncGen(func_name, hash_func)
+        def hash_gen(writer):
+            writer.gen_ref_conv(refname='val')
+            writer.gen_auto_assign('hash_val', hash_func('val'))
+            writer.gen_return_buildvalue('k', ['hash_val'])
+        self.__hash_gen = HashFuncGen(func_name, hash_gen)
 
     def add_call(self, *,
                  func_name=None,
@@ -709,3 +733,19 @@ class MkPyCapi(CodeGen):
         """
         basedir = os.path.dirname(__file__)
         return os.path.join(basedir, filename)
+
+    def gen_obj_conv(self, writer, *,
+                     objname='self',
+                     varname):
+        """PyObject* から自分のオブジェクト型に変換するコードを生成する．
+        """
+        writer.gen_auto_assign(varname,
+                               f'reinterpret_cast<{self.objectname}*>({objname})')
+
+    def gen_ref_conv(self, writer, *,
+                     objname='self',
+                     refname):
+        """PyObject* から値の参照を取り出すコードを生成する．
+        """
+        writer.gen_autoref_assign(refname,
+                                  f'{self.pyclassname}::_get_ref({objname})')

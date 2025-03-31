@@ -7,7 +7,6 @@
 :copyright: Copyright (C) 2025 Yusuke Matsunaga, All rights reserved.
 """
 
-from .codegen import CodeGen
 from .utils import analyze_args
 
 
@@ -37,21 +36,11 @@ class CodeBlock:
         self.__writer.write_line(line)
 
         
-class CxxWriter(CodeGen):
+class CxxWriter:
     """C++ のコードを出力するクラス
     """
 
-    def __new__(cls, core_info, *, fout):
-        self = super().__new__(cls,
-                               classname=core_info.classname,
-                               pyclassname=core_info.pyclassname,
-                               namespace=core_info.namespace,
-                               typename=core_info.typename,
-                               objectname=core_info.objectname,
-                               pyname=core_info.pyname)
-        return self
-
-    def __init__(self, core_info, *, fout):
+    def __init__(self, *, fout):
         # 出力先のファイルオブジェクト
         self.__fout = fout
 
@@ -166,22 +155,6 @@ class CxxWriter(CodeGen):
 
     def gen_getset(self, getset_gen, getset_name):
         getset_gen(self, getset_name)
-
-    def gen_obj_conv(self, *,
-                     objname='self',
-                     varname):
-        """PyObject* から自分のオブジェクト型に変換するコードを生成する．
-        """
-        self.gen_auto_assign(varname,
-                             f'reinterpret_cast<{self.objectname}*>({objname})')
-
-    def gen_ref_conv(self, *,
-                     objname='self',
-                     refname):
-        """PyObject* から値の参照を取り出すコードを生成する．
-        """
-        self.gen_autoref_assign(refname,
-                                f'{self.pyclassname}::_get_ref({objname})')
 
     def gen_vardecl(self, *,
                     typename,
