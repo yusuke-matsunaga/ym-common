@@ -7,7 +7,6 @@
 :copyright: Copyright (C) 2025 Yusuke Matsunaga, All rights reserved.
 """
 
-from .mk_py_capi import MkPyCapi, FuncDef
 from .pyobj_gen import PyObjGen
 from .arg import IntArg, DoubleArg, RawObjArg
 from .arg import BoolArg, StringArg, ObjArg, TypedObjArg

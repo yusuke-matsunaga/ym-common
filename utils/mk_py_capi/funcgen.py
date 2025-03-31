@@ -7,8 +7,6 @@
 :copyright: Copyright (C) 2025 Yusuke Matsunaga, All rights reserved.
 """
 
-from .utils import FuncDef, FuncDefWithArgs
-
 
 class FuncBase:
     """関数の基本情報を表すクラス
@@ -58,6 +56,13 @@ class ReprFuncGen(FuncBase):
     """
     
     def __init__(self, gen, name, body):
+        if body is None:
+            # デフォルト実装
+            def default_body(writer):
+                writer.gen_comment("val を表す文字列を str_val に入れる．")
+                writer.gen_comment("このコードは実際には機能しない．")
+                writer.gen_auto_assign('str_val', 'val.repr_str()')
+            body = default_body
         super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
@@ -77,6 +82,13 @@ class HashFuncGen(FuncBase):
     """
     
     def __init__(self, gen, name, body):
+        if body is None:
+            # デフォルト実装
+            def default_body(writer):
+                writer.gen_comment("val のハッシュ値を hash_val に入れる．")
+                writer.gen_comment("このコードは実際には機能しない．")
+                writer.gen_auto_assign('hash_val', 'val.hash()')
+            body = default_body
         super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
@@ -96,7 +108,13 @@ class RichcmpFuncGen(FuncBase):
     """
     
     def __init__(self, gen, name, body):
-        super().__new__(cls, name, body)
+        if body is None:
+            # デフォルト実装
+            # この関数は実際には機能しない．
+            def default_body(writer):
+                writer.gen_comment('self と other の比較結果を返す．')
+            body = default_body
+        super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
                  description=None):
@@ -113,7 +131,13 @@ class InitProcGen(FuncWithArgs):
     """initproc 型の関数を生成するクラス
     """
     
-    def __init__(cls, name, body, arg_list):
+    def __init__(self, gen, name, body, arg_list):
+        if body is None:
+            # デフォルト実装
+            # この関数は実際には機能しない．
+            def default_body(writer):
+                writer.gen_comment('初期化を行う．')
+            body = default_body
         super().__init__(gen, name, body, arg_list)
 
     def __call__(self, writer, *,
@@ -121,7 +145,7 @@ class InitProcGen(FuncWithArgs):
         args = ('PyObject* self',
                 'PyObject* args',
                 'PyObject* kwds')
-        with writer.gen_func_block(desctiption=description,
+        with writer.gen_func_block(description=description,
                                    return_type='int',
                                    func_name=self.name,
                                    args=args):
@@ -134,6 +158,15 @@ class NewFuncGen(FuncWithArgs):
     """
     
     def __init__(self, gen, name, body, arg_list):
+        if body is None:
+            # デフォルト実装
+            # この関数は実際には機能しない．
+            def default_body(writer):
+                writer.gen_auto_assign('self', 'type->tp_alloc(type, 0)')
+                gen.gen_obj_conv(writer, varname='my_obj')
+                writer.write_line(f'new (&myobj->mVal) {gen.classname}()')
+                writer.gen_return('self')
+            body = default_body
         super().__init__(gen, name, body, arg_list)
 
     def __call__(self, writer, *,
@@ -154,6 +187,14 @@ class LenFuncGen(FuncBase):
     """
     
     def __init__(self, gen, name, body):
+        if body is None:
+            # デフォルト実装
+            # この関数は実際には機能しない．
+            def default_body(writer):
+                writer.gen_comment('val のサイズ(len) を len_val に入れる．')
+                writer.gen_comment('このコードは実際には機能しない．')
+                writer.gen_auto_assign('len_val', 'val.len()')
+            body = default_body
         super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
@@ -165,14 +206,19 @@ class LenFuncGen(FuncBase):
                                    args=args):
             self.gen.gen_ref_conv(writer, refname='val')
             self.body(writer)
-            writer.gen_return_buildvalue('k', ['len_val'])
-
+            writer.gen_return('len_val')
+            
 
 class InquiryGen(FuncBase):
     """inquiry 型の関数を生成するクラス
     """
     
-    def __new__(self, gen, name, body):
+    def __init__(self, gen, name, body):
+        if body is None:
+            # デフォルト実装
+            def default_body(writer):
+                writer.gen_comment('結果を inquiry_val に入れる．')
+            body = default_body
         super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
@@ -184,13 +230,20 @@ class InquiryGen(FuncBase):
                                    args=args):
             self.gen.gen_ref_conv(writer, refname='val')
             self.body(writer)
+            writer.gen_return('inquiry_val')
 
-
+            
 class UnaryFuncGen(FuncBase):
     """unaryfunc 型の関数を生成するクラス
     """
     
     def __init__(self, gen, name, body):
+        if body is None:
+            # デフォルト実装
+            def default_body(writer):
+                writer.gen_comment('val の演算結果を返す．')
+                writer.gen_return_py_none()
+            body = default_body
         super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
@@ -209,6 +262,12 @@ class BinaryFuncGen(FuncBase):
     """
     
     def __init__(self, gen, name, body):
+        if body is None:
+            # デフォルト実装
+            def default_body(writer):
+                writer.gen_comment('val と PyObject* other の演算結果を返す．')
+                writer.gen_return_py_none()
+            body = default_body
         super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
@@ -219,6 +278,7 @@ class BinaryFuncGen(FuncBase):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=args):
+            self.gen.gen_ref_conv(writer, refname='val')
             self.body(writer)
 
 
@@ -227,6 +287,12 @@ class TernaryFuncGen(FuncBase):
     """
     
     def __init__(self, gen, name, body):
+        if body is None:
+            # デフォルト実装
+            def default_body(writer):
+                writer.gen_comment('val と PyObject* obj2, obj3 の演算結果を返す．')
+                writer.gen_return_py_none()
+            body = default_body
         super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
@@ -238,6 +304,7 @@ class TernaryFuncGen(FuncBase):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=args):
+            self.gen.gen_ref_conv(writer, refname='val')
             self.body(writer)
 
 
@@ -246,6 +313,12 @@ class SsizeArgFuncGen(FuncBase):
     """
     
     def __init__(self, gen, name, body):
+        if body is None:
+            # デフォルト実装
+            # この関数は実際には機能しない．
+            def default_body(writer):
+                writer.gen_comment('val と Py_ssize_t arg2 の演算結果を返す．')
+            body = default_body
         super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
@@ -256,6 +329,7 @@ class SsizeArgFuncGen(FuncBase):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=args):
+            self.gen.gen_ref_conv(writer, refname='val')
             self.body(writer)
 
 
@@ -264,6 +338,12 @@ class SsizeObjArgProcGen(FuncBase):
     """
     
     def __init__(self, gen, name, body):
+        if body is None:
+            # デフォルト実装
+            def default_body(writer):
+                writer.gen_comment('val と Py_ssize_t arg2, PyObject* arg3  の演算結果を返す．')
+                
+            body = default_body
         super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
@@ -275,6 +355,7 @@ class SsizeObjArgProcGen(FuncBase):
                                    return_type='int',
                                    func_name=self.name,
                                    args=args):
+            self.gen.gen_ref_conv(writer, refname='val')
             self.body(writer)
 
 
@@ -283,6 +364,11 @@ class ObjObjProcGen(FuncBase):
     """
     
     def __init__(self, gen, name, body):
+        if body is None:
+            # デフォルト実装
+            def default_body(writer):
+                writer.gen_comment('val と PyObject* ovj2 の演算結果を返す．')
+            body = default_body
         super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
@@ -293,6 +379,7 @@ class ObjObjProcGen(FuncBase):
                                    return_type='int',
                                    func_name=self.name,
                                    args=args):
+            self.gen.gen_ref_conv(writer, refname='val')
             self.body(writer)
 
 
@@ -301,6 +388,12 @@ class ObjObjArgProcGen(FuncBase):
     """
     
     def __init__(self, gen, name, body):
+        if body is None:
+            # デフォルト実装
+            # この関数は実際には機能しない．
+            def default_body(writer):
+                writer.gen_comment('val と PyObject* ovj2, obj3 の演算結果を返す．')
+            body = default_body
         super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
@@ -312,4 +405,5 @@ class ObjObjArgProcGen(FuncBase):
                                    return_type='int',
                                    func_name=self.name,
                                    args=args):
+            self.gen.gen_ref_conv(writer, refname='val')
             self.body(writer)

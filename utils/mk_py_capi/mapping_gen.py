@@ -8,7 +8,6 @@
 """
 
 from collections import namedtuple
-from .funcgen import LenFuncGen, BinaryFuncGen, ObjObjArgProcGen
 from .utils import gen_func, add_member_def
 
 
@@ -28,11 +27,12 @@ class MappingGen(Mapping):
                 mp_subscript=None,
                 mp_ass_subscript=None):
         if mp_length is not None:
-            mp_length = LenFuncGen(gen, 'mp_length', mp_length)
+            mp_length = gen.new_lenfunc('mp_length', mp_length)
         if mp_subscript is not None:
-            mp_subscript = BinaryFuncGen(gen, 'mp_subscript', mp_subscript)
+            mp_subscript = gen.new_binaryfunc('mp_subscript', mp_subscript)
         if mp_ass_subscript is not None:
-            mp_ass_subscript = ObjObjArgProcGen(gen, 'mp_ass_subscript', mp_ass_subscript)
+            mp_ass_subscript = gen.new_objobjargproc('mp_ass_subscript',
+                                                     mp_ass_subscript)
         self = super().__new__(cls,
                                mp_length=mp_length,
                                mp_subscript=mp_subscript,
@@ -53,4 +53,4 @@ class MappingGen(Mapping):
             add_member_def(mp_lines, 'mp_length', self.mp_length)
             add_member_def(mp_lines, 'mp_subscript', self.mp_subscript)
             add_member_def(mp_lines, 'mp_ass_subscript', self.mp_ass_subscript)
-            writer._write_lines(mp_lines, delim=',')
+            writer.write_lines(mp_lines, delim=',')

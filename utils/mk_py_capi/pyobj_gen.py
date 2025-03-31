@@ -14,14 +14,23 @@ import sys
 from .funcgen import DeallocGen
 from .funcgen import ReprFuncGen
 from .funcgen import HashFuncGen
+from .funcgen import RichcmpFuncGen
 from .funcgen import InitProcGen
 from .funcgen import NewFuncGen
+from .funcgen import LenFuncGen
+from .funcgen import InquiryGen
+from .funcgen import UnaryFuncGen
+from .funcgen import BinaryFuncGen
+from .funcgen import TernaryFuncGen
+from .funcgen import SsizeArgFuncGen
+from .funcgen import SsizeObjArgProcGen
+from .funcgen import ObjObjProcGen
+from .funcgen import ObjObjArgProcGen
 from .number_gen import NumberGen
 from .sequence_gen import SequenceGen
 from .mapping_gen import MappingGen
 from .method_gen import MethodGen
 from .getset_gen import GetSetGen
-from .utils import FuncDef, FuncDefWithArgs
 from .utils import gen_func
 from .cxxwriter import CxxWriter
 
@@ -122,6 +131,8 @@ class PyObjGen:
         self.__ex_init_pat = re.compile('^(\s*)%%EX_INIT_CODE%%$')
 
     def add_preamble(self, func_body):
+        if self.__preamble_gen is not None:
+            raise ValueError("preamble has benn already defined")
         self.__preamble_gen = func_body
         
     def add_dealloc(self, *,
@@ -136,7 +147,7 @@ class PyObjGen:
 
     def add_repr(self, *,
                  func_name=None,
-                 repr_func):
+                 repr_func=None):
         """repr 関数定義を追加する．
         """
         if self.__repr_gen is not None:
@@ -146,7 +157,7 @@ class PyObjGen:
 
     def add_hash(self, *,
                  func_name=None,
-                 hash_func):
+                 hash_func=None):
         """hash 関数定義を追加する．
         """
         if self.__hash_gen is not None:
@@ -156,7 +167,7 @@ class PyObjGen:
 
     def add_call(self, *,
                  func_name=None,
-                 call_func):
+                 call_func=None):
         """call 関数定義を追加する．
         """
         if self.__call_gen is not None:
@@ -166,7 +177,7 @@ class PyObjGen:
 
     def add_str(self, *,
                 func_name=None,
-                str_func):
+                str_func=None):
         """str 関数定義を追加する．
         """
         if self.__str_gen is not None:
@@ -176,7 +187,7 @@ class PyObjGen:
 
     def add_richcompare(self, *,
                         func_name=None,
-                        cmp_func):
+                        cmp_func=None):
         """richcompare 関数定義を追加する．
         """
         if self.__richcompare_gen is not None:
@@ -190,7 +201,7 @@ class PyObjGen:
                    nb_subtract=None,
                    nb_multiply=None,
                    nb_remainder=None,
-                   nb_dvmod=None,
+                   nb_divmod=None,
                    nb_power=None,
                    nb_negative=None,
                    nb_positive=None,
@@ -209,7 +220,7 @@ class PyObjGen:
                    nb_inplace_multiply=None,
                    nb_inplace_remainder=None,
                    nb_inplace_power=None,
-                   nb_inplace_lshft=None,
+                   nb_inplace_lshift=None,
                    nb_inplace_rshift=None,
                    nb_inplace_and=None,
                    nb_inplace_xor=None,
@@ -256,6 +267,10 @@ class PyObjGen:
             nb_inplace_and=nb_inplace_and,
             nb_inplace_xor=nb_inplace_xor,
             nb_inplace_or=nb_inplace_or,
+            nb_floor_divide=nb_floor_divide,
+            nb_true_divide=nb_true_divide,
+            nb_inplace_floor_divide=nb_inplace_floor_divide,
+            nb_inplace_true_divide=nb_inplace_true_divide,
             nb_index=nb_index,
             nb_matrix_multiply=nb_matrix_multiply,
             nb_inplace_matrix_multiply=nb_inplace_matrix_multiply)
@@ -304,7 +319,7 @@ class PyObjGen:
         
     def add_init(self, *,
                  func_name=None,
-                 func_body,
+                 func_body=None,
                  arg_list=[]):
         """init 関数定義を追加する．
         """
@@ -315,7 +330,7 @@ class PyObjGen:
         
     def add_new(self, *,
                 func_name=None,
-                func_body,
+                func_body=None,
                 arg_list=[]):
         """new 関数定義を追加する．
         """
@@ -328,7 +343,7 @@ class PyObjGen:
                    func_name=None,
                    arg_list=[],
                    is_static=False,
-                   func_body,
+                   func_body=None,
                    doc_str=''):
         """メソッド定義を追加する．
         """
@@ -343,7 +358,7 @@ class PyObjGen:
 
     def add_getter(self, func_name, *,
                    has_closure=False,
-                   func_body):
+                   func_body=None):
         """getter 定義を追加する．
         """
         self.__check_name(func_name)
@@ -353,7 +368,7 @@ class PyObjGen:
 
     def add_setter(self, func_name, *,
                    has_closure=False,
-                   func_body):
+                   func_body=None):
         """setter 定義を追加する．
         """
         self.__check_name(func_name)
@@ -365,7 +380,7 @@ class PyObjGen:
                  getter_name=None,
                  setter_name=None,
                  closure=None,
-                 doc_str):
+                 doc_str=''):
         """属性定義を追加する．
         """
         self.__getset_gen.add_attr(name,
@@ -374,6 +389,33 @@ class PyObjGen:
                                    closure=closure,
                                    doc_str=doc_str)
 
+    def new_lenfunc(self, name, body):
+        return LenFuncGen(self, name, body)
+
+    def new_inquiry(self, name, body):
+        return InquiryGen(self, name, body)
+
+    def new_unaryfunc(self, name, body):
+        return UnaryFuncGen(self, name, body)
+
+    def new_binaryfunc(self, name, body):
+        return BinaryFuncGen(self, name, body)
+
+    def new_ternaryfunc(self, name, body):
+        return TernaryFuncGen(self, name, body)
+
+    def new_ssizeargfunc(self, name, body):
+        return SsizeArgFuncGen(self, name, body)
+
+    def new_ssizeobjargproc(self, name, body):
+        return SsizeObjArgProcGen(self, name, body)
+
+    def new_objobjproc(self, name, body):
+        return ObjObjProcGen(self, name, body)
+
+    def new_objobjargproc(self, name, body):
+        return ObjObjArgProcGen(self, name, body)
+    
     def add_conv(self, func_body=None):
         if func_body is None:
             # デフォルト実装
@@ -417,6 +459,18 @@ class PyObjGen:
                         writer.gen_include(filename)
                     continue
 
+                if line == '%%BEGIN_NAMESPACE%%':
+                    # 名前空間の開始
+                    if self.namespace is not None:
+                        writer.write_line(f'BEGIN_NAMESPACE_{self.namespace}')
+                    continue
+
+                if line == '%%END_NAMESPACE%%':
+                    # 名前空間の終了
+                    if self.namespace is not None:
+                        writer.write_line(f'END_NAMESPACE_{self.namespace}')
+                    continue
+                
                 result = self.__conv_def_pat.match(line)
                 if result:
                     # Conv の宣言
@@ -458,7 +512,8 @@ class PyObjGen:
                 # Python 拡張用のクラス名の置換
                 line = line.replace('%%PyCustom%%', self.pyclassname)
                 # 名前空間の置換
-                line = line.replace('%%NAMESPACE%%', self.namespace)
+                if self.namespace is not None:
+                    line = line.replace('%%NAMESPACE%%', self.namespace)
 
                 writer.write_line(line)
 
@@ -539,6 +594,18 @@ class PyObjGen:
                         writer.gen_include(filename)
                     continue
 
+                if line == '%%BEGIN_NAMESPACE%%':
+                    # 名前空間の開始
+                    if self.namespace is not None:
+                        writer.write_line(f'BEGIN_NAMESPACE_{self.namespace}')
+                    continue
+
+                if line == '%%END_NAMESPACE%%':
+                    # 名前空間の終了
+                    if self.namespace is not None:
+                        writer.write_line(f'END_NAMESPACE_{self.namespace}')
+                    continue
+
                 if line == '%%EXTRA_CODE%%':
                     self.make_extra_code(writer)
                     continue
@@ -581,7 +648,8 @@ class PyObjGen:
                 # Python 上のタイプ名の置換
                 line = line.replace('%%TypeName%%', self.pyname)
                 # 名前空間の置換
-                line = line.replace('%%NAMESPACE%%', self.namespace)
+                if self.namespace is not None:
+                    line = line.replace('%%NAMESPACE%%', self.namespace)
                 # タイプクラス名の置換
                 line = line.replace('%%CustomType%%', self.typename)
                 # オブジェクトクラス名の置換

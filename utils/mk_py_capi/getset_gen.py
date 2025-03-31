@@ -8,7 +8,6 @@
 """
 
 from collections import namedtuple
-from .utils import FuncDef
 
 
 # getter/setterを表す型
@@ -41,6 +40,10 @@ class GetSetGen:
                    func_body):
         """getter 定義を追加する．
         """
+        if func_body is None:
+            def default_body(writer):
+                pass
+            func_body = default_body
         self.__getter_list.append(GetSet(gen, func_name, func_body, has_closure))
 
     def add_setter(self, gen, func_name, *,
@@ -48,6 +51,10 @@ class GetSetGen:
                    func_body):
         """setter 定義を追加する．
         """
+        if func_body is None:
+            def default_body(writer):
+                pass
+            func_body = default_body
         self.__setter_list.append(GetSet(gen, func_name, func_body, has_closure))
 
     def add_attr(self, name, *,

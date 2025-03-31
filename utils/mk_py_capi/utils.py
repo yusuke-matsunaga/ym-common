@@ -7,21 +7,6 @@
 :copyright: Copyright (C) 2025 Yusuke Matsunaga, All rights reserved.
 """
 
-from collections import namedtuple
-
-
-# 関数定義を表す型
-FuncDef = namedtuple('FuncDef',
-                     ['name',
-                      'func'])
-
-FuncDef.__new__.__defaults__ = (None, None)
-
-        
-# 引数付きの関数定義を表す型
-FuncDefWithArgs = namedtuple('FuncDefWithArgs',
-                             FuncDef._fields + ('arg_list', ))
-
 
 def analyze_args(arg_list):
     """引数のリストから特徴を解析する．

@@ -37,6 +37,10 @@ class MethodGen:
             func_body,
             doc_str):
         has_args, has_keywords = analyze_args(arg_list)
+        if func_body is None:
+            def default_body(writer):
+                pass
+            func_body = default_body
         self.__method_list.append(Method(gen=gen,
                                          name=name,
                                          func_name=func_name,

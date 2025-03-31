@@ -14,7 +14,7 @@
 %%INCLUDES%%
 
 
-BEGIN_NAMESPACE_%%NAMESPACE%%
+%%BEGIN_NAMESPACE%%
 
 //////////////////////////////////////////////////////////////////////
 /// @class %%PyCustom%% %%PyCustom%%.h "%%PyCustom%%.h"
@@ -70,6 +70,6 @@ public:
 
 };
 
-END_NAMESPACE_%%NAMESPACE%%
+%%END_NAMESPACE%%
 
 #endif // %%PYCUSTOM%%_H
