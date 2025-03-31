@@ -198,7 +198,7 @@ class CxxWriter:
         line = f'return Py_BuildValue("{fmt}"'
         for val in val_list:
             line += f', {val}'
-        line += ';'
+        line += ');'
         self.write_line(line)
         
     def gen_return(self, val):
