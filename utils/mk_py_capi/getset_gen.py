@@ -13,7 +13,10 @@ from .utils import FuncDef
 
 # getter/setterを表す型
 GetSet = namedtuple('GetSet',
-                    FuncDef._fields + ('has_closure',))
+                    ['gen',
+                     'name',
+                     'body',
+                     'has_closure'])
 
 # 属性を表す型
 Attr = namedtuple('Attr',
@@ -33,19 +36,19 @@ class GetSetGen:
         self.__setter_list = []
         self.__attr_list = []
         
-    def add_getter(self, func_name, *,
+    def add_getter(self, gen, func_name, *,
                    has_closure=False,
                    func_body):
         """getter 定義を追加する．
         """
-        self.__getter_list.append(GetSet(func_name, func_body, has_closure))
+        self.__getter_list.append(GetSet(gen, func_name, func_body, has_closure))
 
-    def add_setter(self, func_name, *,
+    def add_setter(self, gen, func_name, *,
                    has_closure=False,
                    func_body):
         """setter 定義を追加する．
         """
-        self.__setter_list.append(GetSet(func_name, func_body, has_closure))
+        self.__setter_list.append(GetSet(gen, func_name, func_body, has_closure))
 
     def add_attr(self, name, *,
                  getter_name=None,
@@ -110,8 +113,8 @@ class GetSetGen:
             with writer.gen_func_block(return_type='PyObject*',
                                        func_name=getter.name,
                                        args=args):
-                writer.gen_ref_conv(refname='val')
-                getter.func(writer)
+                getter.gen.gen_ref_conv(writer, refname='val')
+                getter.body(writer)
                 
         # setter 関数の生成
         for setter in self.__setter_list:
@@ -125,8 +128,8 @@ class GetSetGen:
             with writer.gen_func_block(return_type='int',
                                        func_name=setter.name,
                                        args=args):
-                writer.gen_ref_conv(refname='val')
-                setter.func(writer)
+                setter.gen.gen_ref_conv(writer, refname='val')
+                setter.body(writer)
 
         # getset テーブルの生成
         writer.gen_CRLF()

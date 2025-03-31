@@ -31,7 +31,7 @@ class SequenceGen(Sequence):
     """Sequence オブジェクト構造体を作るクラス
     """
 
-    def __new__(cls, *,
+    def __new__(cls, gen, *,
                 sq_length=None,
                 sq_concat=None,
                 sq_repeat=None,
@@ -41,21 +41,21 @@ class SequenceGen(Sequence):
                 sq_inplace_concat=None,
                 sq_inplace_repeat=None):
         if sq_length is not None:
-            sq_length = LenFuncGen('sq_length', sq_length)
+            sq_length = LenFuncGen(gen, 'sq_length', sq_length)
         if sq_concat is not None:
-            sq_concat = BinaryFuncGen('sq_concat', sq_concat)
+            sq_concat = BinaryFuncGen(gen, 'sq_concat', sq_concat)
         if sq_repeat is not None:
-            sq_repeat = SsizeArgFuncGen('sq_repeat', sq_repeat)
+            sq_repeat = SsizeArgFuncGen(gen, 'sq_repeat', sq_repeat)
         if sq_item is not None:
-            sq_item = SsizeArgFuncGen('sq_item', sq_item)
+            sq_item = SsizeArgFuncGen(gen, 'sq_item', sq_item)
         if sq_ass_item is not None:
-            sq_ass_item = SsizeObjArgProcGen('sq_ass_item', sq_ass_item)
+            sq_ass_item = SsizeObjArgProcGen(gen, 'sq_ass_item', sq_ass_item)
         if sq_contains is not None:
-            sq_contains = ObjObjProcGen('sq_contains', sq_contains)
+            sq_contains = ObjObjProcGen(gen, 'sq_contains', sq_contains)
         if sq_inplace_concat is not None:
-            sq_inplace_concat = BinaryFuncGen('sq_inplace_concat', sq_inplace_concat)
+            sq_inplace_concat = BinaryFuncGen(gen, 'sq_inplace_concat', sq_inplace_concat)
         if sq_inplace_repeat is not None:
-            sq_inplace_repeat = SsizeArgFuncGen('sq_inplace_repeat', sq_inplace_repeat)
+            sq_inplace_repeat = SsizeArgFuncGen(gen, 'sq_inplace_repeat', sq_inplace_repeat)
         self = super().__new__(cls,
                                sq_length=sq_length,
                                sq_concat=sq_concat,

@@ -13,7 +13,8 @@ from .utils import analyze_args
 
 # メソッドを表す型
 Method = namedtuple('Method',
-                    ['name',
+                    ['gen',
+                     'name',
                      'func_name',
                      'arg_list',
                      'is_static',
@@ -29,15 +30,15 @@ class MethodGen:
     def __init__(self):
         self.__method_list = []
 
-    def add(self, *,
+    def add(self, gen, func_name, *,
             name,
-            func_name,
             arg_list,
             is_static,
             func_body,
             doc_str):
         has_args, has_keywords = analyze_args(arg_list)
-        self.__method_list.append(Method(name=name,
+        self.__method_list.append(Method(gen=gen,
+                                         name=name,
                                          func_name=func_name,
                                          arg_list=arg_list,
                                          is_static=is_static,
@@ -67,6 +68,8 @@ class MethodGen:
                                        func_name=method.func_name,
                                        args=args):
                 writer.gen_func_preamble(method.arg_list)
+                if not method.is_static:
+                    method.gen.gen_ref_conv(writer, refname='val')
                 method.func_body(writer)
 
         # メソッドテーブルを生成する．

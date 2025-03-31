@@ -7,7 +7,6 @@
 :copyright: Copyright (C) 2025 Yusuke Matsunaga, All rights reserved.
 """
 
-from collections import namedtuple
 import re
 import os
 import datetime
@@ -27,42 +26,9 @@ from .utils import gen_func
 from .cxxwriter import CxxWriter
 
 
-# 基本情報
-PyObjInfo = namedtuple('PyObjInfo',
-                       ['classname',
-                        'pyclassname',
-                        'namespace',
-                        'typename',
-                        'objectname',
-                        'pyname'])
-
-
-class PyObjGen(PyObjInfo):
+class PyObjGen:
     """PyObject の拡張クラスを生成するクラス
     """
-    
-    def __new__(cls, *,
-                classname,
-                pyclassname=None,
-                namespace=None,
-                typename=None,
-                objectname=None,
-                pyname,
-                header_include_files=[],
-                source_include_files=[]):
-        if pyclassname is None:
-            pyclassname = f'Py{classname}'
-        if typename is None:
-            typename = f'{classname}_Type'
-        if objectname is None:
-            objectname = f'{classname}_Object'
-        return super().__new__(cls,
-                               classname,
-                               pyclassname,
-                               namespace,
-                               typename,
-                               objectname,
-                               pyname)
     
     def __init__(self, *,
                  classname,
@@ -73,7 +39,22 @@ class PyObjGen(PyObjInfo):
                  pyname,
                  header_include_files=[],
                  source_include_files=[]):
-
+        # C++ のクラス名
+        self.classname = classname
+        # Python-CAPI 用のクラス名
+        if pyclassname is None:
+            self.pyclassname = f'Py{classname}'
+        # 名前空間
+        self.namespace = namespace
+        # Python-CAPI 用のタイプクラス名
+        if typename is None:
+            self.typename = f'{classname}_Type'
+        # Python-CAPI 用のオブジェクトクラス名
+        if objectname is None:
+            self.objectname = f'{classname}_Object'
+        # Python のクラス名
+        self.pyname = pyname
+        
         # ヘッダファイル用のインクルードファイルリスト
         self.header_include_files = header_include_files
         # ソースファイル用のインクルードファイルリスト
@@ -151,14 +132,7 @@ class PyObjGen(PyObjInfo):
         if self.__dealloc_gen is not None:
             raise ValueError('dealloc has been already defined')
         func_name = self.__complete(func_name, 'dealloc_func')
-        if dealloc_func is None:
-            # デフォルト実装
-            def default_func(writer):
-                self.gen_obj_conv(writer, varname='obj')
-                writer.write_line(f'obj->mVal.~{self.classname}()')
-                writer.write_line('PyTYPE(self)->tp_free(self)')
-            dealloc_func = default_func
-        self.__dealloc_gen = DeallocGen(func_name, dealloc_func)
+        self.__dealloc_gen = DeallocGen(self, func_name, dealloc_func)
 
     def add_repr(self, *,
                  func_name=None,
@@ -168,11 +142,7 @@ class PyObjGen(PyObjInfo):
         if self.__repr_gen is not None:
             raise ValueError('repr has been already defined')
         func_name = self.__complete(func_name, 'repr_func')
-        def repr_gen(writer):
-            self.gen_ref_conv(writer, refname='val')
-            writer.gen_auto_assign('str_val', repr_func('val'))
-            writer.gen_return_py_string('str_val')
-        self.__repr_gen = ReprFuncGen(func_name, repr_gen)
+        self.__repr_gen = ReprFuncGen(self, func_name, repr_func)
 
     def add_hash(self, *,
                  func_name=None,
@@ -182,11 +152,7 @@ class PyObjGen(PyObjInfo):
         if self.__hash_gen is not None:
             raise ValueError('hash has been already defined')
         func_name = self.__complete(func_name, 'hash_func')
-        def hash_gen(writer):
-            writer.gen_ref_conv(refname='val')
-            writer.gen_auto_assign('hash_val', hash_func('val'))
-            writer.gen_return_buildvalue('k', ['hash_val'])
-        self.__hash_gen = HashFuncGen(func_name, hash_gen)
+        self.__hash_gen = HashFuncGen(self, func_name, hash_func)
 
     def add_call(self, *,
                  func_name=None,
@@ -196,7 +162,7 @@ class PyObjGen(PyObjInfo):
         if self.__call_gen is not None:
             raise ValueError('hash has been already defined')
         func_name = self.__complete(func_name, 'call_func')
-        self.__call_gen = TernaryFuncGen(func_name, call_func)
+        self.__call_gen = TernaryFuncGen(self, func_name, call_func)
 
     def add_str(self, *,
                 func_name=None,
@@ -206,7 +172,7 @@ class PyObjGen(PyObjInfo):
         if self.__str_gen is not None:
             raise ValueError('str has been already defined')
         func_name = self.__complete(func_name, 'str_func')
-        self.__str_gen = ReprFuncGen(func_name, str_func)
+        self.__str_gen = ReprFuncGen(self, func_name, str_func)
 
     def add_richcompare(self, *,
                         func_name=None,
@@ -216,7 +182,7 @@ class PyObjGen(PyObjInfo):
         if self.__richcompare_gen is not None:
             raise ValueError('richcompare has been already defined')
         func_name = self.__complete(func_name, 'richcompare_func')
-        self.__richcompare_gen = RichcmpFuncGen(func_name, cmp_func)
+        self.__richcompare_gen = RichcmpFuncGen(self, func_name, cmp_func)
         
     def add_number(self, *,
                    name=None,
@@ -261,6 +227,7 @@ class PyObjGen(PyObjInfo):
             raise ValueError('number has been already defined')
         self.__number_name = self.__complete(name, 'number')
         self.__number_gen = NumberGen(
+            self,
             nb_add=nb_add,
             nb_subtract=nb_subtract,
             nb_multiply=nb_multiply,
@@ -308,7 +275,8 @@ class PyObjGen(PyObjInfo):
         if self.__sequence_gen is not None:
             raise ValueError('sequence has been already defined')
         self.__sequence_name = self.__complete(name, 'sequence')
-        self.__sequence_gen = SequenceGen(            
+        self.__sequence_gen = SequenceGen(
+            self,
             sq_length=sq_length,
             sq_concat=sq_concat,
             sq_repeat=sq_repeat,
@@ -329,6 +297,7 @@ class PyObjGen(PyObjInfo):
             raise ValueError('mapping has been already defined')
         self.__mapping_name = self.__complete(name, 'mapping')
         self.__mapping_gen = MappingGen(
+            self,
             mp_length=mp_length,
             mp_subscript=mp_subscript,
             mp_ass_subscript=mp_ass_subscript)
@@ -342,7 +311,7 @@ class PyObjGen(PyObjInfo):
         if self.__init_gen is not None:
             raise ValueError('init has been already defined')
         func_name = self.__complete(func_name, 'init_func')
-        self.__init_gen = InitProcGen(func_name, func_body, arg_list)
+        self.__init_gen = InitProcGen(self, func_name, func_body, arg_list)
         
     def add_new(self, *,
                 func_name=None,
@@ -353,7 +322,7 @@ class PyObjGen(PyObjInfo):
         if self.__new_gen is not None:
             raise ValueError('new has been already defined')
         func_name = self.__complete(func_name, 'new_func')
-        self.__new_gen = NewFuncGen(func_name, func_body, arg_list)
+        self.__new_gen = NewFuncGen(self, func_name, func_body, arg_list)
         
     def add_method(self, name, *,
                    func_name=None,
@@ -365,8 +334,8 @@ class PyObjGen(PyObjInfo):
         """
         # デフォルトの関数名は Python のメソッド名をそのまま用いる．
         func_name = self.__complete(func_name, name)
-        self.__method_gen.add(name=name,
-                              func_name=func_name,
+        self.__method_gen.add(self, func_name,
+                              name=name,
                               arg_list=arg_list,
                               is_static=is_static,
                               func_body=func_body,
@@ -378,7 +347,7 @@ class PyObjGen(PyObjInfo):
         """getter 定義を追加する．
         """
         self.__check_name(func_name)
-        self.__getset_gen.add_getter(func_name,
+        self.__getset_gen.add_getter(self, func_name,
                                      has_closure=has_closure,
                                      func_body=func_body)
 
@@ -388,7 +357,7 @@ class PyObjGen(PyObjInfo):
         """setter 定義を追加する．
         """
         self.__check_name(func_name)
-        self.__getset_gen.add_setter(func_name,
+        self.__getset_gen.add_setter(self, func_name,
                                      has_closure=has_closure,
                                      func_body=func_body)
 

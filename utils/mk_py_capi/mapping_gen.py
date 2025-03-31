@@ -23,16 +23,16 @@ class MappingGen(Mapping):
     """Mapping オブジェクト構造体を作るクラス
     """
 
-    def __new__(cls, *,
+    def __new__(cls, gen, *,
                 mp_length=None,
                 mp_subscript=None,
                 mp_ass_subscript=None):
         if mp_length is not None:
-            mp_length = LenFuncGen('mp_length', mp_length)
+            mp_length = LenFuncGen(gen, 'mp_length', mp_length)
         if mp_subscript is not None:
-            mp_subscript = BinaryFuncGen('mp_subscript', mp_subscript)
+            mp_subscript = BinaryFuncGen(gen, 'mp_subscript', mp_subscript)
         if mp_ass_subscript is not None:
-            mp_ass_subscript = ObjObjArgProcGen('mp_ass_subscript', mp_ass_subscript)
+            mp_ass_subscript = ObjObjArgProcGen(gen, 'mp_ass_subscript', mp_ass_subscript)
         self = super().__new__(cls,
                                mp_length=mp_length,
                                mp_subscript=mp_subscript,

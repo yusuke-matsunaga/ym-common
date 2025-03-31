@@ -10,13 +10,36 @@
 from .utils import FuncDef, FuncDefWithArgs
 
 
-class DeallocGen(FuncDef):
+class FuncBase:
+    """関数の基本情報を表すクラス
+    """
+
+    def __init__(self, gen, name, body):
+        self.gen = gen
+        self.name = name
+        self.body = body
+
+
+class FuncWithArgs(FuncBase):
+    """引数付きの関数の基本情報を表すクラス
+    """
+
+    def __init__(self, gen, name, body, arg_list):
+        super().__init__(gen, name, body)
+        self.arg_list = arg_list
+
+        
+class DeallocGen(FuncBase):
     """dealloc 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func):
-        self = super().__new__(cls, name, func)
-        return self
+    def __init__(self, gen, name, body=None):
+        if body is None:
+            # デフォルト実装
+            def default_body(writer):
+                writer.write_line(f'obj->mVal.~{gen.classname}()')
+            body = default_body
+        self = super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
                  description=None):
@@ -25,16 +48,17 @@ class DeallocGen(FuncDef):
                                    return_type='void',
                                    func_name=self.name,
                                    args=args):
-            self.func(writer)
+            self.gen.gen_obj_conv(writer, varname='obj')
+            self.body(writer)
+            writer.write_line('PyTYPE(self)->tp_free(self)')
 
 
-class ReprFuncGen(FuncDef):
+class ReprFuncGen(FuncBase):
     """reprfunc 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func):
-        self = super().__new__(cls, name, func)
-        return self
+    def __init__(self, gen, name, body):
+        super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
                  description=None):
@@ -43,16 +67,17 @@ class ReprFuncGen(FuncDef):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=args):
-            self.func(writer)
+            self.gen.gen_ref_conv(writer, refname='val')
+            self.body(writer)
+            writer.gen_return_py_string('str_val')
 
 
-class HashFuncGen(FuncDef):
+class HashFuncGen(FuncBase):
     """hashfunc 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func):
-        self = super().__new__(cls, name, func)
-        return self
+    def __init__(self, gen, name, body):
+        super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
                  description=None):
@@ -61,35 +86,35 @@ class HashFuncGen(FuncDef):
                                    return_type='Py_hash_t',
                                    func_name=self.name,
                                    args=args):
-            self.func(writer)
+            self.gen.gen_ref_conv(writer, refname='val')
+            self.body(writer)
+            writer.gen_return_buildvalue('k', ['hash_val'])
 
 
-class RichcmpFuncGen(FuncDef):
+class RichcmpFuncGen(FuncBase):
     """richcmpfunc 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func):
-        self = super().__new__(cls, name, func)
-        return self
+    def __init__(self, gen, name, body):
+        super().__new__(cls, name, body)
 
     def __call__(self, writer, *,
                  description=None):
         args = ('PyObject* self',
                 'PyObject* other')
         with writer.gen_func_block(description=description,
-                                 return_type='PyObject*',
-                                 func_name=self.name,
-                                 args=args):
-            self.func(writer)
+                                   return_type='PyObject*',
+                                   func_name=self.name,
+                                   args=args):
+            self.body(writer)
 
 
-class InitProcGen(FuncDefWithArgs):
+class InitProcGen(FuncWithArgs):
     """initproc 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func, arg_list):
-        self = super().__new__(cls, name, func, arg_list)
-        return self
+    def __init__(cls, name, body, arg_list):
+        super().__init__(gen, name, body, arg_list)
 
     def __call__(self, writer, *,
                  description=None):
@@ -101,16 +126,15 @@ class InitProcGen(FuncDefWithArgs):
                                    func_name=self.name,
                                    args=args):
             writer.gen_func_preamble(self.arg_list)
-            self.func(writer)
+            self.body(writer)
 
 
-class NewFuncGen(FuncDefWithArgs):
+class NewFuncGen(FuncWithArgs):
     """newfunc 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func, arg_list):
-        self = super().__new__(cls, name, func, arg_list)
-        return self
+    def __init__(self, gen, name, body, arg_list):
+        super().__init__(gen, name, body, arg_list)
 
     def __call__(self, writer, *,
                  description=None):
@@ -122,16 +146,15 @@ class NewFuncGen(FuncDefWithArgs):
                                    func_name=self.name,
                                    args=args):
             writer.gen_func_preamble(self.arg_list)
-            self.func(writer)
+            self.body(writer)
 
 
-class LenFuncGen(FuncDef):
+class LenFuncGen(FuncBase):
     """lenfunc 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func):
-        self = super().__new__(cls, name, func)
-        return self
+    def __init__(self, gen, name, body):
+        super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
                  description=None):
@@ -140,16 +163,17 @@ class LenFuncGen(FuncDef):
                                    return_type='Py_ssize_t',
                                    func_name=self.name,
                                    args=args):
-            self.func(writer)
+            self.gen.gen_ref_conv(writer, refname='val')
+            self.body(writer)
+            writer.gen_return_buildvalue('k', ['len_val'])
 
 
-class InquiryGen(FuncDef):
+class InquiryGen(FuncBase):
     """inquiry 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func):
-        self = super().__new__(cls, name, func)
-        return self
+    def __new__(self, gen, name, body):
+        super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
                  description=None):
@@ -158,16 +182,16 @@ class InquiryGen(FuncDef):
                                    return_type='int',
                                    func_name=self.name,
                                    args=args):
-            self.func(writer)
+            self.gen.gen_ref_conv(writer, refname='val')
+            self.body(writer)
 
 
-class UnaryFuncGen(FuncDef):
+class UnaryFuncGen(FuncBase):
     """unaryfunc 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func):
-        self = super().__new__(cls, name, func)
-        return self
+    def __init__(self, gen, name, body):
+        super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
                  description=None):
@@ -176,16 +200,16 @@ class UnaryFuncGen(FuncDef):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=args):
-            self.func(writer)
+            self.gen.gen_ref_conv(writer, refname='val')
+            self.body(writer)
 
 
-class BinaryFuncGen(FuncDef):
+class BinaryFuncGen(FuncBase):
     """binaryfunc 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func):
-        self = super().__new__(cls, name, func)
-        return self
+    def __init__(self, gen, name, body):
+        super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
                  description=None):
@@ -195,16 +219,15 @@ class BinaryFuncGen(FuncDef):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=args):
-            self.func(writer)
+            self.body(writer)
 
 
-class TernaryFuncGen(FuncDef):
+class TernaryFuncGen(FuncBase):
     """ternaryfunc 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func):
-        self = super().__new__(cls, name, func)
-        return self
+    def __init__(self, gen, name, body):
+        super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
                  description=None):
@@ -215,16 +238,15 @@ class TernaryFuncGen(FuncDef):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=args):
-            self.func(writer)
+            self.body(writer)
 
 
-class SsizeArgFuncGen(FuncDef):
+class SsizeArgFuncGen(FuncBase):
     """ssizeargfunc 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func):
-        self = super().__new__(cls, name, func)
-        return self
+    def __init__(self, gen, name, body):
+        super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
                  description=None):
@@ -234,16 +256,15 @@ class SsizeArgFuncGen(FuncDef):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=args):
-            self.func(writer)
+            self.body(writer)
 
 
-class SsizeObjArgProcGen(FuncDef):
+class SsizeObjArgProcGen(FuncBase):
     """ssizeobjargproc 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func):
-        self = super().__new__(cls, name, func)
-        return self
+    def __init__(self, gen, name, body):
+        super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
                  description=None):
@@ -254,16 +275,15 @@ class SsizeObjArgProcGen(FuncDef):
                                    return_type='int',
                                    func_name=self.name,
                                    args=args):
-            self.func(writer)
+            self.body(writer)
 
 
-class ObjObjProcGen(FuncDef):
+class ObjObjProcGen(FuncBase):
     """objobjproc 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func):
-        self = super().__new__(cls, name, func)
-        return self
+    def __init__(self, gen, name, body):
+        super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
                  description=None):
@@ -273,16 +293,15 @@ class ObjObjProcGen(FuncDef):
                                    return_type='int',
                                    func_name=self.name,
                                    args=args):
-            self.func(writer)
+            self.body(writer)
 
 
-class ObjObjArgProcGen(FuncDef):
+class ObjObjArgProcGen(FuncBase):
     """objobjargproc 型の関数を生成するクラス
     """
     
-    def __new__(cls, name, func):
-        self = super().__new__(cls, name, func)
-        return self
+    def __init__(self, gen, name, body):
+        super().__init__(gen, name, body)
 
     def __call__(self, writer, *,
                  description=None):
@@ -293,4 +312,4 @@ class ObjObjArgProcGen(FuncDef):
                                    return_type='int',
                                    func_name=self.name,
                                    args=args):
-            self.func(writer)
+            self.body(writer)
