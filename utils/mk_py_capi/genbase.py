@@ -67,9 +67,9 @@ class GenBase:
     def template_file(filename):
         """テンプレートファイル名を返す．
         """
-        # テンプレートファイルは同じディレクトリにあると仮定している．
+        # テンプレートファイルは 'templates' の下にあると仮定している．
         basedir = os.path.dirname(__file__)
-        return os.path.join(basedir, filename)
+        return os.path.join(basedir, 'templates', filename)
 
 
 class IncludesGen:
