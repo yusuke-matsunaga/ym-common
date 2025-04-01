@@ -223,7 +223,7 @@ class CxxWriter:
     def gen_return_py_string(self, varname):
         """string 値を表す PyObject を返す return 文を出力する．
         """
-        self.gen_return_buildvalue("s", [varname])
+        self.gen_return(f'PyString::ToPyObject({varname})')
 
     def gen_return_py_bool(self, varname):
         """bool 値を表す PyObject を返す return 文を出力する．

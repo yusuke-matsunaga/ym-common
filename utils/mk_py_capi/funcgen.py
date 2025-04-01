@@ -31,8 +31,13 @@ class DeallocGen(FuncBase):
     """dealloc 型の関数を生成するクラス
     """
     
-    def __init__(self, gen, name, body=None):
+    def __init__(self, gen, name, body='default'):
         if body is None:
+            # 空
+            def null_body(writer):
+                pass
+            body = null_body
+        elif body == 'default':
             # デフォルト実装
             def default_body(writer):
                 writer.write_line(f'obj->mVal.~{gen.classname}()')

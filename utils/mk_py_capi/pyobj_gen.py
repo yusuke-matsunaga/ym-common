@@ -137,7 +137,7 @@ class PyObjGen:
         
     def add_dealloc(self, *,
                     func_name=None,
-                    dealloc_func=None):
+                    dealloc_func='default'):
         """dealloc 関数定義を追加する．
         """
         if self.__dealloc_gen is not None:
