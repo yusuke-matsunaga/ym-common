@@ -139,10 +139,9 @@ class GetSetGen:
                 setter.body(writer)
 
         # getset テーブルの生成
-        writer.gen_CRLF()
-        writer.gen_comment('getter/setter定義')
         with writer.gen_array_block(typename='PyGetSetDef',
-                                    arrayname=name):
+                                    arrayname=name,
+                                    comment='getter/setter定義'):
             for attr in self.__attr_list:
                 line = f'{{"{attr.name}", {attr.getter_name}, '
                 line += f'{attr.setter_name}, PyDoc_STR("{attr.doc_str}"), '

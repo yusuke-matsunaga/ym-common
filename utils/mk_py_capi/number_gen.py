@@ -255,9 +255,9 @@ class NumberGen(Number):
         gen_func(self.nb_inplace_matrix_multiply, writer)
 
         # 構造体定義を生成する．
-        writer.gen_CRLF()
-        writer.gen_comment('Numberオブジェクト構造体')
-        with writer.gen_struct_init_block('PyNumberMethods', name):
+        with writer.gen_struct_init_block(structname='PyNumberMethods',
+                                          varname=name,
+                                          comment='Numberオブジェクト構造体'):
             nb_lines = []
             add_member_def(nb_lines, 'nb_add', self.nb_add)
             add_member_def(nb_lines, 'nb_subtract', self.nb_subtract)

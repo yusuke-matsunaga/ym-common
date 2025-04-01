@@ -67,7 +67,7 @@ class MethodGen:
                 args = [ arg0, arg1, arg2 ]
             else:
                 args = [ arg0, arg1 ]
-            with writer.gen_func_block(description=method.doc_str,
+            with writer.gen_func_block(comment=method.doc_str,
                                        return_type='PyObject*',
                                        func_name=method.func_name,
                                        args=args):
@@ -77,10 +77,9 @@ class MethodGen:
                 method.func_body(writer)
 
         # メソッドテーブルを生成する．
-        writer.gen_CRLF()
-        writer.gen_comment('メソッド定義')
         with writer.gen_array_block(typename='PyMethodDef',
-                                    arrayname=name):
+                                    arrayname=name,
+                                    comment='メソッド定義'):
             for method in self.__method_list:
                 writer.write_line(f'{{"{method.name}",')
                 writer.indent_inc(1)

@@ -8,9 +8,8 @@
 """
 
 import re
-import os
-import datetime
 import sys
+from .genbase import GenBase, IncludesGen, BeginNamespaceGen, EndNamespaceGen
 from .funcgen import DeallocGen
 from .funcgen import ReprFuncGen
 from .funcgen import HashFuncGen
@@ -26,6 +25,8 @@ from .funcgen import SsizeArgFuncGen
 from .funcgen import SsizeObjArgProcGen
 from .funcgen import ObjObjProcGen
 from .funcgen import ObjObjArgProcGen
+from .funcgen import ConvGen
+from .funcgen import DeconvGen
 from .number_gen import NumberGen
 from .sequence_gen import SequenceGen
 from .mapping_gen import MappingGen
@@ -33,9 +34,138 @@ from .method_gen import MethodGen
 from .getset_gen import GetSetGen
 from .utils import gen_func
 from .cxxwriter import CxxWriter
+    
+
+class ConvDefGen:
+    """%%CONV_DEF%% の置換を行うクラス
+    """
+    
+    def __init__(self, conv_gen, deconv_gen):
+        self.__conv_def_pat = re.compile('^(\s*)%%CONV_DEF%%$')
+        self.__conv_gen = conv_gen
+        self.__deconv_gen = deconv_gen
+
+    def __call__(self, line, writer):
+        result = self.__conv_def_pat.match(line)
+        if result:
+            # Conv の宣言
+            writer.indent_set(len(result.group(1)))
+            if self.__conv_gen is None:
+                writer.gen_CRLF()
+                if self.__deconv_gen is None:
+                    writer.gen_comment('このクラスは Conv/Deconv を持たない．')
+                else:
+                    writer.gen_comment('このクラスは Conv を持たない．')
+            else:
+                self.__conv_gen.gen_decl(writer)
+            writer.indent_set(0)
+
+            # Deconv の宣言
+            writer.indent_set(len(result.group(1)))
+            if self.__deconv_gen is None:
+                if self.__conv_gen is not None:
+                    writer.gen_CRLF()
+                    writer.gen_comment('このクラスは Deconv を持たない．')
+            else:
+                self.__deconv_gen.gen_decl(writer)
+            writer.indent_set(0)
+            return True
+        return False
 
 
-class PyObjGen:
+class ToDefGen:
+    """%%TOPYOBJECT%% の置換を行うクラス
+    """
+    
+    def __init__(self, conv_gen, deconv_gen):
+        self.__to_def_pat = re.compile('^(\s*)%%TOPYOBJECT%%$')
+        self.__conv_gen = conv_gen
+        self.__deconv_gen = deconv_gen
+
+    def __call__(self, line, writer):
+        result = self.__to_def_pat.match(line)
+        if result:
+            # ToPyObject の宣言
+            if self.__conv_gen is not None:
+                writer.indent_set(len(result.group(1)))
+                self.__conv_gen.gen_tofunc(writer)
+                writer.indent_set(0)
+            # FromPyObject の宣言
+            if self.__deconv_gen is not None:
+                writer.indent_set(len(result.group(1)))
+                self.__deconv_gen.gen_fromfunc(writer)
+                writer.indent_set(0)
+            return True
+        return False
+
+    
+class ExtraCodeGen:
+    """%%EXTRA_CODE%% の置換を行うクラス
+    """
+    
+    def __init__(self, gen):
+        self.__gen = gen
+
+    def __call__(self, line, writer):
+        if line == '%%EXTRA_CODE%%':
+            self.__gen.make_extra_code(writer)
+            return True
+        return False
+
+
+class TpInitGen:
+    """%%TP_INIT_CDE%% の置換を行うクラス
+    """
+
+    def __init__(self, gen):
+        self.__gen = gen
+        self.__tp_init_pat = re.compile('^(\s*)%%TP_INIT_CODE%%$')
+
+    def __call__(self, line, writer):
+        result = self.__tp_init_pat.match(line)
+        if result:
+            # tp_XXX 設定の置換
+            writer.indent_set(len(result.group(1)))
+            self.__gen.make_tp_init(writer)
+            writer.indent_set(0)
+            return True
+        return False
+
+
+class ExInitGen:
+    """%%EX_INIT_CODE%% の置換を行うクラス
+    """
+
+    def __init__(self, gen):
+        self.__gen = gen
+        self.__ex_init_pat = re.compile('^(\s*)%%EX_INIT_CODE%%$')
+
+    def __call__(self, line, writer):
+        result = self.__ex_init_pat.match(line)
+        if result:
+            # 追加の初期化コードの置換
+            writer.indent_set(len(result.group(1)))
+            self.__gen.make_ex_init(writer)
+            writer.indent_set(0)
+            return True
+        return False
+
+
+class ConvCodeGen:
+    """%%CONV_CODE%% の置換を行うクラス
+    """
+
+    def __init__(self, gen):
+        self.__gen = gen
+
+    def __call__(self, line, writer):
+        if line == '%%CONV_CODE%%':
+            self.__gen.make_conv_code(writer)
+            return True
+        return False
+    
+
+class PyObjGen(GenBase):
     """PyObject の拡張クラスを生成するクラス
     """
     
@@ -48,6 +178,8 @@ class PyObjGen:
                  pyname,
                  header_include_files=[],
                  source_include_files=[]):
+        super().__init__()
+        
         # C++ のクラス名
         self.classname = classname
         # Python-CAPI 用のクラス名
@@ -68,9 +200,6 @@ class PyObjGen:
         self.header_include_files = header_include_files
         # ソースファイル用のインクルードファイルリスト
         self.source_include_files = source_include_files
-
-        # 出力するC++の変数名の重複チェック用の辞書
-        self.__name_dict = set()
 
         # プリアンブル出力器
         self.__preamble_gen = None
@@ -98,11 +227,11 @@ class PyObjGen:
         self.__mapping_gen = None
 
         # メソッド構造体の定義
-        self.__method_name = self.__check_name('method')
+        self.__method_name = self.check_name('method')
         self.__method_gen = MethodGen()
 
         # get/set 構造体の定義
-        self.__getset_name = self.__check_name('getset')
+        self.__getset_name = self.check_name('getset')
         self.__getset_gen = GetSetGen()
 
         # 追加の初期化コード
@@ -123,12 +252,10 @@ class PyObjGen:
 
         # 置換用のパタン
         # 字下げ位置を求めるために正規表現を用いている．
-        self.__conv_def_pat = re.compile('^(\s*)%%CONV_DEF%%$')
-        self.__deconv_def_pat = re.compile('^(\s*)%%DECONV_DEF%%$')
-        self.__to_def_pat = re.compile('^(\s*)%%TOPYOBJECT%%$')
-        self.__from_def_pat = re.compile('^(\s*)%%FROMPYOBJECT%%$')
-        self.__tp_init_pat = re.compile('^(\s*)%%TP_INIT_CODE%%$')
-        self.__ex_init_pat = re.compile('^(\s*)%%EX_INIT_CODE%%$')
+        #self.__conv_def_pat = re.compile('^(\s*)%%CONV_DEF%%$')
+        #self.__to_def_pat = re.compile('^(\s*)%%TOPYOBJECT%%$')
+        #self.__tp_init_pat = re.compile('^(\s*)%%TP_INIT_CODE%%$')
+        #self.__ex_init_pat = re.compile('^(\s*)%%EX_INIT_CODE%%$')
 
     def add_preamble(self, func_body):
         if self.__preamble_gen is not None:
@@ -142,7 +269,7 @@ class PyObjGen:
         """
         if self.__dealloc_gen is not None:
             raise ValueError('dealloc has been already defined')
-        func_name = self.__complete(func_name, 'dealloc_func')
+        func_name = self.complete_name(func_name, 'dealloc_func')
         self.__dealloc_gen = DeallocGen(self, func_name, dealloc_func)
 
     def add_repr(self, *,
@@ -152,7 +279,7 @@ class PyObjGen:
         """
         if self.__repr_gen is not None:
             raise ValueError('repr has been already defined')
-        func_name = self.__complete(func_name, 'repr_func')
+        func_name = self.complete_name(func_name, 'repr_func')
         self.__repr_gen = ReprFuncGen(self, func_name, repr_func)
 
     def add_hash(self, *,
@@ -162,7 +289,7 @@ class PyObjGen:
         """
         if self.__hash_gen is not None:
             raise ValueError('hash has been already defined')
-        func_name = self.__complete(func_name, 'hash_func')
+        func_name = self.complete_name(func_name, 'hash_func')
         self.__hash_gen = HashFuncGen(self, func_name, hash_func)
 
     def add_call(self, *,
@@ -172,7 +299,7 @@ class PyObjGen:
         """
         if self.__call_gen is not None:
             raise ValueError('hash has been already defined')
-        func_name = self.__complete(func_name, 'call_func')
+        func_name = self.complete_name(func_name, 'call_func')
         self.__call_gen = TernaryFuncGen(self, func_name, call_func)
 
     def add_str(self, *,
@@ -182,7 +309,7 @@ class PyObjGen:
         """
         if self.__str_gen is not None:
             raise ValueError('str has been already defined')
-        func_name = self.__complete(func_name, 'str_func')
+        func_name = self.complete_name(func_name, 'str_func')
         self.__str_gen = ReprFuncGen(self, func_name, str_func)
 
     def add_richcompare(self, *,
@@ -192,7 +319,7 @@ class PyObjGen:
         """
         if self.__richcompare_gen is not None:
             raise ValueError('richcompare has been already defined')
-        func_name = self.__complete(func_name, 'richcompare_func')
+        func_name = self.complete_name(func_name, 'richcompare_func')
         self.__richcompare_gen = RichcmpFuncGen(self, func_name, cmp_func)
         
     def add_number(self, *,
@@ -236,7 +363,7 @@ class PyObjGen:
         """
         if self.__number_gen is not None:
             raise ValueError('number has been already defined')
-        self.__number_name = self.__complete(name, 'number')
+        self.__number_name = self.complete_name(name, 'number')
         self.__number_gen = NumberGen(
             self,
             nb_add=nb_add,
@@ -289,7 +416,7 @@ class PyObjGen:
         """
         if self.__sequence_gen is not None:
             raise ValueError('sequence has been already defined')
-        self.__sequence_name = self.__complete(name, 'sequence')
+        self.__sequence_name = self.complete_name(name, 'sequence')
         self.__sequence_gen = SequenceGen(
             self,
             sq_length=sq_length,
@@ -310,7 +437,7 @@ class PyObjGen:
         """
         if self.__mapping_gen is not None:
             raise ValueError('mapping has been already defined')
-        self.__mapping_name = self.__complete(name, 'mapping')
+        self.__mapping_name = self.complete_name(name, 'mapping')
         self.__mapping_gen = MappingGen(
             self,
             mp_length=mp_length,
@@ -325,7 +452,7 @@ class PyObjGen:
         """
         if self.__init_gen is not None:
             raise ValueError('init has been already defined')
-        func_name = self.__complete(func_name, 'init_func')
+        func_name = self.complete_name(func_name, 'init_func')
         self.__init_gen = InitProcGen(self, func_name, func_body, arg_list)
         
     def add_new(self, *,
@@ -336,7 +463,7 @@ class PyObjGen:
         """
         if self.__new_gen is not None:
             raise ValueError('new has been already defined')
-        func_name = self.__complete(func_name, 'new_func')
+        func_name = self.complete_name(func_name, 'new_func')
         self.__new_gen = NewFuncGen(self, func_name, func_body, arg_list)
         
     def add_method(self, name, *,
@@ -348,7 +475,7 @@ class PyObjGen:
         """メソッド定義を追加する．
         """
         # デフォルトの関数名は Python のメソッド名をそのまま用いる．
-        func_name = self.__complete(func_name, name)
+        func_name = self.complete_name(func_name, name)
         self.__method_gen.add(self, func_name,
                               name=name,
                               arg_list=arg_list,
@@ -361,7 +488,7 @@ class PyObjGen:
                    func_body=None):
         """getter 定義を追加する．
         """
-        self.__check_name(func_name)
+        self.check_name(func_name)
         self.__getset_gen.add_getter(self, func_name,
                                      has_closure=has_closure,
                                      func_body=func_body)
@@ -371,7 +498,7 @@ class PyObjGen:
                    func_body=None):
         """setter 定義を追加する．
         """
-        self.__check_name(func_name)
+        self.check_name(func_name)
         self.__getset_gen.add_setter(self, func_name,
                                      has_closure=has_closure,
                                      func_body=func_body)
@@ -388,6 +515,12 @@ class PyObjGen:
                                    setter_name=setter_name,
                                    closure=closure,
                                    doc_str=doc_str)
+    
+    def add_conv(self, body):
+        self.__conv_gen = ConvGen(self, body)
+
+    def add_deconv(self, body):
+        self.__deconv_gen = DeconvGen(self, body)
 
     def new_lenfunc(self, name, body):
         return LenFuncGen(self, name, body)
@@ -415,272 +548,98 @@ class PyObjGen:
 
     def new_objobjargproc(self, name, body):
         return ObjObjArgProcGen(self, name, body)
-    
-    def add_conv(self, func_body=None):
-        if func_body is None:
-            # デフォルト実装
-            def conv_gen(writer):
-                writer.write_line(f'new (&obj1->mVal) {self.classname}(val);')
-            func_body = conv_gen
-        self.__conv_gen = func_body
-
-    def add_deconv(self, func_body=None):
-        if func_body is None:
-            # デフォルト実装
-            def deconv_gen(writer):
-                with writer.gen_if_block(f'{gen.pyclassname}::Check(obj)'):
-                    writer.gen_assign('val', f'{gen.pyclassname}::_get_ref(obj)')
-                    writer.gen_return('true')
-                writer.gen_return('false')
-            func_body = deconv_gen
-        self.__deconv_gen = func_body
                 
     def make_header(self, fout=sys.stdout):
         """ヘッダファイルを出力する．"""
 
-        # テンプレートファイルは同じディレクトリにあると仮定している．
-        template_file = self.template_file("PyCustom.h")
-
-        # 結果のヘッダファイル名
-        header_file = f'{self.pyclassname}.h'
-
-        # インタロック用マクロ名
-        cap_header_file = self.pyclassname.upper()
-
-        writer = CxxWriter(fout=fout)
-        with open(template_file, 'rt') as fin:
-            for line in fin:
-                # 余分な改行を削除
-                line = line.rstrip()
-
-                if line == '%%INCLUDES%%':
-                    # インクルードファイルの置換
-                    for filename in self.header_include_files:
-                        writer.gen_include(filename)
-                    continue
-
-                if line == '%%BEGIN_NAMESPACE%%':
-                    # 名前空間の開始
-                    if self.namespace is not None:
-                        writer.write_line(f'BEGIN_NAMESPACE_{self.namespace}')
-                    continue
-
-                if line == '%%END_NAMESPACE%%':
-                    # 名前空間の終了
-                    if self.namespace is not None:
-                        writer.write_line(f'END_NAMESPACE_{self.namespace}')
-                    continue
-                
-                result = self.__conv_def_pat.match(line)
-                if result:
-                    # Conv の宣言
-                    writer.indent_set(len(result.group(1)))
-                    self.conv_def_gen(writer)
-                    writer.indent_set(0)
-                    continue
-
-                result = self.__deconv_def_pat.match(line)
-                if result:
-                    # Deconv の宣言
-                    writer.indent_set(len(result.group(1)))
-                    self.deconv_def_gen(writer)
-                    writer.indent_set(0)
-                    continue
-
-                result = self.__to_def_pat.match(line)
-                if result:
-                    # ToPyObject の宣言
-                    writer.indent_set(len(result.group(1)))
-                    self.to_def_gen(writer)
-                    writer.indent_set(0)
-                    continue
-
-                result = self.__from_def_pat.match(line)
-                if result:
-                    # FromPyObject の宣言
-                    writer.indent_set(len(result.group(1)))
-                    self.from_def_gen(writer)
-                    writer.indent_set(0)
-                    continue
-                
-                # 年の置換
-                line = line.replace('%%Year%%', self.year())
-                # インタロック用マクロ名の置換
-                line = line.replace('%%PYCUSTOM%%', cap_header_file)
-                # クラス名の置換
-                line = line.replace('%%Custom%%', self.classname)
-                # Python 拡張用のクラス名の置換
-                line = line.replace('%%PyCustom%%', self.pyclassname)
-                # 名前空間の置換
-                if self.namespace is not None:
-                    line = line.replace('%%NAMESPACE%%', self.namespace)
-
-                writer.write_line(line)
-
-    def conv_def_gen(self, writer):
-        writer.gen_CRLF()
-        if self.__conv_gen is None:
-            if self.__deconv_gen is None:
-                writer.gen_comment('このクラスは Conv/Deconv を持たない．')
-            else:
-                writer.gen_comment('このクラスは Conv を持たない．')
-        else:
-            writer.gen_dox_comment(f'@brief {self.classname} を PyObject* に変換するファンクタクラス')
-            with writer.gen_struct_block('Conv'):
-                args = ('const ElemType& val', )
-                writer.gen_func_declaration(return_type='PyObject*',
-                                            func_name='operator()',
-                                            args=args)
-
-    def deconv_def_gen(self, writer):
-        if self.__deconv_gen is None:
-            if self.__conv_gen is not None:
-                writer.gen_CRLF()
-                writer.gen_comment('このクラスは Deconv を持たない．')
-        else:
-            writer.gen_CRLF()
-            writer.gen_dox_comment(f'@brief PyObject* から {self.classname} を取り出すファンクタクラス')
-            with writer.gen_struct_block('Deconv'):
-                args = ('PyObject* obj',
-                        'ElemType& val')
-                writer.gen_func_declaration(return_type='bool',
-                                            func_name='operator()',
-                                            args=args)
-                
-    def to_def_gen(self, writer):
-        if self.__conv_gen is not None:
-            writer.gen_CRLF()
-            writer.gen_dox_comment(f'@brief {self.classname} を表す PyObject を作る．')
-            writer.gen_dox_comment('@return 生成した PyObject を返す．')
-            writer.gen_dox_comment('')
-            writer.gen_dox_comment('返り値は新しい参照が返される．')
-            with writer.gen_func_block(is_static=True,
-                                       return_type='PyObject*',
-                                       func_name='ToPyObject',
-                                       args=('const ElemType& val ///< [in] 値', )):
-                writer.gen_vardecl(typename='Conv',
-                                   varname='conv')
-                writer.gen_return('conv(val)')
-
-    def from_def_gen(self, writer):
-        if self.__deconv_gen is not None:
-            writer.gen_CRLF()
-            writer.gen_dox_comment(f'@brief PyObject から {self.classname} を取り出す．')
-            writer.gen_dox_comment('@return 正しく変換できた時に true を返す．')
-            with writer.gen_func_block(is_static=True,
-                                       return_type='bool',
-                                       func_name='FromPyObject',
-                                       args=('PyObject* obj, ///< [in] Python のオブジェクト',
-                                             'ElemType& val  ///< [out] 結果を格納する変数')):
-                writer.gen_vardecl(typename='Deconv',
-                                   varname='deconv')
-                writer.gen_return('deconv(obj, val)')
-                
-    def make_source(self, fout=sys.stdout):
-        """ソースファイルを出力する．"""
+        # Generator リスト
+        gen_list = []
+        gen_list.append(IncludesGen(self.header_include_files))
+        gen_list.append(BeginNamespaceGen(self.namespace))
+        gen_list.append(EndNamespaceGen(self.namespace))
+        gen_list.append(ConvDefGen(self.__conv_gen, self.__deconv_gen))
+        gen_list.append(ToDefGen(self.__conv_gen, self.__deconv_gen))
         
-        # テンプレートファイルは同じディレクトリにあると仮定している．
-        template_file = self.template_file("PyCustom.cc")
+        # 置換リスト
+        replace_list = []
+        # 年の置換
+        replace_list.append(('%%Year%%', self.year()))
+        # インタロック用マクロ名の置換
+        replace_list.append(('%%PYCUSTOM%%', self.pyclassname.upper()))
+        # クラス名の置換
+        replace_list.append(('%%Custom%%', self.classname))
+        # Python 拡張用のクラス名の置換
+        replace_list.append(('%%PyCustom%%', self.pyclassname))
+        # 名前空間の置換
+        if self.namespace is not None:
+            replace_list.append(('%%NAMESPACE%%', self.namespace))
 
         writer = CxxWriter(fout=fout)
-        with open(template_file, 'rt') as fin:
-            for line in fin:
-                # 余分な改行を削除
-                line = line.rstrip()
+        self.make_file(template_file=self.template_file('PyCustom.h'),
+                       writer=CxxWriter(fout=fout),
+                       gen_list=gen_list,
+                       replace_list=replace_list)
 
-                if line == '%%INCLUDES%%':
-                    # インクルードファイルの置換
-                    for filename in self.source_include_files:
-                        writer.gen_include(filename)
-                    continue
+    def make_source(self, fout=sys.stdout):
 
-                if line == '%%BEGIN_NAMESPACE%%':
-                    # 名前空間の開始
-                    if self.namespace is not None:
-                        writer.write_line(f'BEGIN_NAMESPACE_{self.namespace}')
-                    continue
+        # Generator リスト
+        gen_list = []
+        gen_list.append(IncludesGen(self.source_include_files))
+        gen_list.append(BeginNamespaceGen(self.namespace))
+        gen_list.append(EndNamespaceGen(self.namespace))
+        gen_list.append(ExtraCodeGen(self))
+        gen_list.append(TpInitGen(self))
+        gen_list.append(ExInitGen(self))
+        gen_list.append(ConvCodeGen(self))
+        
+        # 置換リスト
+        replace_list = []
+        # 年の置換
+        replace_list.append(('%%Year%%', self.year()))
+        # クラス名の置換
+        replace_list.append(('%%Custom%%', self.classname))
+        # Python 拡張用のクラス名の置換
+        replace_list.append(('%%PyCustom%%', self.pyclassname))
+        # Python 上のタイプ名の置換
+        replace_list.append(('%%TypeName%%', self.pyname))
+        # 名前空間の置換
+        if self.namespace is not None:
+            replace_list.append(('%%NAMESPACE%%', self.namespace))
+        # タイプクラス名の置換
+        replace_list.append(('%%CustomType%%', self.typename))
+        # オブジェクトクラス名の置換
+        replace_list.append(('%%CustomObject%%', self.objectname))
 
-                if line == '%%END_NAMESPACE%%':
-                    # 名前空間の終了
-                    if self.namespace is not None:
-                        writer.write_line(f'END_NAMESPACE_{self.namespace}')
-                    continue
-
-                if line == '%%EXTRA_CODE%%':
-                    self.make_extra_code(writer)
-                    continue
-
-                result = self.__tp_init_pat.match(line)
-                if result:
-                    # tp_XXX 設定の置換
-                    writer.indent_set(len(result.group(1)))
-                    self.make_tp_init(writer)
-                    writer.indent_set(0)
-                    continue
-
-                result = self.__ex_init_pat.match(line)
-                if result:
-                    # 追加の初期化コードの置換
-                    if self.__ex_init_gen is not None:
-                        writer.indent_set(len(result.group(1)))
-                        self.__ex_init_gen(writer)
-                        writer.indent_set(0)
-                    continue
-
-                if line == '%%CONV_CODE%%':
-                    # Conv 関数の置換
-                    if self.__conv_gen is not None:
-                        self.make_conv(writer)
-                    continue
-
-                if line == '%%DECONV_CODE%%':
-                    # Deconv 関数の置換
-                    if self.__deconv_gen is not None:
-                        self.make_deconv(writer)
-                    continue
-                
-                # 年の置換
-                line = line.replace('%%Year%%', self.year())
-                # クラス名の置換
-                line = line.replace('%%Custom%%', self.classname)
-                # Python 拡張用のクラス名の置換
-                line = line.replace('%%PyCustom%%', self.pyclassname)
-                # Python 上のタイプ名の置換
-                line = line.replace('%%TypeName%%', self.pyname)
-                # 名前空間の置換
-                if self.namespace is not None:
-                    line = line.replace('%%NAMESPACE%%', self.namespace)
-                # タイプクラス名の置換
-                line = line.replace('%%CustomType%%', self.typename)
-                # オブジェクトクラス名の置換
-                line = line.replace('%%CustomObject%%', self.objectname)
-
-                writer.write_line(line)
+        writer = CxxWriter(fout=fout)
+        self.make_file(template_file=self.template_file('PyCustom.cc'),
+                       writer=CxxWriter(fout=fout),
+                       gen_list=gen_list,
+                       replace_list=replace_list)
 
     def make_extra_code(self, writer):
         if self.__preamble_gen is not None:
             self.__preamble_gen(writer)
         gen_func(self.__dealloc_gen, writer,
-                 description='終了関数')
+                 comment='終了関数')
         gen_func(self.__repr_gen, writer, 
-                 description='repr 関数')
+                 comment='repr 関数')
         writer.gen_number(self.__number_gen, self.__number_name)
         writer.gen_sequence(self.__sequence_gen, self.__sequence_name)
         writer.gen_mapping(self.__mapping_gen, self.__mapping_name)
         gen_func(self.__hash_gen, writer, 
-                 description='hash 関数')
+                 comment='hash 関数')
         gen_func(self.__call_gen, writer,
-                 description='call 関数')
+                 comment='call 関数')
         gen_func(self.__str_gen, writer, 
-                 description='str 関数')
+                 comment='str 関数')
         gen_func(self.__richcompare_gen, writer,
-                 description='richcompare 関数')
+                 comment='richcompare 関数')
         writer.gen_methods(self.__method_gen, self.__method_name)
         writer.gen_getset(self.__getset_gen, self.__getset_name)
         gen_func(self.__init_gen, writer,
-                 description='init 関数')
+                 comment='init 関数')
         gen_func(self.__new_gen, writer,
-                 description='new 関数')
+                 comment='new 関数')
         
     def make_tp_init(self, writer):
         tp_list = []
@@ -716,61 +675,18 @@ class PyObjGen:
         for name, rval in tp_list:
             writer.gen_assign(f'{self.typename}.tp_{name}', f'{rval}')
 
-    def make_conv(self, writer):
-        description = f'{self.classname} を PyObject に変換する．'
-        func_name = f'{self.pyclassname}::Conv::operator()'
-        args = (f'const {self.classname}& val', )
-        with writer.gen_func_block(description=description,
-                                   return_type='PyObject*',
-                                   func_name=func_name,
-                                   args=args):
-            writer.gen_auto_assign('type', f'{self.pyclassname}::_typeobject()')
-            writer.gen_auto_assign('obj', 'type->tp_alloc(type, 0)')
-            writer.gen_auto_assign('obj1', f'reinterpret_cast<{self.objectname}*>(obj)')
+    def make_ex_init(self, writer):
+        if self.__ex_init_gen is not None:
+            self.__ex_init_gen(writer)
+
+    def make_conv_code(self, writer):
+        # Conv 関数の置換
+        if self.__conv_gen is not None:
             self.__conv_gen(writer)
-            writer.gen_return('obj')
-
-    def make_deconv(self, writer):
-        description = f'PyObject を {self.classname} に変換する．'
-        func_name = f'{self.pyclassname}::Deconv::operator()'
-        args = ('PyObject* obj',
-                f'{self.classname}& val')
-        with writer.gen_func_block(description=description,
-                                   return_type='bool',
-                                   func_name=func_name,
-                                   args=args):
+        # Deconv 関数の置換
+        if self.__deconv_gen is not None:
             self.__deconv_gen(writer)
-    
-    def __complete(self, name, default_name):
-        """名前がない場合に名前を補完する．
-        """
-        if name is None:
-            name = default_name
-        return self.__check_name(name)
-
-    def __check_name(self, name):
-        """名前が重複していないかチェックする．
-
-        重複していたら例外を送出する．
-        """
-        if name in self.__name_dict:
-            raise ValueError(f'{name} is already in use')
-        self.__name_dict.add(name)
-        return name
-
-    @staticmethod
-    def year():
-        """現在の年を表す文字列を返す．
-        """
-        return str(datetime.datetime.now().year)
-
-    @staticmethod
-    def template_file(filename):
-        """テンプレートファイル名を返す．
-        """
-        basedir = os.path.dirname(__file__)
-        return os.path.join(basedir, filename)
-
+        
     def gen_obj_conv(self, writer, *,
                      objname='self',
                      varname):

@@ -46,9 +46,9 @@ class MappingGen(Mapping):
         gen_func(self.mp_ass_subscript, writer)
 
         # 構造体定義を生成する．
-        writer.gen_CRLF()
-        writer.gen_comment('Mapping オブジェクト構造体')
-        with writer.gen_struct_init_block('PyMappingMethods', name):
+        with writer.gen_struct_init_block(structname='PyMappingMethods',
+                                          varname=name,
+                                          comment='Mapping オブジェクト構造体'):
             mp_lines = []
             add_member_def(mp_lines, 'mp_length', self.mp_length)
             add_member_def(mp_lines, 'mp_subscript', self.mp_subscript)

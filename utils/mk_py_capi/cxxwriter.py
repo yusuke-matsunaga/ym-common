@@ -236,14 +236,22 @@ class CxxWriter:
         self.write_line('Py_RETURN_NONE;')
         
     def gen_func_declaration(self, *,
-                             description=None,
+                             no_crlf=False,
+                             comment=None,
+                             comments=None,
+                             dox_comment=None,
+                             dox_comments=None,
                              is_static=False,
                              return_type,
                              func_name,
                              args):
         """関数宣言を出力する．
         """
-        self.gen_func_header(description=description,
+        self.gen_func_header(no_crlf=no_crlf,
+                             comment=comment,
+                             comments=comments,
+                             dox_comment=dox_comment,
+                             dox_comments=dox_comments,
                              is_static=is_static,
                              is_declaration=True,
                              return_type=return_type,
@@ -251,7 +259,11 @@ class CxxWriter:
                              args=args)
 
     def gen_func_header(self, *,
-                        description=None,
+                        no_crlf=False,
+                        comment=None,
+                        comments=None,
+                        dox_comment=None,
+                        dox_comments=None,
                         is_static=False,
                         is_declaration,
                         return_type,
@@ -259,9 +271,18 @@ class CxxWriter:
                         args):
         """関数ヘッダを出力する．
         """
-        self.gen_CRLF()
-        if description is not None:
-            self.gen_comment(f'{description}')
+        if not no_crlf:
+            self.gen_CRLF()
+        if comment is not None:
+            self.gen_comment(comment)
+        if comments is not None:
+            for comment in comments:
+                self.gen_comment(comment)
+        if dox_comment is not None:
+            self.gen_dox_comment(dox_comment)
+        if dox_comments is not None:
+            for comment in dox_comments:
+                self.gen_dox_comment(comment)
         if is_static:
             self.write_line('static')
         self.write_line(f'{return_type}')
@@ -276,7 +297,11 @@ class CxxWriter:
             self.write_lines(args, delim=',')
         
     def gen_func_block(self, *,
-                       description=None,
+                       no_crlf=False,
+                       comment=None,
+                       comments=None,
+                       dox_comment=None,
+                       dox_comments=None,
                        is_static=False,
                        return_type,
                        func_name,
@@ -289,7 +314,11 @@ class CxxWriter:
           ...
         という風に用いる．
         """
-        self.gen_func_header(description=description,
+        self.gen_func_header(no_crlf=no_crlf,
+                             comment=comment,
+                             comments=comments,
+                             dox_comment=dox_comment,
+                             dox_comments=dox_comments,
                              is_static=is_static,
                              is_declaration=False,
                              return_type=return_type,
@@ -338,24 +367,77 @@ class CxxWriter:
 
     def gen_array_block(self, *,
                         typename,
-                        arrayname):
+                        arrayname,
+                        no_crlf=False,
+                        comment=None,
+                        comments=None,
+                        dox_comment=None,
+                        dox_comments=None):
         """initializer を持つ配列定義用ブロックを出力する．
         """
+        if not no_crlf:
+            self.gen_CRLF()
+        if comment is not None:
+            self.gen_comment(comment)
+        if comments is not None:
+            for comment in comments:
+                self.gen_comment(comment)
+        if dox_comment is not None:
+            self.gen_dox_comment(dox_comment)
+        if dox_comments is not None:
+            for comment in dox_comments:
+                self.gen_dox_comment(comment)
         return CodeBlock(self,
                          prefix=f'{typename} {arrayname}[] = ',
                          postfix=';')
 
-    def gen_struct_block(self, structname):
+    def gen_struct_block(self, structname, *,
+                         no_crlf=False,
+                         comment=None,
+                         comments=None,
+                         dox_comment=None,
+                         dox_comments=None):
         """struct ブロックを出力する．
         """
+        if not no_crlf:
+            self.gen_CRLF()
+        if comment is not None:
+            self.gen_comment(comment)
+        if comments is not None:
+            for comment in comments:
+                self.gen_comment(comment)
+        if dox_comment is not None:
+            self.gen_dox_comment(dox_comment)
+        if dox_comments is not None:
+            for comment in dox_comments:
+                self.gen_dox_comment(comment)
         return CodeBlock(self,
                          prefix=f'struct {structname} ',
                          postfix=';')
                          
 
-    def gen_struct_init_block(self, structname, varname):
+    def gen_struct_init_block(self, *,
+                              structname,
+                              varname,
+                              no_crlf=False,
+                              comment=None,
+                              comments=None,
+                              dox_comment=None,
+                              dox_comments=None):
         """struct の初期化用ブロックを出力する．
         """
+        if not no_crlf:
+            self.gen_CRLF()
+        if comment is not None:
+            self.gen_comment(comment)
+        if comments is not None:
+            for comment in comments:
+                self.gen_comment(comment)
+        if dox_comment is not None:
+            self.gen_dox_comment(dox_comment)
+        if dox_comments is not None:
+            for comment in dox_comments:
+                self.gen_dox_comment(comment)
         return CodeBlock(self,
                          prefix=f'{structname} {varname} = ',
                          postfix=';')

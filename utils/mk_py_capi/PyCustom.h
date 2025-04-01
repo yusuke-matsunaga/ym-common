@@ -28,7 +28,6 @@ class %%PyCustom%%
 
 public:
   %%CONV_DEF%%
-  %%DECONV_DEF%%
 
 
 public:
@@ -44,7 +43,6 @@ public:
     PyObject* m ///< [in] 親のモジュールを表す PyObject
   );
   %%TOPYOBJECT%%
-  %%FROMPYOBJECT%%
 
   /// @brief PyObject が %%Custom%% タイプか調べる．
   static

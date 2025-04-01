@@ -54,7 +54,6 @@ bool
   return false;
 }
 %%CONV_CODE%%
-%%DECONV_CODE%%
 
 // @brief PyObject が %%Custom%% タイプか調べる．
 bool

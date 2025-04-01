@@ -76,9 +76,9 @@ class SequenceGen(Sequence):
         gen_func(self.sq_inplace_repeat, writer)
 
         # 構造体定義を生成する．
-        writer.gen_CRLF()
-        writer.gen_comment('Sequence オブジェクト構造体')
-        with writer.gen_struct_init_block('PySequenceMethods', name):
+        with writer.gen_struct_init_block(structname='PySequenceMethods',
+                                          varname=name,
+                                          comment='Sequence オブジェクト構造体'):
             sq_lines = []
             add_member_def(sq_lines, 'sq_length', self.sq_length)
             add_member_def(sq_lines, 'sq_concat', self.sq_concat)

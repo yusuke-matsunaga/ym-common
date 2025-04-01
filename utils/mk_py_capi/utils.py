@@ -24,9 +24,12 @@ def analyze_args(arg_list):
 
 
 def gen_func(func_gen, writer, *,
-             description=None):
+             comment=None,
+             comments=None):
     if func_gen is not None:
-        func_gen(writer, description=description)
+        func_gen(writer,
+                 comment=comment,
+                 comments=comments)
         
 
 def add_member_def(line_list, member_name, func_def):
