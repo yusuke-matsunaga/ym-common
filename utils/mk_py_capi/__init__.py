@@ -8,5 +8,6 @@
 """
 
 from .pyobj_gen import PyObjGen
+from .module_gen import ModuleGen
 from .arg import IntArg, DoubleArg, RawObjArg
 from .arg import BoolArg, StringArg, ObjArg, TypedObjArg

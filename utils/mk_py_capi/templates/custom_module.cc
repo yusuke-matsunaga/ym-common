@@ -1,6 +1,6 @@
 
-/// @file %%MODULENAME%%_module.cc
-/// @brief Python 用の %%MODULENAME%% モジュールを定義する．
+/// @file %%ModuleName%%_module.cc
+/// @brief Python 用の %%ModuleName%% モジュールを定義する．
 /// @author Yusuke Matsunaga (松永 裕介)
 ///
 /// Copyright (C) %%YEAR%% Yusuke Matsunaga
@@ -16,32 +16,26 @@
 %%BEGIN_NAMESPACE%%
 
 BEGIN_NONAMESPACE
-
 %%EXTRA_CODE%%
-// メソッド定義構造体
-PyMethodDef ymbase_methods[] = {
-  {nullptr, nullptr, 0, nullptr},
-};
 
 // モジュール定義構造体
-PyModuleDef %%MODULENAME%%_module = {
+PyModuleDef %%ModuleName%%_module = {
   PyModuleDef_HEAD_INIT,
-  "%%MODULENAME%%",
+  "%%ModuleName%%",
   PyDoc_STR("%%DOC_STR%%"),
   -1,
-  ymbase_methods,
+  methods,
 };
 
 END_NONAMESPACE
 
 PyMODINIT_FUNC
-PyInit_%%MODULENAME%%()
+PyInit_%%ModuleName%%()
 {
-  auto m = PyModule::init(&%%MODULENAME%%_module);
+  auto m = PyModule::init(&%%ModuleName%%_module);
   if ( m == nullptr ) {
     return nullptr;
   }
-
   %%INIT_CODE%%
 
   return m;

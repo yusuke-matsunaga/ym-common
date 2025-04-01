@@ -227,11 +227,11 @@ class PyObjGen(GenBase):
         self.__mapping_gen = None
 
         # メソッド構造体の定義
-        self.__method_name = self.check_name('method')
+        self.__method_name = self.check_name('methods')
         self.__method_gen = MethodGen()
 
         # get/set 構造体の定義
-        self.__getset_name = self.check_name('getset')
+        self.__getset_name = self.check_name('getsets')
         self.__getset_gen = GetSetGen()
 
         # 追加の初期化コード
@@ -574,7 +574,6 @@ class PyObjGen(GenBase):
         if self.namespace is not None:
             replace_list.append(('%%NAMESPACE%%', self.namespace))
 
-        writer = CxxWriter(fout=fout)
         self.make_file(template_file=self.template_file('PyCustom.h'),
                        writer=CxxWriter(fout=fout),
                        gen_list=gen_list,
@@ -610,7 +609,6 @@ class PyObjGen(GenBase):
         # オブジェクトクラス名の置換
         replace_list.append(('%%CustomObject%%', self.objectname))
 
-        writer = CxxWriter(fout=fout)
         self.make_file(template_file=self.template_file('PyCustom.cc'),
                        writer=CxxWriter(fout=fout),
                        gen_list=gen_list,
@@ -634,8 +632,8 @@ class PyObjGen(GenBase):
                  comment='str 関数')
         gen_func(self.__richcompare_gen, writer,
                  comment='richcompare 関数')
-        writer.gen_methods(self.__method_gen, self.__method_name)
-        writer.gen_getset(self.__getset_gen, self.__getset_name)
+        self.__method_gen(writer, self.__method_name)
+        self.__getset_gen(writer, self.__getset_name)
         gen_func(self.__init_gen, writer,
                  comment='init 関数')
         gen_func(self.__new_gen, writer,

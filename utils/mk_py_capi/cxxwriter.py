@@ -149,12 +149,6 @@ class CxxWriter:
         if mapping_gen is None:
             return
         mapping_gen(self, mapping_name)
-            
-    def gen_methods(self, method_gen, method_name):
-        method_gen(self, method_name)
-
-    def gen_getset(self, getset_gen, getset_name):
-        getset_gen(self, getset_name)
 
     def gen_vardecl(self, *,
                     typename,
