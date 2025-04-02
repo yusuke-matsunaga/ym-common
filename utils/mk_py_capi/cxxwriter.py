@@ -350,6 +350,16 @@ class CxxWriter:
         return CodeBlock(self,
                          prefix=f'else if ( {condition} ) ')
 
+    def gen_switch_block(self, expr):
+        """switch 文を出力する．
+
+        with obj.gen_switch_block(expr):
+          ...
+        というふうに用いる．
+        """
+        return CodeBlock(self,
+                         prefix=f'switch ( {expr} ) ')
+        
     def gen_for_block(self,
                       init_stmt,
                       cond_expr,
@@ -461,11 +471,22 @@ class CxxWriter:
         if not noexit:
             self.gen_return('nullptr')
         
+    def gen_dox_comments(self, comments):
+        """Doxygen 用のコメントを出力する．
+        """
+        self.gen_comments(comment, doxygen=True)
+        
     def gen_dox_comment(self, comment):
         """Doxygen 用のコメントを出力する．
         """
         self.gen_comment(comment, doxygen=True)
 
+    def gen_comments(self, comments, *, doxygen=False):
+        """コメントを出力する．
+        """
+        for comment in comments:
+            self.gen_comment(comment, doxygen=doxygen)
+            
     def gen_comment(self, comment, *, doxygen=False):
         """コメントを出力する．
         """

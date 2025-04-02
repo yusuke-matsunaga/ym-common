@@ -27,8 +27,9 @@ class MethodGen:
     """メソッドを作るクラス
     """
     
-    def __init__(self):
+    def __init__(self, *, module_func=False):
         self.__method_list = []
+        self.__module_func = module_func
 
     def add(self, gen, func_name, *,
             name,
@@ -54,7 +55,7 @@ class MethodGen:
     def __call__(self, writer, name):
         # 個々のメソッドの実装コードを生成する．
         for method in self.__method_list:
-            if method.is_static:
+            if self.__module_func or method.is_static:
                 arg0 = 'PyObject* Py_UNUSED(self)'
             else:
                 arg0 = 'PyObject* self'
@@ -72,7 +73,7 @@ class MethodGen:
                                        func_name=method.func_name,
                                        args=args):
                 writer.gen_func_preamble(method.arg_list)
-                if not method.is_static:
+                if not (self.__module_func or method.is_static):
                     method.gen.gen_ref_conv(writer, refname='val')
                 method.func_body(writer)
 

@@ -7,7 +7,8 @@
 :copyright: Copyright (C) 2025 Yusuke Matsunaga, All rights reserved.
 """
 
-from .pyobj_gen import PyObjGen
 from .module_gen import ModuleGen
+from .pyobj_gen import PyObjGen
+from .enum_gen import EnumGen, EnumInfo
 from .arg import IntArg, DoubleArg, RawObjArg
 from .arg import BoolArg, StringArg, ObjArg, TypedObjArg

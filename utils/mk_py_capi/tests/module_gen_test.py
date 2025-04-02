@@ -13,5 +13,7 @@ gen = ModuleGen(modulename='test',
                 submodule_list=[('ymbase', 'PyInit_ymbase')],
                 pyclass_list=['PyJsonValue'])
 
+gen.add_method('test_method')
+
 gen.make_source()
                 

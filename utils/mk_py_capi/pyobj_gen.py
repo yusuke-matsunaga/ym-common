@@ -13,6 +13,7 @@ from .genbase import GenBase, IncludesGen, BeginNamespaceGen, EndNamespaceGen
 from .funcgen import DeallocGen
 from .funcgen import ReprFuncGen
 from .funcgen import HashFuncGen
+from .funcgen import CallFuncGen
 from .funcgen import RichcmpFuncGen
 from .funcgen import InitProcGen
 from .funcgen import NewFuncGen
@@ -294,13 +295,14 @@ class PyObjGen(GenBase):
 
     def add_call(self, *,
                  func_name=None,
-                 call_func=None):
+                 call_func=None,
+                 arg_list=[]):
         """call 関数定義を追加する．
         """
         if self.__call_gen is not None:
             raise ValueError('hash has been already defined')
         func_name = self.complete_name(func_name, 'call_func')
-        self.__call_gen = TernaryFuncGen(self, func_name, call_func)
+        self.__call_gen = CallFuncGen(self, func_name, call_func, arg_list)
 
     def add_str(self, *,
                 func_name=None,

@@ -69,7 +69,7 @@ class ModuleGen(GenBase):
         
         # メソッド構造体の定義
         self.__method_name = self.check_name('methods')
-        self.__method_gen = MethodGen()
+        self.__method_gen = MethodGen(module_func=True)
 
         # サブモジュールのリスト
         self.__submodule_list = submodule_list
@@ -92,7 +92,7 @@ class ModuleGen(GenBase):
         self.__method_gen.add(self, func_name,
                               name=name,
                               arg_list=arg_list,
-                              is_static=True,
+                              is_static=False,
                               func_body=func_body,
                               doc_str=doc_str)
 
