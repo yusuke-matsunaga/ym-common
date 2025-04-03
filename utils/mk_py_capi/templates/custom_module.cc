@@ -3,7 +3,7 @@
 /// @brief Python 用の %%ModuleName%% モジュールを定義する．
 /// @author Yusuke Matsunaga (松永 裕介)
 ///
-/// Copyright (C) %%YEAR%% Yusuke Matsunaga
+/// Copyright (C) %%Year%% Yusuke Matsunaga
 /// All rights reserved.
 
 #define PY_SSIZE_T_CLEAN

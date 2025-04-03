@@ -293,6 +293,11 @@ class PyObjGen(GenBase):
         func_name = self.complete_name(func_name, 'hash_func')
         self.__hash_gen = HashFuncGen(self, func_name, hash_func)
 
+    def add_ex_init(self, gen_body):
+        if self.__ex_init_gen is not None:
+            raise ValueError('ex_init has been already defined')
+        self.__ex_init_gen = gen_body
+                    
     def add_call(self, *,
                  func_name=None,
                  call_func=None,
@@ -521,8 +526,9 @@ class PyObjGen(GenBase):
     def add_conv(self, body):
         self.__conv_gen = ConvGen(self, body)
 
-    def add_deconv(self, body):
-        self.__deconv_gen = DeconvGen(self, body)
+    def add_deconv(self, body, *,
+                   extra_func=None):
+        self.__deconv_gen = DeconvGen(self, body, extra_func=extra_func)
 
     def new_lenfunc(self, name, body):
         return LenFuncGen(self, name, body)
@@ -686,6 +692,26 @@ class PyObjGen(GenBase):
         # Deconv 関数の置換
         if self.__deconv_gen is not None:
             self.__deconv_gen(writer)
+
+    def gen_alloc_code(self, writer, *,
+                       varname='self'):
+        """PyObject* の拡張クラスの領域を確保するコードを出力する．
+
+        ただし，Cタイプの allocate なので初期化はされていない．
+        """
+        writer.gen_auto_assign('type', f'{self.pyclassname}::_typeobject()')
+        writer.gen_auto_assign(f'{varname}', 'type->tp_alloc(type, 0)')
+
+    def gen_raw_conv(self, writer, *,
+                     varname='val'):
+        """PyObject* self から classname& val に変換するコードを出力する．
+
+        変換が成功したら true を返す．
+        失敗したら以下のコードに制御を移す．
+        """
+        with writer.gen_if_block(f'{self.pyclassname}::Check(obj)'):
+            writer.gen_assign(varname, f'{self.pyclassname}::_get_ref(obj)')
+            writer.gen_return('true')
         
     def gen_obj_conv(self, writer, *,
                      objname='self',

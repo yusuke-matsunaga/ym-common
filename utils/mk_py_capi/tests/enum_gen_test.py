@@ -12,9 +12,10 @@ from mk_py_capi import EnumGen, EnumInfo
 
 gen = EnumGen(classname='Color',
               pyname='Color',
-              enum_list=[EnumInfo('RED', 'Red', 'red'),
-                         EnumInfo('BLUE', 'Blue', 'blue'),
-                         EnumInfo('GREEN', 'Green', 'green')])
+              enum_list=[EnumInfo('Color::RED', 'Red', 'red'),
+                         EnumInfo('Color::BLUE', 'Blue', 'blue'),
+                         EnumInfo('Color::GREEN', 'Green', 'green')],
+              extra_deconv='extra_color_deconv')
 
 gen.make_header()
 gen.make_source()

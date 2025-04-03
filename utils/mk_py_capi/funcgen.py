@@ -505,7 +505,10 @@ class ConvGen:
         if body == 'default':
             # デフォルト実装
             def default_body(writer):
+                gen.gen_alloc_code(writer)
+                gen.gen_obj_conv(writer, objname='obj', varname='my_obj')
                 writer.write_line(f'new (&my_obj->mVal) {gen.classname}(val);')
+                writer.gen_return('obj')
             body = default_body
         self.body = body
 
@@ -540,28 +543,24 @@ class ConvGen:
                                    return_type='PyObject*',
                                    func_name=f'{self.gen.pyclassname}::Conv::operator()',
                                    args=(f'const {self.gen.classname}& val', )):
-            writer.gen_auto_assign('type', f'{self.gen.pyclassname}::_typeobject()')
-            writer.gen_auto_assign('obj', 'type->tp_alloc(type, 0)')
-            writer.gen_auto_assign('my_obj', f'reinterpret_cast<{self.gen.objectname}*>(obj)')
             self.body(writer)
-            writer.gen_return('obj')
 
 
 class DeconvGen:
     """Deconv ファンクタクラスを生成するクラス
     """
 
-    def __init__(self, gen, body):
+    def __init__(self, gen, body, *,
+                 extra_func=None):
         self.gen = gen
         if body == 'default':
             # デフォルト実装
             def default_body(writer):
-                with writer.gen_if_block(f'{gen.pyclassname}::Check(obj)'):
-                    writer.gen_assign('val', f'{gen.pyclassname}::_get_ref(obj)')
-                    writer.gen_return('true')
+                gen.gen_raw_conv(writer)
                 writer.gen_return('false')
             body = default_body
         self.body = body
+        self.__extra_func = extra_func
 
     def gen_decl(self, writer):
         """ヘッダ用の宣言を生成する．
@@ -597,5 +596,8 @@ class DeconvGen:
                                    return_type='bool',
                                    func_name=f'{self.gen.pyclassname}::Deconv::operator()',
                                    args=args):
+            if self.__extra_func is not None:
+                with writer.gen_if_block(f'{self.__extra_func}(obj, val)'):
+                    writer.gen_return('true')
             self.body(writer)
         
