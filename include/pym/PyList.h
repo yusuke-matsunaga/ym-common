@@ -62,15 +62,6 @@ public:
     {
       typename PyT::Deconv deconv;
 
-      // 特例: obj が T そのものだった場合．
-      {
-	T val;
-	if ( deconv(obj, val) ) {
-	  val_list = {val};
-	  return true;
-	}
-      }
-
       // 通常は T を表す PyObject のシーケンス
       if ( !PySequence_Check(obj) ) {
 	return false;
