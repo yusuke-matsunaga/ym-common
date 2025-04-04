@@ -47,7 +47,7 @@ public:
     )
     {
       if ( PyString::Check(obj) ) {
-	val = PyString::AsString(obj);
+	val = PyString::Get(obj);
 	return true;
       }
       return false;
@@ -111,7 +111,7 @@ public:
   /// Check(obj) == true であると仮定している．
   static
   std::string
-  AsString(
+  Get(
     PyObject* obj ///< [in] 対象の PyObject
   )
   {

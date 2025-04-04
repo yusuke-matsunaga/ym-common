@@ -48,7 +48,7 @@ public:
     )
     {
       if ( PyFloat::Check(obj) ) {
-	val = PyFloat::AsDouble(obj);
+	val = PyFloat::Get(obj);
 	return true;
       }
       return false;
@@ -102,7 +102,7 @@ public:
   /// Check(obj) == true であると仮定している．
   static
   ElemType
-  AsDouble(
+  Get(
     PyObject* obj ///< [in] 対象の PyObject
   )
   {

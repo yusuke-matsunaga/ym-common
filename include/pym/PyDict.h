@@ -1,8 +1,8 @@
-#ifndef PYLIST_H
-#define PYLIST_H
+#ifndef PYDICT_H
+#define PYDICT_H
 
-/// @file PyList.h
-/// @brief PyList のヘッダファイル
+/// @file PyDict.h
+/// @brief PyDict のヘッダファイル
 /// @author Yusuke Matsunaga (松永 裕介)
 ///
 /// Copyright (C) 2025 Yusuke Matsunaga
@@ -17,36 +17,38 @@
 BEGIN_NAMESPACE_YM
 
 //////////////////////////////////////////////////////////////////////
-/// @class PyList PyList.h "PyList.h"
+/// @class PyDict PyDict.h "PyDict.h"
 /// @brief Python のリストに関する関数を集めたクラス
 ///
 /// - T は要素のクラス
 /// - PyT は T と PyObject の間の変換を行うクラス
 /// - PyT は PyT::Conv(const T&) と PyT::Deconv(PyObject*, T&)
 ///   を実装している必要がある．
-/// - PyList 自身もこのインターフェイスを実装している．
+/// - PyDict 自身もこのインターフェイスを実装している．
 //////////////////////////////////////////////////////////////////////
 template<class T, class PyT>
-class PyList
+class PyDict
 {
-  using ElemType = std::vector<T>;
+  using ElemType = std::unordered_map<std::string, T>;
 
 public:
 
-  /// @brief 要素のリストを表す PyObject* を作るファンクタクラス
+  /// @brief 要素の辞書を表す PyObject* を作るファンクタクラス
   struct Conv {
     PyObject*
     operator()(
-      const ElemType& val_list
+      const ElemType& val_dict
     )
     {
       typename PyT::Conv conv;
-      SizeType n = val_list.size();
-      auto obj = PyList_New(n);
-      for ( SizeType i = 0; i < n; ++ i ) {
-	auto& val = val_list[i];
-	auto val_obj = conv(val);
-	PyList_SET_ITEM(obj, i, val_obj);
+      auto obj = PyDict_New();
+      for ( auto& p: val_dict ) {
+	auto key = p.first;
+	auto elem = p.second;
+	auto elem_obj = conv(elem);
+	if ( PyDict_SetItemString(obj, key.c_str(), elem_obj) < 0 ) {
+	  return nullptr;
+	}
       }
       return obj;
     }
@@ -54,31 +56,36 @@ public:
   };
 
 
-  /// @brief 要素のリストを取り出すファンクタクラス
+  /// @brief 要素の辞書を取り出すファンクタクラス
   struct Deconv {
     bool
     operator()(
       PyObject* obj,
-      ElemType& val_list
+      ElemType& val_dict
     )
     {
       typename PyT::Deconv deconv;
 
-      // 通常は T を表す PyObject のシーケンス
-      if ( !PySequence_Check(obj) ) {
+      if ( !PyDict_Check(obj) ) {
 	return false;
       }
-      auto n = PySequence_Size(obj);
-      val_list.clear();
-      val_list.reserve(n);
+      auto items = PyDict_Items(obj);
+      auto n = PyList_Size(items);
+      val_dict.clear();
       for ( SizeType i = 0; i < n; ++ i ) {
-	auto val_obj = PySequence_GetItem(obj, i);
+	auto item_obj = PyList_GetItem(items, i);
+	const char* key;
+	PyObject* val_obj;
+	if ( !PyArg_ParseTuple(item_obj, "(sO)", &key, &val_obj) ) {
+	  return false;
+	}
 	T val;
 	if ( !deconv(val_obj, val) ) {
 	  return false;
 	}
-	val_list.push_back(val);
+	val_dict.emplace(key, val_obj);
       }
+      Py_DecRef(items);
       return true;
     }
   };
@@ -89,19 +96,19 @@ public:
   // 外部インターフェイス
   //////////////////////////////////////////////////////////////////////
 
-  /// @brief vector<T> を表す PyObject を作る．
-  /// @return リストを表す Python のオブジェクト(PyList)を返す．
+  /// @brief unordered_map<string, T> を表す PyObject を作る．
+  /// @return リストを表す Python のオブジェクト(PyDict)を返す．
   static
   PyObject*
   ToPyObject(
-    const ElemType& val_list ///< [in] 値のリスト
+    const ElemType& val_dict ///< [in] 値の辞書
   )
   {
     Conv conv;
-    return conv(val_list);
+    return conv(val_dict);
   }
 
-  /// @brief PyObject から vector<T> を取り出す．
+  /// @brief PyObject から unordered_map<string, T> を取り出す．
   /// @return 正しく変換できた時に true を返す．
   ///
   /// deconv は PyObject* から T を取り出すファンクタクラス
@@ -109,14 +116,14 @@ public:
   bool
   FromPyObject(
     PyObject* obj,     ///< [in] Python のオブジェクト
-    ElemType& val_list ///< [out] 結果を格納するリスト
+    ElemType& val_dict ///< [out] 結果を格納する辞書
   )
   {
     Deconv deconv;
-    return deconv(obj, val_list);
+    return deconv(obj, val_dict);
   }
 
-  /// @brief PyObject がシーケンス型かどうか調べる．
+  /// @brief PyObject が辞書型かどうか調べる．
   ///
   /// 要素が T に変換可能かどうかは調べない．
   static
@@ -125,10 +132,10 @@ public:
     PyObject* obj ///< [in] 対象の Python オブジェクト
   )
   {
-    return PySequence_Check(obj);
+    return PyDict_Check(obj);
   }
 
-  /// @brief PyObject から vector<T> を取り出す．
+  /// @brief PyObject から std::unordered_map<string, T> を取り出す．
   static
   ElemType
   Get(
@@ -139,7 +146,7 @@ public:
     if ( FromPyObject(obj, val) ) {
       return val;
     }
-    PyErr_SetString(PyExc_TypeError, "not a sequence type");
+    PyErr_SetString(PyExc_TypeError, "not a dictionary type");
     return {};
   }
 
@@ -147,4 +154,4 @@ public:
 
 END_NAMESPACE_YM
 
-#endif // PYLIST_H
+#endif // PYDICT_H

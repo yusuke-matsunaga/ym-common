@@ -48,7 +48,7 @@ public:
     )
     {
       if ( PyLong::Check(obj) ) {
-	val = PyLong::AsLong(obj);
+	val = PyLong::Get(obj);
 	return true;
       }
       return false;
@@ -102,7 +102,7 @@ public:
   /// Check(obj) == true であると仮定している．
   static
   ElemType
-  AsLong(
+  Get(
     PyObject* obj ///< [in] 対象の PyObject
   )
   {
