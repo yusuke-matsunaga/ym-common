@@ -114,6 +114,18 @@ public:
     return deconv(obj, val_list);
   }
 
+  /// @brief PyObject がシーケンス型かどうか調べる．
+  ///
+  /// 要素が T に変換可能かどうかは調べない．
+  static
+  bool
+  Check(
+    PyObject* obj ///< [in] 対象の Python オブジェクト
+  )
+  {
+    return PySequence_Check(obj);
+  }
+
 };
 
 END_NAMESPACE_YM
