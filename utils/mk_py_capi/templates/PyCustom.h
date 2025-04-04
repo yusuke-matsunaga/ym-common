@@ -50,6 +50,7 @@ public:
   Check(
     PyObject* obj ///< [in] 対象の PyObject
   );
+  %%GET_DEF%%
 
   /// @brief %%Custom%% を表す PyObject から %%Custom%% を取り出す．
   /// @return %%Custom%% を返す．

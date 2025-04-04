@@ -100,6 +100,24 @@ class ToDefGen:
         return False
 
     
+class GetDefGen:
+    """%%GET_DEF%% の置換を行うクラス
+    """
+
+    def __init__(self, gen):
+        self.__get_def_pat = re.compile('^(\s*)%%GET_DEF%%')
+        self.__gen = gen
+
+    def __call__(self, line, writer):
+        result = self.__get_def_pat.match(line)
+        if result:
+            writer.indent_set(len(result.group(1)))
+            self.__gen.make_get_def(writer)
+            writer.indent_set(0)
+            return True
+        return False
+
+    
 class ExtraCodeGen:
     """%%EXTRA_CODE%% の置換を行うクラス
     """
@@ -250,13 +268,6 @@ class PyObjGen(GenBase):
         
         # 説明文
         self.doc_str = f'{self.classname} object'
-
-        # 置換用のパタン
-        # 字下げ位置を求めるために正規表現を用いている．
-        #self.__conv_def_pat = re.compile('^(\s*)%%CONV_DEF%%$')
-        #self.__to_def_pat = re.compile('^(\s*)%%TOPYOBJECT%%$')
-        #self.__tp_init_pat = re.compile('^(\s*)%%TP_INIT_CODE%%$')
-        #self.__ex_init_pat = re.compile('^(\s*)%%EX_INIT_CODE%%$')
 
     def add_preamble(self, func_body):
         if self.__preamble_gen is not None:
@@ -567,6 +578,7 @@ class PyObjGen(GenBase):
         gen_list.append(EndNamespaceGen(self.namespace))
         gen_list.append(ConvDefGen(self.__conv_gen, self.__deconv_gen))
         gen_list.append(ToDefGen(self.__conv_gen, self.__deconv_gen))
+        gen_list.append(GetDefGen(self))
         
         # 置換リスト
         replace_list = []
@@ -587,6 +599,22 @@ class PyObjGen(GenBase):
                        gen_list=gen_list,
                        replace_list=replace_list)
 
+    def make_get_def(self, writer):
+        if self.__deconv_gen is None:
+            return
+        dox_comment = f'@brief PyObject から {self.classname} を取り出す．'
+        with writer.gen_func_block(dox_comment=dox_comment,
+                                   is_static=True,
+                                   return_type='ElemType',
+                                   func_name='Get',
+                                   args=['PyObject* obj ///< [in] 対象の Python オブジェクト']):
+            writer.gen_vardecl(typename='ElemType', varname='val')
+            with writer.gen_if_block(f'{self.pyclassname}::FromPyObject(obj, val)'):
+                writer.gen_return('val')
+            writer.gen_type_error(f'"Could not convert to {self.classname}"',
+                                  noexit=True)
+            writer.gen_return('val')
+        
     def make_source(self, fout=sys.stdout):
 
         # Generator リスト
