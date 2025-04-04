@@ -538,8 +538,11 @@ class PyObjGen(GenBase):
         self.__conv_gen = ConvGen(self, body)
 
     def add_deconv(self, body, *,
-                   extra_func=None):
-        self.__deconv_gen = DeconvGen(self, body, extra_func=extra_func)
+                   extra_func=None,
+                   error_value=None):
+        self.__deconv_gen = DeconvGen(self, body,
+                                      extra_func=extra_func,
+                                      error_value=error_value)
 
     def new_lenfunc(self, name, body):
         return LenFuncGen(self, name, body)
@@ -608,7 +611,8 @@ class PyObjGen(GenBase):
                                    return_type='ElemType',
                                    func_name='Get',
                                    args=['PyObject* obj ///< [in] 対象の Python オブジェクト']):
-            writer.gen_vardecl(typename='ElemType', varname='val')
+            writer.gen_vardecl(typename='ElemType', varname='val',
+                               initializer=self.__deconv_gen.error_value)
             with writer.gen_if_block(f'{self.pyclassname}::FromPyObject(obj, val)'):
                 writer.gen_return('val')
             writer.gen_type_error(f'"Could not convert to {self.classname}"',

@@ -82,7 +82,7 @@ gen.add_attr('attr1',
              getter_name='get1',
              setter_name='set1')
 gen.add_conv('default')
-gen.add_deconv('default')
+gen.add_deconv('default', error_value='Test::error()')
 
 gen.make_header()
 

@@ -551,7 +551,8 @@ class DeconvGen:
     """
 
     def __init__(self, gen, body, *,
-                 extra_func=None):
+                 extra_func=None,
+                 error_value=None):
         self.gen = gen
         if body == 'default':
             # デフォルト実装
@@ -560,6 +561,7 @@ class DeconvGen:
                 writer.gen_return('false')
             body = default_body
         self.body = body
+        self.error_value = error_value
         self.__extra_func = extra_func
 
     def gen_decl(self, writer):
