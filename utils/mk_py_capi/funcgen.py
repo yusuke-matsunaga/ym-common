@@ -40,7 +40,7 @@ class DeallocGen(FuncBase):
         elif body == 'default':
             # デフォルト実装
             def default_body(writer):
-                writer.write_line(f'obj->mVal.~{gen.classname}()')
+                writer.write_line(f'obj->mVal.~{gen.classname}();')
             body = default_body
         self = super().__init__(gen, name, body)
 
@@ -55,7 +55,7 @@ class DeallocGen(FuncBase):
                                    args=args):
             self.gen.gen_obj_conv(writer, varname='obj')
             self.body(writer)
-            writer.write_line('PyTYPE(self)->tp_free(self)')
+            writer.write_line('Py_TYPE(self)->tp_free(self);')
 
 
 class ReprFuncGen(FuncBase):
@@ -240,7 +240,7 @@ class NewFuncGen(FuncWithArgs):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=args):
-            writer.gen_func_preamble(self.arg_list)
+            writer.gen_func_preamble(self.arg_list, force_has_keywords=True)
             self.body(writer)
 
 
@@ -333,13 +333,15 @@ class BinaryFuncGen(FuncBase):
     """
     
     def __init__(self, gen, name, body, *,
-                 arg2name='other'):
+                 arg2name=None):
         if body is None:
             # 空
             def null_body(writer):
                 pass
             body = null_body
         super().__init__(gen, name, body)
+        if arg2name is None:
+            arg2name = 'other'
         self.__args = ('PyObject* self',
                        f'PyObject* {arg2name}')
 
@@ -360,14 +362,18 @@ class TernaryFuncGen(FuncBase):
     """
     
     def __init__(self, gen, name, body, *,
-                 arg2name='obj2',
-                 arg3name='obj3'):
+                 arg2name=None,
+                 arg3name=None):
         if body is None:
             # 空
             def null_body(writer):
                 pass
             body = null_body
         super().__init__(gen, name, body)
+        if arg2name is None:
+            arg2name = 'obj2'
+        if arg3name is None:
+            arg3name = 'obj3'
         self.__args = ('PyObject* self',
                        f'PyObject* {arg2name}',
                        f'PyObject* {arg3name}')
@@ -389,13 +395,15 @@ class SsizeArgFuncGen(FuncBase):
     """
     
     def __init__(self, gen, name, body, *,
-                 arg2name='arg2'):
+                 arg2name=None):
         if body is None:
             # 空
             def null_body(writer):
                 pass
             body = null_body
         super().__init__(gen, name, body)
+        if arg2name is None:
+            arg2name = 'arg2'
         self.__args = ('PyObject* self',
                        f'Py_ssize_t {arg2name}')
 
@@ -416,14 +424,18 @@ class SsizeObjArgProcGen(FuncBase):
     """
     
     def __init__(self, gen, name, body, *,
-                 arg2name='arg2',
-                 arg3name='arg3'):
+                 arg2name=None,
+                 arg3name=None):
         if body is None:
             # 空
             def null_body(writer):
                 pass
             body = null_body
         super().__init__(gen, name, body)
+        if arg2name is None:
+            arg2name = 'arg2'
+        if arg3name is None:
+            arg3name = 'arg3'
         self.__args = ('PyObject* self',
                        f'Py_ssize_t {arg2name}',
                        f'PyObject* {arg3name}')
@@ -445,13 +457,15 @@ class ObjObjProcGen(FuncBase):
     """
     
     def __init__(self, gen, name, body, *,
-                 arg2name='obj2'):
+                 arg2name=None):
         if body is None:
             # 空
             def null_body(writer):
                 pass
             body = null_body
         super().__init__(gen, name, body)
+        if arg2name is None:
+            arg2name = 'obj2'
         self.__args = ('PyObject* self',
                        f'PyObject* {arg2name}')
 
@@ -472,14 +486,18 @@ class ObjObjArgProcGen(FuncBase):
     """
     
     def __init__(self, gen, name, body, *,
-                 arg2name='obj2',
-                 arg3name='obj3'):
+                 arg2name=None,
+                 arg3name=None):
         if body is None:
             # 空
             def null_body(writer):
                 pass
             body = null_body
         super().__init__(gen, name, body)
+        if arg2name is None:
+            arg2name = 'obj2'
+        if arg3name is None:
+            arg3name = 'obj3'
         self.__args = ('PyObject* self',
                        f'PyObject* {arg2name}',
                        f'PyObject* {arg3name}')
@@ -505,7 +523,7 @@ class ConvGen:
         if body == 'default':
             # デフォルト実装
             def default_body(writer):
-                gen.gen_alloc_code(writer)
+                gen.gen_alloc_code(writer, varname='obj')
                 gen.gen_obj_conv(writer, objname='obj', varname='my_obj')
                 writer.write_line(f'new (&my_obj->mVal) {gen.classname}(val);')
                 writer.gen_return('obj')

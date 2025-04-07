@@ -29,10 +29,14 @@ class MappingGen(Mapping):
         if mp_length is not None:
             mp_length = gen.new_lenfunc('mp_length', mp_length)
         if mp_subscript is not None:
-            mp_subscript = gen.new_binaryfunc('mp_subscript', mp_subscript)
+            mp_subscript = gen.new_binaryfunc('mp_subscript',
+                                              mp_subscript,
+                                              arg2name='key')
         if mp_ass_subscript is not None:
             mp_ass_subscript = gen.new_objobjargproc('mp_ass_subscript',
-                                                     mp_ass_subscript)
+                                                     mp_ass_subscript,
+                                                     arg2name='key',
+                                                     arg3name='obj')
         self = super().__new__(cls,
                                mp_length=mp_length,
                                mp_subscript=mp_subscript,

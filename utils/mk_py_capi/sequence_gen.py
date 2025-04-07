@@ -44,9 +44,12 @@ class SequenceGen(Sequence):
         if sq_repeat is not None:
             sq_repeat = gen.new_ssizeargfunc('sq_repeat', sq_repeat)
         if sq_item is not None:
-            sq_item = gen.new_ssizeargfunc('sq_item', sq_item)
+            sq_item = gen.new_ssizeargfunc('sq_item', sq_item,
+                                           arg2name='index')
         if sq_ass_item is not None:
-            sq_ass_item = gen.new_ssizeobjargproc('sq_ass_item', sq_ass_item)
+            sq_ass_item = gen.new_ssizeobjargproc('sq_ass_item', sq_ass_item,
+                                                  arg2name='index',
+                                                  arg3name='obj')
         if sq_contains is not None:
             sq_contains = gen.new_objobjproc('sq_contains', sq_contains)
         if sq_inplace_concat is not None:

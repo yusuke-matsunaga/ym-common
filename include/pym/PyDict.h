@@ -74,16 +74,16 @@ public:
       val_dict.clear();
       for ( SizeType i = 0; i < n; ++ i ) {
 	auto item_obj = PyList_GetItem(items, i);
-	const char* key;
-	PyObject* val_obj;
-	if ( !PyArg_ParseTuple(item_obj, "(sO)", &key, &val_obj) ) {
+	const char* key = nullptr;
+	PyObject* val_obj = nullptr;
+	if ( !PyArg_ParseTuple(item_obj, "sO", &key, &val_obj) ) {
 	  return false;
 	}
 	T val;
 	if ( !deconv(val_obj, val) ) {
 	  return false;
 	}
-	val_dict.emplace(key, val_obj);
+	val_dict.emplace(key, val);
       }
       Py_DecRef(items);
       return true;
@@ -132,7 +132,21 @@ public:
     PyObject* obj ///< [in] 対象の Python オブジェクト
   )
   {
-    return PyDict_Check(obj);
+    if ( !PyDict_Check(obj) ) {
+      return false;
+    }
+    auto val_list = PyDict_Values(obj);
+    auto n = PyList_Size(val_list);
+    bool ans = true;
+    for ( SizeType i = 0; i < n; ++ i ) {
+      auto val_obj = PyList_GetItem(val_list, i);
+      if ( !PyT::Check(val_obj) ) {
+	ans = false;
+	break;
+      }
+    }
+    Py_DecRef(val_list);
+    return ans;
   }
 
   /// @brief PyObject から std::unordered_map<string, T> を取り出す．

@@ -74,7 +74,9 @@ public:
       for ( SizeType i = 0; i < n; ++ i ) {
 	auto val_obj = PySequence_GetItem(obj, i);
 	T val;
-	if ( !deconv(val_obj, val) ) {
+	auto ans = deconv(val_obj, val);
+	Py_DecRef(val_obj);
+	if ( !ans ) {
 	  return false;
 	}
 	val_list.push_back(val);
@@ -125,7 +127,19 @@ public:
     PyObject* obj ///< [in] 対象の Python オブジェクト
   )
   {
-    return PySequence_Check(obj);
+    if ( !PySequence_Check(obj) ) {
+      return false;
+    }
+    auto n = PySequence_Size(obj);
+    for ( SizeType i = 0; i < n; ++ i ) {
+      auto obj1 = PySequence_GetItem(obj, i);
+      auto ans = PyT::Check(obj1);
+      Py_DecRef(obj1);
+      if ( !ans ) {
+	return false;
+      }
+    }
+    return true;
   }
 
   /// @brief PyObject から vector<T> を取り出す．

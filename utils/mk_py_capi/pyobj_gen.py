@@ -203,15 +203,18 @@ class PyObjGen(GenBase):
         self.classname = classname
         # Python-CAPI 用のクラス名
         if pyclassname is None:
-            self.pyclassname = f'Py{classname}'
+            pyclassname = f'Py{classname}'
+        self.pyclassname = pyclassname
         # 名前空間
         self.namespace = namespace
         # Python-CAPI 用のタイプクラス名
         if typename is None:
-            self.typename = f'{classname}_Type'
+            typename = f'{pyname}_Type'
+        self.typename = typename
         # Python-CAPI 用のオブジェクトクラス名
         if objectname is None:
-            self.objectname = f'{classname}_Object'
+            objectname = f'{pyname}_Object'
+        self.objectname = objectname
         # Python のクラス名
         self.pyname = pyname
         
@@ -267,7 +270,7 @@ class PyObjGen(GenBase):
         self.flags = 'Py_TPFLAGS_DEFAULT'
         
         # 説明文
-        self.doc_str = f'{self.classname} object'
+        self.doc_str = f'Python extended object for {self.classname}'
 
     def add_preamble(self, func_body):
         if self.__preamble_gen is not None:
@@ -553,23 +556,41 @@ class PyObjGen(GenBase):
     def new_unaryfunc(self, name, body):
         return UnaryFuncGen(self, name, body)
 
-    def new_binaryfunc(self, name, body):
-        return BinaryFuncGen(self, name, body)
+    def new_binaryfunc(self, name, body, *,
+                       arg2name=None):
+        return BinaryFuncGen(self, name, body,
+                             arg2name=arg2name)
 
-    def new_ternaryfunc(self, name, body):
-        return TernaryFuncGen(self, name, body)
+    def new_ternaryfunc(self, name, body, *,
+                        arg2name=None,
+                        arg3name=None):
+        return TernaryFuncGen(self, name, body,
+                              arg2name=arg2name,
+                              arg3name=arg3name)
 
-    def new_ssizeargfunc(self, name, body):
-        return SsizeArgFuncGen(self, name, body)
+    def new_ssizeargfunc(self, name, body, *,
+                         arg2name=None):
+        return SsizeArgFuncGen(self, name, body,
+                               arg2name=arg2name)
 
-    def new_ssizeobjargproc(self, name, body):
-        return SsizeObjArgProcGen(self, name, body)
+    def new_ssizeobjargproc(self, name, body, *,
+                            arg2name=None,
+                            arg3name=None):
+        return SsizeObjArgProcGen(self, name, body,
+                                  arg2name=arg2name,
+                                  arg3name=arg3name)
 
-    def new_objobjproc(self, name, body):
-        return ObjObjProcGen(self, name, body)
+    def new_objobjproc(self, name, body, *,
+                       arg2name=None):
+        return ObjObjProcGen(self, name, body,
+                             arg2name=arg2name)
 
-    def new_objobjargproc(self, name, body):
-        return ObjObjArgProcGen(self, name, body)
+    def new_objobjargproc(self, name, body, *,
+                          arg2name=None,
+                          arg3name=None):
+        return ObjObjArgProcGen(self, name, body,
+                                arg2name=arg2name,
+                                arg3name=arg3name)
                 
     def make_header(self, fout=sys.stdout):
         """ヘッダファイルを出力する．"""
@@ -691,9 +712,9 @@ class PyObjGen(GenBase):
         if self.__number_name is not None:
             tp_list.append(('as_number', self.__number_name))
         if self.__sequence_name is not None:
-            tp_list.append(('as_sequence', self.__sequence_name))
+            tp_list.append(('as_sequence', f'&{self.__sequence_name}'))
         if self.__mapping_name is not None:
-            tp_list.append(('as_mapping', self.__mapping_name))
+            tp_list.append(('as_mapping', f'&{self.__mapping_name}'))
         if self.__hash_gen is not None:
             tp_list.append(('hash', self.__hash_gen.name))
         if self.__call_gen is not None:

@@ -7,6 +7,7 @@
 :copyright: Copyright (C) 2025 Yusuke Matsunaga, All rights reserved.
 """
 
+import re
 from .utils import analyze_args
 
 
@@ -47,29 +48,25 @@ class CxxWriter:
         # 現在のインデント位置
         self.__indent = 0
 
-    def gen_include(self, filename, *,
-                    sysinclude=False):
+    def gen_include(self, filename):
         """include 文を出力する．
 
         :param str filename: ファイル名
-        :param bool sysinclude: <>の形式の時 True にするフラグ
         """
-        line = '#include '
-        if sysinclude:
-            line += '<'
+        if re.match('^<[^<>]*>$', filename):
+            quote = ''
         else:
-            line += '"'
-        line += filename
-        if sysinclude:
-            line += '>'
-        else:
-            line += '"'
+            quote = '"'
+        line = f'#include {quote}{filename}{quote}'
         self.write_line(line)
 
-    def gen_func_preamble(self, arg_list):
+    def gen_func_preamble(self, arg_list, *,
+                          force_has_keywords=False):
         """引数を解釈する前処理のコードを生成する．
         """
         has_args, has_keywords = analyze_args(arg_list)
+        if force_has_keywords:
+            has_keywords = True
         if has_keywords:
             # キーワードテーブルの定義
             kwds_table = 'kwlist'
