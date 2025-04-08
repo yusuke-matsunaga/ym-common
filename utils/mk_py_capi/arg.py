@@ -24,12 +24,10 @@ class ArgBase:
 
     def __init__(self, *,
                  name=None,
-                 option=False,
                  pchar,
                  vardef,
                  varref):
         self.name = name
-        self.option = option
         self.pchar = pchar
         self.vardef = vardef
         self.varref = varref
@@ -37,6 +35,26 @@ class ArgBase:
     def gen_conv(self, gen):
         pass
 
+    
+class OptArg(ArgBase):
+    """以降がオプション引数であることを示すマーカー
+    """
+
+    def __init__(self):
+        super().__init__(pchar='|',
+                         vardef=None,
+                         varref=None)
+
+        
+class KwdArg(ArgBase):
+    """以降がオプション引数であることを示すマーカー
+    """
+
+    def __init__(self):
+        super().__init__(pchar='$',
+                         vardef=None,
+                         varref=None)
+        
 
 class RawArg(ArgBase):
     """PyArg_Parse で直接変換するタイプの引数を表すクラス
@@ -44,13 +62,11 @@ class RawArg(ArgBase):
 
     def __init__(self, *,
                  name=None,
-                 option=False,
                  pchar,
                  cvartype,
                  cvarname,
                  cvardefault=None):
         super().__init__(name=name,
-                         option=option,
                          pchar=pchar,
                          vardef=make_vardef(cvartype, cvarname, cvardefault),
                          varref=make_varref(cvarname))
@@ -62,11 +78,9 @@ class IntArg(RawArg):
 
     def __init__(self, *,
                  name=None,
-                 option=False,
                  cvarname,
                  cvardefault=None):
         super().__init__(name=name,
-                         option=option,
                          pchar='i',
                          cvartype='int',
                          cvarname=cvarname,
@@ -79,11 +93,9 @@ class UintArg(RawArg):
 
     def __init__(self, *,
                  name=None,
-                 option=False,
                  cvarname,
                  cvardefault=None):
         super().__init__(name=name,
-                         option=option,
                          pchar='I',
                          cvartype='unsigned int',
                          cvarname=cvarname,
@@ -96,11 +108,9 @@ class LongArg(RawArg):
 
     def __init__(self, *,
                  name=None,
-                 option=False,
                  cvarname,
                  cvardefault=None):
         super().__init__(name=name,
-                         option=option,
                          pchar='l',
                          cvartype='long',
                          cvarname=cvarname,
@@ -113,11 +123,9 @@ class UlongArg(RawArg):
 
     def __init__(self, *,
                  name=None,
-                 option=False,
                  cvarname,
                  cvardefault=None):
         super().__init__(name=name,
-                         option=option,
                          pchar='k',
                          cvartype='unsigned long',
                          cvarname=cvarname,
@@ -130,11 +138,9 @@ class DoubleArg(RawArg):
 
     def __init__(self, *,
                  name=None,
-                 option=False,
                  cvarname,
                  cvardefault=None):
         super().__init__(name=name,
-                         option=option,
                          pchar='d',
                          cvartype='double',
                          cvarname=cvarname,
@@ -147,15 +153,28 @@ class RawObjArg(RawArg):
 
     def __init__(self, *,
                  name=None,
-                 option=False,
                  cvarname,
                  cvardefault='nullptr'):
         super().__init__(name=name,
-                         option=option,
                          pchar='O',
                          cvartype='PyObject*',
                          cvarname=cvarname,
                          cvardefault=cvardefault)
+
+
+class TypedRawObjArg(ArgBase):
+    """PyObject* 型の引数を表すクラス
+    """
+
+    def __init__(self, *,
+                 name=None,
+                 cvarname,
+                 cvardefault='nullptr',
+                 pytypename):
+        super().__init__(name=name,
+                         pchar='O!',
+                         vardef=f'PyObject* {cvarname} = nullptr',
+                         varref=f'{pytypename}, &{cvarname}')
 
 
 class ConvFunc:
@@ -182,7 +201,6 @@ class ConvArg(ArgBase):
 
     def __init__(self, *,
                  name=None,
-                 option=False,
                  pchar,
                  cvartype,
                  cvarname,
@@ -192,7 +210,6 @@ class ConvArg(ArgBase):
                  tmpdefault=None,
                  conv_func):
         super().__init__(name=name,
-                         option=option,
                          pchar=pchar,
                          vardef=make_vardef(tmptype, tmpname, tmpdefault),
                          varref=make_varref(tmpname))
@@ -226,12 +243,10 @@ class BoolArg(ConvArg):
                      
     def __init__(self, *,
                  name=None,
-                 option=False,
                  cvarname,
                  cvardefault=None):
         tmpname = BoolArg.make_tmpname(cvarname)
         super().__init__(name=name,
-                         option=option,
                          pchar='p',
                          cvartype='bool',
                          cvarname=cvarname,
@@ -268,12 +283,10 @@ class StringArg(ConvArg):
             
     def __init__(self, *,
                  name=None,
-                 option=False,
                  cvarname,
                  cvardefault=None):
         tmpname = StringArg.make_tmpname(cvarname)
         super().__init__(name=name,
-                         option=option,
                          pchar='s',
                          cvartype='std::string',
                          cvarname=cvarname,
@@ -285,13 +298,12 @@ class StringArg(ConvArg):
                                                       cvardefault=cvardefault))
             
 
-class ObjArg(ArgBase):
+class ObjConvArg(ArgBase):
     """PyObject* 型の引数を表すクラス
     """
                              
     def __init__(self, *,
                  name=None,
-                 option=False,
                  cvartype,
                  cvarname,
                  cvardefault,
@@ -299,7 +311,6 @@ class ObjArg(ArgBase):
         tmptype = 'PyObject*'
         tmpname = f'{cvarname}_obj'
         super().__init__(name=name,
-                         option=option,
                          pchar='O',
                          vardef=make_vardef(tmptype, tmpname, 'nullptr'),
                          varref=make_varref(tmpname))
@@ -317,13 +328,12 @@ class ObjArg(ArgBase):
                 writer.gen_type_error(f'"could not convert to {self.cvartype}"')
             
 
-class TypedObjArg(ArgBase):
+class TypedObjConvArg(ArgBase):
     """PyObject* 型の引数を表すクラス
     """
                              
     def __init__(self, *,
                  name=None,
-                 option=False,
                  cvartype,
                  cvarname,
                  cvardefault,
@@ -331,13 +341,13 @@ class TypedObjArg(ArgBase):
         tmptype = 'PyObject*'
         tmpname = f'{cvarname}_obj'
         super().__init__(name=name,
-                         option=option,
                          pchar='O!',
                          vardef=make_vardef(tmptype, tmpname, 'nullptr'),
                          varref=f'{pyclassname}::_typeobject(), &{tmpname}')
         self.cvartype = cvartype
         self.cvarname = cvarname
         self.cvardefault = cvardefault
+        self.pyclassname = pyclassname
         self.tmpname = tmpname
         
     def gen_conv(self, writer):

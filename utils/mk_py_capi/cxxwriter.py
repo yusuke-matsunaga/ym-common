@@ -74,6 +74,8 @@ class CxxWriter:
                                       arrayname=kwds_table,
                                       no_crlf=True):
                 for arg in arg_list:
+                    if arg.pchar == '|' or arg.pchar == '$':
+                        continue
                     if arg.name is None:
                         self.write_line('"",')
                     else:
@@ -82,25 +84,14 @@ class CxxWriter:
 
         # パーズ結果を格納する変数の宣言
         for arg in arg_list:
-            line = f'{arg.vardef};'
-            self.write_line(line)
+            if arg.vardef is not None:
+                line = f'{arg.vardef};'
+                self.write_line(line)
 
         # PyArg_Parse() 用のフォーマット文字列の生成
         fmt_str = ""
-        mode = "init" # init|option|keyword の3つ
         for arg in arg_list:
-            if arg.option:
-                if mode == "init":
-                    fmt_str += "|"
-                    mode = "option"
-            if arg.name is None:
-                if mode == "keyword":
-                    raise ValueError('nameless argument is not allowed here')
-            else:
-                if mode == "option":
-                    fmt_str += "$"
-                    mode = "keyword"
-            fmt_str += f'{arg.pchar}'
+            fmt_str += arg.pchar
 
         # パーズ関数の呼び出し
         if has_args:
@@ -119,6 +110,8 @@ class CxxWriter:
                 self.indent_inc(delta)
             nargs = len(arg_list)
             for i, arg in enumerate(arg_list):
+                if arg.varref is None:
+                    continue
                 line = arg.varref
                 if i < nargs - 1:
                     line += ','

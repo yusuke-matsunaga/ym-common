@@ -9,7 +9,7 @@
 
 from collections import namedtuple
 from .pyobj_gen import PyObjGen
-from .arg import ObjArg
+from .arg import ObjConvArg
 
 
 EnumInfo = namedtuple('EnumInfo',
@@ -85,10 +85,10 @@ class EnumGen(PyObjGen):
         def new_body(writer):
             writer.gen_return(f'{self.pyclassname}::ToPyObject(val)')
         self.add_new(func_body=new_body,
-                     arg_list=[ObjArg(cvartype=f'{self.classname}',
-                                      cvarname='val',
-                                      cvardefault=None,
-                                      pyclassname=f'{self.pyclassname}'),])
+                     arg_list=[ObjConvArg(cvartype=f'{self.classname}',
+                                          cvarname='val',
+                                          cvardefault=None,
+                                          pyclassname=f'{self.pyclassname}'),])
         
         def init_body(writer):
             writer.gen_comment('定数オブジェクトの生成・登録')
