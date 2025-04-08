@@ -71,7 +71,8 @@ class CxxWriter:
             # キーワードテーブルの定義
             kwds_table = 'kwlist'
             with self.gen_array_block(typename='static const char*',
-                                      arrayname=kwds_table):
+                                      arrayname=kwds_table,
+                                      no_crlf=True):
                 for arg in arg_list:
                     if arg.name is None:
                         self.write_line('"",')
@@ -100,7 +101,7 @@ class CxxWriter:
                     fmt_str += "$"
                     mode = "keyword"
             fmt_str += f'{arg.pchar}'
-                    
+
         # パーズ関数の呼び出し
         if has_args:
             if has_keywords:
@@ -111,9 +112,11 @@ class CxxWriter:
                 self.indent_inc(delta)
                 self.write_line(f'const_cast<char**>({kwds_table}),')
             else:
-                line = f'if ( !PyArg_Parse(args, "{fmt_str}",'
+                line = f'if ( !PyArg_ParseTuple(args, "{fmt_str}",'
+                self.write_line(line)
                 fpos = line.find('(')
                 delta = line.find('(', fpos + 1) + 1
+                self.indent_inc(delta)
             nargs = len(arg_list)
             for i, arg in enumerate(arg_list):
                 line = arg.varref
@@ -159,10 +162,11 @@ class CxxWriter:
         line += ';'
         self.write_line(line)
         
-    def gen_auto_assign(self, lval, rval):
+    def gen_auto_assign(self, lval, rval, *,
+                        casttype=None):
         """auto 宣言付きの代入文を出力する．
         """
-        self.gen_assign(lval, rval, autodef=True)
+        self.gen_assign(lval, rval, autodef=True, casttype=casttype)
         
     def gen_autoref_assign(self, lval, rval):
         """auto& 宣言付きの代入文を出力する．
@@ -171,7 +175,8 @@ class CxxWriter:
         
     def gen_assign(self, lval, rval, *,
                    autodef=False,
-                   autoref=False):
+                   autoref=False,
+                   casttype=None):
         """代入文を出力する．
         """
         if autodef:
@@ -180,7 +185,12 @@ class CxxWriter:
             line = 'auto& '
         else:
             line = ''
-        line += f'{lval} = {rval};'
+        line += f'{lval} = '
+        if casttype is None:
+            line += rval
+        else:
+            line += f'static_cast<{casttype}>({rval})'
+        line += ';'
         self.write_line(line)
 
     def gen_return_buildvalue(self, fmt, val_list):
@@ -205,6 +215,11 @@ class CxxWriter:
         """int 値を表す PyObject を返す return 文を出力する．
         """
         self.gen_return_buildvalue("i", [varname])
+
+    def gen_return_py_long(self, varname):
+        """long 値を表す PyObject を返す return 文を出力する．
+        """
+        self.gen_return(f'PyLong::ToPyObject({varname})')
 
     def gen_return_py_float(self, varname):
         """float 値を表す PyObject を返す return 文を出力する．
@@ -356,6 +371,12 @@ class CxxWriter:
         """
         return CodeBlock(self,
                          prefix=f'switch ( {expr} ) ')
+        
+    def gen_while_block(self, cond_expr):
+        """while 文を出力する．
+        """
+        return CodeBlock(self,
+                         prefix=f'while ( {cond_expr} ) ')
         
     def gen_for_block(self,
                       init_stmt,

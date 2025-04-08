@@ -27,6 +27,7 @@ class EnumGen(PyObjGen):
                  objectname=None,
                  pyname,
                  enum_list,
+                 none_value=None,
                  extra_deconv=None,
                  header_include_files=[],
                  source_include_files=[]):
@@ -38,6 +39,7 @@ class EnumGen(PyObjGen):
                          pyname=pyname,
                          header_include_files=header_include_files,
                          source_include_files=source_include_files)
+        self.none_value = none_value
 
         def preamble_body(writer):
             writer.gen_CRLF()
@@ -61,13 +63,13 @@ class EnumGen(PyObjGen):
                 writer.gen_return('true')
         self.add_preamble(preamble_body)
         
-        self.add_dealloc(dealloc_func=None)
+        self.add_dealloc(func_body=None)
 
         def reprfunc(writer):
             with writer.gen_switch_block('val'):
                 for enum_info in enum_list:
                     writer.write_line(f'case {enum_info.cval}: repr_str = "{enum_info.strname}"; break;')
-        self.add_repr(repr_func=reprfunc)
+        self.add_repr(func_body=reprfunc)
 
         def richcmpfunc(writer):
             with writer.gen_if_block(f'{self.pyclassname}::Check(self) && {self.pyclassname}::Check(other)'):
@@ -78,13 +80,12 @@ class EnumGen(PyObjGen):
                 with writer.gen_if_block('op == Py_NE'):
                     writer.gen_return_py_bool('val1 != val2')
             writer.write_line('Py_RETURN_NOTIMPLEMENTED')
-        self.add_richcompare(cmp_func=richcmpfunc)
+        self.add_richcompare(func_body=richcmpfunc)
 
         def new_body(writer):
             writer.gen_return(f'{self.pyclassname}::ToPyObject(val)')
         self.add_new(func_body=new_body,
-                     arg_list=[ObjArg(name='val',
-                                      cvartype=f'{self.classname}',
+                     arg_list=[ObjArg(cvartype=f'{self.classname}',
                                       cvarname='val',
                                       cvardefault=None,
                                       pyclassname=f'{self.pyclassname}'),])
@@ -103,6 +104,8 @@ class EnumGen(PyObjGen):
             with writer.gen_switch_block('val'):
                 for enum in enum_list:
                     writer.write_line(f'case {enum.cval}: return Const_{enum.pyname};')
+                if self.none_value is not None:
+                    writer.write_line(f'case {self.none_value}: Py_RETURN_NONE;')
             writer.gen_value_error('"never happen"')
         self.add_conv(conv_body)
 

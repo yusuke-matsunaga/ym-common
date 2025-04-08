@@ -10,5 +10,6 @@
 from .module_gen import ModuleGen
 from .pyobj_gen import PyObjGen
 from .enum_gen import EnumGen, EnumInfo
-from .arg import IntArg, DoubleArg, RawObjArg
+from .arg import IntArg, UintArg, LongArg, UlongArg, DoubleArg
+from .arg import RawObjArg
 from .arg import BoolArg, StringArg, ObjArg, TypedObjArg

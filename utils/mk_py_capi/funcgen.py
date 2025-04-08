@@ -32,12 +32,7 @@ class DeallocGen(FuncBase):
     """
     
     def __init__(self, gen, name, body):
-        if body is None:
-            # 空
-            def null_body(writer):
-                pass
-            body = null_body
-        elif body == 'default':
+        if body == 'default':
             # デフォルト実装
             def default_body(writer):
                 writer.write_line(f'obj->mVal.~{gen.classname}();')
@@ -53,8 +48,9 @@ class DeallocGen(FuncBase):
                                    return_type='void',
                                    func_name=self.name,
                                    args=args):
-            self.gen.gen_obj_conv(writer, varname='obj')
-            self.body(writer)
+            if self.body is not None:
+                self.gen.gen_obj_conv(writer, varname='obj')
+                self.body(writer)
             writer.write_line('Py_TYPE(self)->tp_free(self);')
 
 

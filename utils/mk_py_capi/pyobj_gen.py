@@ -279,33 +279,33 @@ class PyObjGen(GenBase):
         
     def add_dealloc(self, *,
                     func_name=None,
-                    dealloc_func='default'):
+                    func_body='default'):
         """dealloc 関数定義を追加する．
         """
         if self.__dealloc_gen is not None:
             raise ValueError('dealloc has been already defined')
         func_name = self.complete_name(func_name, 'dealloc_func')
-        self.__dealloc_gen = DeallocGen(self, func_name, dealloc_func)
+        self.__dealloc_gen = DeallocGen(self, func_name, func_body)
 
     def add_repr(self, *,
                  func_name=None,
-                 repr_func=None):
+                 func_body=None):
         """repr 関数定義を追加する．
         """
         if self.__repr_gen is not None:
             raise ValueError('repr has been already defined')
         func_name = self.complete_name(func_name, 'repr_func')
-        self.__repr_gen = ReprFuncGen(self, func_name, repr_func)
+        self.__repr_gen = ReprFuncGen(self, func_name, func_body)
 
     def add_hash(self, *,
                  func_name=None,
-                 hash_func=None):
+                 func_body=None):
         """hash 関数定義を追加する．
         """
         if self.__hash_gen is not None:
             raise ValueError('hash has been already defined')
         func_name = self.complete_name(func_name, 'hash_func')
-        self.__hash_gen = HashFuncGen(self, func_name, hash_func)
+        self.__hash_gen = HashFuncGen(self, func_name, func_body)
 
     def add_ex_init(self, gen_body):
         if self.__ex_init_gen is not None:
@@ -314,34 +314,34 @@ class PyObjGen(GenBase):
                     
     def add_call(self, *,
                  func_name=None,
-                 call_func=None,
+                 func_body=None,
                  arg_list=[]):
         """call 関数定義を追加する．
         """
         if self.__call_gen is not None:
             raise ValueError('hash has been already defined')
         func_name = self.complete_name(func_name, 'call_func')
-        self.__call_gen = CallFuncGen(self, func_name, call_func, arg_list)
+        self.__call_gen = CallFuncGen(self, func_name, func_body, arg_list)
 
     def add_str(self, *,
                 func_name=None,
-                str_func=None):
+                func_body=None):
         """str 関数定義を追加する．
         """
         if self.__str_gen is not None:
             raise ValueError('str has been already defined')
         func_name = self.complete_name(func_name, 'str_func')
-        self.__str_gen = ReprFuncGen(self, func_name, str_func)
+        self.__str_gen = ReprFuncGen(self, func_name, func_body)
 
     def add_richcompare(self, *,
                         func_name=None,
-                        cmp_func=None):
+                        func_body=None):
         """richcompare 関数定義を追加する．
         """
         if self.__richcompare_gen is not None:
             raise ValueError('richcompare has been already defined')
         func_name = self.complete_name(func_name, 'richcompare_func')
-        self.__richcompare_gen = RichcmpFuncGen(self, func_name, cmp_func)
+        self.__richcompare_gen = RichcmpFuncGen(self, func_name, func_body)
         
     def add_number(self, *,
                    name=None,
@@ -489,9 +489,9 @@ class PyObjGen(GenBase):
         
     def add_method(self, name, *,
                    func_name=None,
+                   func_body=None,
                    arg_list=[],
                    is_static=False,
-                   func_body=None,
                    doc_str=''):
         """メソッド定義を追加する．
         """
@@ -505,8 +505,8 @@ class PyObjGen(GenBase):
                               doc_str=doc_str)
 
     def add_getter(self, func_name, *,
-                   has_closure=False,
-                   func_body=None):
+                   func_body=None,
+                   has_closure=False):
         """getter 定義を追加する．
         """
         self.check_name(func_name)
@@ -515,8 +515,8 @@ class PyObjGen(GenBase):
                                      func_body=func_body)
 
     def add_setter(self, func_name, *,
-                   has_closure=False,
-                   func_body=None):
+                   func_body=None,
+                   has_closure=False):
         """setter 定義を追加する．
         """
         self.check_name(func_name)
@@ -537,13 +537,13 @@ class PyObjGen(GenBase):
                                    closure=closure,
                                    doc_str=doc_str)
     
-    def add_conv(self, body):
-        self.__conv_gen = ConvGen(self, body)
+    def add_conv(self, func_body):
+        self.__conv_gen = ConvGen(self, func_body)
 
-    def add_deconv(self, body, *,
+    def add_deconv(self, func_body, *,
                    extra_func=None,
                    error_value=None):
-        self.__deconv_gen = DeconvGen(self, body,
+        self.__deconv_gen = DeconvGen(self, func_body,
                                       extra_func=extra_func,
                                       error_value=error_value)
 

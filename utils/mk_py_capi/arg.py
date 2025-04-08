@@ -73,6 +73,57 @@ class IntArg(RawArg):
                          cvardefault=cvardefault)
 
     
+class UintArg(RawArg):
+    """unsigned int 型の引数を表すクラス
+    """
+
+    def __init__(self, *,
+                 name=None,
+                 option=False,
+                 cvarname,
+                 cvardefault=None):
+        super().__init__(name=name,
+                         option=option,
+                         pchar='I',
+                         cvartype='unsigned int',
+                         cvarname=cvarname,
+                         cvardefault=cvardefault)
+
+    
+class LongArg(RawArg):
+    """long 型の引数を表すクラス
+    """
+
+    def __init__(self, *,
+                 name=None,
+                 option=False,
+                 cvarname,
+                 cvardefault=None):
+        super().__init__(name=name,
+                         option=option,
+                         pchar='l',
+                         cvartype='long',
+                         cvarname=cvarname,
+                         cvardefault=cvardefault)
+
+    
+class UlongArg(RawArg):
+    """unsigned long 型の引数を表すクラス
+    """
+
+    def __init__(self, *,
+                 name=None,
+                 option=False,
+                 cvarname,
+                 cvardefault=None):
+        super().__init__(name=name,
+                         option=option,
+                         pchar='k',
+                         cvartype='unsigned long',
+                         cvarname=cvarname,
+                         cvardefault=cvardefault)
+
+    
 class DoubleArg(RawArg):
     """double 型の引数を表すクラス
     """
@@ -99,8 +150,7 @@ class RawObjArg(RawArg):
                  option=False,
                  cvarname,
                  cvardefault='nullptr'):
-        super().__init__(parent,
-                         name=name,
+        super().__init__(name=name,
                          option=option,
                          pchar='O',
                          cvartype='PyObject*',
@@ -172,8 +222,7 @@ class BoolArg(ConvArg):
         def conv_body(self, writer):
             tmpname = BoolArg.make_tmpname(self.cvarname)
             with writer.gen_if_block(f'{tmpname} != -1'):
-                writer.gen_assign(f'{self.cvarname}',
-                                  f'static_cast<bool>({tmpname})')
+                writer.gen_assign(self.cvarname, tmpname, casttype='bool')
                      
     def __init__(self, *,
                  name=None,
