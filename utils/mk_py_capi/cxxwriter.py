@@ -234,6 +234,11 @@ class CxxWriter:
         """
         self.write_line('Py_RETURN_NONE;')
         
+    def gen_return_py_notimplemented(self):
+        """Py_RETURN_NOTIMPLEMENTED を出力する．
+        """
+        self.write_line('Py_RETURN_NOTIMPLEMENTED;')
+        
     def gen_block(self, *,
                   no_crlf=False,
                   comment=None,

@@ -1,8 +1,8 @@
-#ifndef PYINT_H
-#define PYINT_H
+#ifndef PYULONG_H
+#define PYULONG_H
 
-/// @file PyInt.h
-/// @brief PyInt のヘッダファイル
+/// @file PyUlong.h
+/// @brief PyUlong のヘッダファイル
 /// @author Yusuke Matsunaga (松永 裕介)
 ///
 /// Copyright (C) 2025 Yusuke Matsunaga
@@ -17,16 +17,16 @@
 BEGIN_NAMESPACE_YM
 
 //////////////////////////////////////////////////////////////////////
-/// @class PyInt PyInt.h "PyInt.h"
-/// @brief int と PyObject の間の変換を行うクラス
+/// @class PyUlong PyUlong.h "PyUlong.h"
+/// @brief long と PyObject の間の変換を行うクラス
 ///
 /// PyLong_XXX 関数のラッパクラス
 //////////////////////////////////////////////////////////////////////
-class PyInt
+class PyUlong
 {
 public:
 
-  using ElemType = int;
+  using ElemType = unsigned long;
 
 public:
 
@@ -37,7 +37,7 @@ public:
       const ElemType& val
     )
     {
-      return PyLong_FromLong(val);
+      return PyLong_FromUnsignedLong(val);
     }
   };
 
@@ -49,8 +49,8 @@ public:
       ElemType& val
     )
     {
-      if ( PyInt::Check(obj) ) {
-	val = PyInt::Get(obj);
+      if ( PyLong::Check(obj) ) {
+	val = PyLong::Get(obj);
 	return true;
       }
       return false;
@@ -74,7 +74,7 @@ public:
     return conv(val);
   }
 
-  /// @brief PyObject から整数を取り出す．
+  /// @brief PyObject から文字列を取り出す．
   /// @return 変換が成功したら true を返す．
   ///
   /// 変換が失敗しても Python 例外を設定しない．
@@ -89,7 +89,7 @@ public:
     return deconv(obj, val);
   }
 
-  /// @brief PyObject が整数型か調べる．
+  /// @brief PyObject が文字列型か調べる．
   static
   bool
   Check(
@@ -108,11 +108,11 @@ public:
     PyObject* obj ///< [in] 対象の PyObject
   )
   {
-    return static_cast<ElemType>(PyLong_AsLong(obj));
+    return PyLong_AsUnsignedLong(obj);
   }
 
 };
 
 END_NAMESPACE_YM
 
-#endif // PYINT_H
+#endif // PYULONG_H

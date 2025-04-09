@@ -710,7 +710,7 @@ class PyObjGen(GenBase):
         if self.__repr_gen is not None:
             tp_list.append(('repr', self.__repr_gen.name))
         if self.__number_name is not None:
-            tp_list.append(('as_number', self.__number_name))
+            tp_list.append(('as_number', f'&{self.__number_name}'))
         if self.__sequence_name is not None:
             tp_list.append(('as_sequence', f'&{self.__sequence_name}'))
         if self.__mapping_name is not None:

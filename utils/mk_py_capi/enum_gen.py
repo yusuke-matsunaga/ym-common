@@ -28,6 +28,7 @@ class EnumGen(PyObjGen):
                  pyname,
                  enum_list,
                  none_value=None,
+                 ignore_case=False,
                  extra_deconv=None,
                  header_include_files=[],
                  source_include_files=[]):
@@ -39,14 +40,13 @@ class EnumGen(PyObjGen):
                          pyname=pyname,
                          header_include_files=header_include_files,
                          source_include_files=source_include_files)
-        self.none_value = none_value
 
         def preamble_body(writer):
             writer.gen_CRLF()
             writer.gen_comment('定数を表すオブジェクト')
             for enum in enum_list:
                 writer.gen_vardecl(typename='PyObject*',
-                                   varname=f'Const_{enum.cval}',
+                                   varname=f'Const_{enum.pyname}',
                                    initializer='nullptr')
             with writer.gen_func_block(comment='定数の登録を行う関数',
                                        return_type='bool',
@@ -59,6 +59,7 @@ class EnumGen(PyObjGen):
                 writer.gen_assign('my_obj->mVal', 'val')
                 with writer.gen_if_block('PyDict_SetItemString(type->tp_dict, name, obj) < 0'):
                     writer.gen_return('false')
+                writer.write_line('Py_INCREF(obj);')
                 writer.gen_assign('const_obj', 'obj')
                 writer.gen_return('true')
         self.add_preamble(preamble_body)
@@ -66,9 +67,13 @@ class EnumGen(PyObjGen):
         self.add_dealloc(func_body=None)
 
         def reprfunc(writer):
+            writer.gen_vardecl(typename='std::string',
+                               varname='str_val')
             with writer.gen_switch_block('val'):
                 for enum_info in enum_list:
-                    writer.write_line(f'case {enum_info.cval}: repr_str = "{enum_info.strname}"; break;')
+                    writer.write_line(f'case {enum_info.cval}: str_val = "{enum_info.strname}"; break;')
+                if none_value is not None:
+                    writer.write_line(f'case {none_value}: str_val = "None"; break;')
         self.add_repr(func_body=reprfunc)
 
         def richcmpfunc(writer):
@@ -79,7 +84,7 @@ class EnumGen(PyObjGen):
                     writer.gen_return_py_bool('val1 == val2')
                 with writer.gen_if_block('op == Py_NE'):
                     writer.gen_return_py_bool('val1 != val2')
-            writer.write_line('Py_RETURN_NOTIMPLEMENTED')
+            writer.gen_return_py_notimplemented()
         self.add_richcompare(func_body=richcmpfunc)
 
         def new_body(writer):
@@ -101,12 +106,18 @@ class EnumGen(PyObjGen):
         self.add_ex_init(init_body)
 
         def conv_body(writer):
+            writer.gen_vardecl(typename='PyObject*',
+                               varname='obj',
+                               initializer='nullptr')
             with writer.gen_switch_block('val'):
                 for enum in enum_list:
-                    writer.write_line(f'case {enum.cval}: return Const_{enum.pyname};')
-                if self.none_value is not None:
-                    writer.write_line(f'case {self.none_value}: Py_RETURN_NONE;')
-            writer.gen_value_error('"never happen"')
+                    writer.write_line(f'case {enum.cval}: obj = Const_{enum.pyname}; break;')
+                if none_value is not None:
+                    writer.write_line(f'case {none_value}: Py_RETURN_NONE;')
+            with writer.gen_if_block('obj == nullptr'):
+                writer.gen_value_error('"invalid string for PrimType"')
+            writer.write_line('Py_INCREF(obj);')
+            writer.gen_return('obj')
         self.add_conv(conv_body)
 
         def deconv_body(writer):
@@ -115,7 +126,10 @@ class EnumGen(PyObjGen):
             with writer.gen_if_block('PyString::FromPyObject(obj, str_val)'):
                 first = True
                 for enum in enum_list:
-                    condition = f'str_val == "{enum.strname}"'
+                    if ignore_case:
+                        condition = f'strcasecmp(str_val.c_str(), "{enum.strname}") == 0'
+                    else:
+                        condition = f'str_val == "{enum.strname}"'
                     if first:
                         block = writer.gen_if_block(condition)
                         first = False
@@ -125,7 +139,6 @@ class EnumGen(PyObjGen):
                         writer.gen_assign('val', f'{enum.cval}')
                         writer.gen_return('true')
                 writer.gen_return('false')
-            with writer.gen_if_block(f'{self.pyclassname}::Check(obj)'):
-                self.gen_raw_conv(writer)
+            self.gen_raw_conv(writer)
             writer.gen_return('false')
         self.add_deconv(deconv_body, extra_func=extra_deconv)

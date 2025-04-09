@@ -325,7 +325,7 @@ class ObjConvArg(ArgBase):
         writer.write_line(line)
         with writer.gen_if_block(f'{self.tmpname} != nullptr'):
             with writer.gen_if_block(f'!{self.pyclassname}::FromPyObject({self.tmpname}, {self.cvarname})'):
-                writer.gen_type_error(f'"could not convert to {self.cvartype}"')
+                writer.gen_value_error(f'"could not convert to {self.cvartype}"')
             
 
 class TypedObjConvArg(ArgBase):
@@ -355,4 +355,4 @@ class TypedObjConvArg(ArgBase):
         writer.write_line(line)
         with writer.gen_if_block(f'{self.tmpname} != nullptr'):
             with writer.gen_if_block(f'!{self.pyclassname}::FromPyObject({self.tmpname}, {self.cvarname})'):
-                writer.gen_type_error(f'could not convert to {self.cvartype}')
+                writer.gen_type_error(f'"could not convert to {self.cvartype}"')

@@ -70,8 +70,8 @@ bool
   PyObject* obj
 )
 {
-  auto mt_obj = reinterpret_cast<%%CustomObject%%*>(obj);
-  return mt_obj->mVal;
+  auto my_obj = reinterpret_cast<%%CustomObject%%*>(obj);
+  return my_obj->mVal;
 }
 
 // @brief %%Custom%% を表すオブジェクトの型定義を返す．
