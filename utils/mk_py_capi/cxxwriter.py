@@ -548,8 +548,11 @@ class CxxWriter:
     def write_line(self, line):
         """一行を出力する．
         """
-        spc = ' ' * self.__indent
-        self.__fout.write(f'{spc}{line}\n')
+        if line == '':
+            self.__fout.write('\n')
+        else:
+            spc = ' ' * self.__indent
+            self.__fout.write(f'{spc}{line}\n')
 
     def indent_inc(self, delta=2):
         """インデント量を増やす．
