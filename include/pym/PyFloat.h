@@ -24,6 +24,8 @@ BEGIN_NAMESPACE_YM
 //////////////////////////////////////////////////////////////////////
 class PyFloat
 {
+public:
+
   using ElemType = double;
 
 public:

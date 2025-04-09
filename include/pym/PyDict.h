@@ -29,6 +29,8 @@ BEGIN_NAMESPACE_YM
 template<class T, class PyT>
 class PyDict
 {
+public:
+
   using ElemType = std::unordered_map<std::string, T>;
 
 public:
@@ -67,6 +69,7 @@ public:
       typename PyT::Deconv deconv;
 
       if ( !PyDict_Check(obj) ) {
+	cout << "A" << endl;
 	return false;
       }
       auto items = PyDict_Items(obj);
@@ -77,10 +80,12 @@ public:
 	const char* key = nullptr;
 	PyObject* val_obj = nullptr;
 	if ( !PyArg_ParseTuple(item_obj, "sO", &key, &val_obj) ) {
+	  cout << "B" << endl;
 	  return false;
 	}
 	T val;
 	if ( !deconv(val_obj, val) ) {
+	  cout << "C" << endl;
 	  return false;
 	}
 	val_dict.emplace(key, val);

@@ -234,6 +234,28 @@ class CxxWriter:
         """
         self.write_line('Py_RETURN_NONE;')
         
+    def gen_block(self, *,
+                  no_crlf=False,
+                  comment=None,
+                  comments=None,
+                  dox_comment=None,
+                  dox_comments=None):
+        """ブロックを出力する．
+        """
+        if not no_crlf:
+            self.gen_CRLF()
+        if comment is not None:
+            self.gen_comment(comment)
+        if comments is not None:
+            for comment in comments:
+                self.gen_comment(comment)
+        if dox_comment is not None:
+            self.gen_dox_comment(dox_comment)
+        if dox_comments is not None:
+            for comment in dox_comments:
+                self.gen_dox_comment(comment)
+        return CodeBlock(self)
+        
     def gen_func_declaration(self, *,
                              no_crlf=False,
                              comment=None,

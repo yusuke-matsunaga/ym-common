@@ -29,6 +29,8 @@ BEGIN_NAMESPACE_YM
 template<class T, class PyT>
 class PyList
 {
+public:
+
   using ElemType = std::vector<T>;
 
 public:

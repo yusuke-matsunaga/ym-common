@@ -23,6 +23,8 @@ BEGIN_NAMESPACE_YM
 //////////////////////////////////////////////////////////////////////
 class PyString
 {
+public:
+
   using ElemType = string;
 
 public:
