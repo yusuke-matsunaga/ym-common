@@ -545,18 +545,28 @@ class CxxWriter:
             self.write_line(f'buf << {msg} << ": " << err.what();')
             self.gen_value_error(f'buf.str().c_str()')
 
-    def gen_type_error(self, error_msg, *, noexit=False):
-        self.gen_error('PyExc_TypeError', error_msg, noexit=noexit)
+    def gen_type_error(self, error_msg, *,
+                       noexit=False,
+                       error_val='nullptr'):
+        self.gen_error('PyExc_TypeError', error_msg,
+                       noexit=noexit,
+                       error_val=error_val)
 
-    def gen_value_error(self, error_msg, *, noexit=False):
-        self.gen_error('PyExc_ValueError', error_msg, noexit=noexit)
+    def gen_value_error(self, error_msg, *,
+                        noexit=False,
+                        error_val='nullptr'):
+        self.gen_error('PyExc_ValueError', error_msg,
+                       noexit=noexit,
+                       error_val=error_val)
 
-    def gen_error(self, error_type, error_msg, *, noexit=False):
+    def gen_error(self, error_type, error_msg, *,
+                  noexit=False,
+                  error_val='nullptr'):
         """エラー出力
         """
         self.write_line(f'PyErr_SetString({error_type}, {error_msg});')
         if not noexit:
-            self.gen_return('nullptr')
+            self.gen_return(error_val)
 
     def gen_dox_comments(self, comments):
         """Doxygen 用のコメントを出力する．
