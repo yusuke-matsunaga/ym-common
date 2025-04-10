@@ -522,6 +522,15 @@ class CxxWriter:
                              varname='buf')
             self.write_line(f'buf << {msg} << ": " << err.what();')
             self.gen_value_error(f'buf.str().c_str()')
+
+    def gen_catch_out_of_range(self, msg=None):
+        if msg is None:
+            msg = '"out of range"'
+        with self.gen_catch_block('std::out_of_range err'):
+            self.gen_vardecl(typename='std::ostringstream',
+                             varname='buf')
+            self.write_line(f'buf << {msg} << ": " << err.what();')
+            self.gen_value_error(f'buf.str().c_str()')
             
     def gen_type_error(self, error_msg, *, noexit=False):
         self.gen_error('PyExc_TypeError', error_msg, noexit=noexit)
