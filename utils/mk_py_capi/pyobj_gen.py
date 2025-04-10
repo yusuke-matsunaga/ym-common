@@ -400,7 +400,7 @@ class PyObjGen(GenBase):
             nb_int=nb_int,
             nb_float=nb_float,
             nb_inplace_add=nb_inplace_add,
-            nb_inplace_subtract=nb_subtract,
+            nb_inplace_subtract=nb_inplace_subtract,
             nb_inplace_multiply=nb_inplace_multiply,
             nb_inplace_remainder=nb_inplace_remainder,
             nb_inplace_power=nb_inplace_power,
