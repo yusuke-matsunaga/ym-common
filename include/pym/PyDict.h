@@ -69,28 +69,23 @@ public:
       typename PyT::Deconv deconv;
 
       if ( !PyDict_Check(obj) ) {
-	cout << "A" << endl;
 	return false;
       }
-      auto items = PyDict_Items(obj);
-      auto n = PyList_Size(items);
       val_dict.clear();
-      for ( SizeType i = 0; i < n; ++ i ) {
-	auto item_obj = PyList_GetItem(items, i);
-	const char* key = nullptr;
-	PyObject* val_obj = nullptr;
-	if ( !PyArg_ParseTuple(item_obj, "sO", &key, &val_obj) ) {
-	  cout << "B" << endl;
+      Py_ssize_t pos = 0;
+      PyObject* key_obj = nullptr;
+      PyObject* val_obj = nullptr;
+      while ( PyDict_Next(obj, &pos, &key_obj, &val_obj) ) {
+	std::string key;
+	if ( !PyString::FromPyObject(key_obj, key) ) {
 	  return false;
 	}
 	T val;
-	if ( !deconv(val_obj, val) ) {
-	  cout << "C" << endl;
+	if ( !PyT::FromPyObject(val_obj, val) ) {
 	  return false;
 	}
 	val_dict.emplace(key, val);
       }
-      Py_DecRef(items);
       return true;
     }
   };
