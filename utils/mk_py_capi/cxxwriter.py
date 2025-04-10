@@ -16,7 +16,7 @@ class CodeBlock:
 
     with 文の引数になることを仮定している．
     """
-    
+
     def __init__(self, writer, *,
                  br_chars='{}',
                  prefix='',
@@ -36,7 +36,7 @@ class CodeBlock:
         line = f'{self.__br_chars[1]}{self.__postfix}'
         self.__writer.write_line(line)
 
-        
+
 class CxxWriter:
     """C++ のコードを出力するクラス
     """
@@ -142,21 +142,21 @@ class CxxWriter:
             self.gen_return(ret_val)
             self.indent_dec()
             self.write_line('}')
-            
+
         # PyObject から C++ の変数へ変換する．
         for arg in arg_list:
             arg.gen_conv(self)
-        
+
     def gen_number(self, number_gen, number_name):
         if number_gen is None:
             return
         number_gen(self, number_name)
-        
+
     def gen_sequence(self, sequence_gen, sequence_name):
         if sequence_gen is None:
             return
         sequence_gen(self, sequence_name)
-        
+
     def gen_mapping(self, mapping_gen, mapping_name):
         if mapping_gen is None:
             return
@@ -173,18 +173,18 @@ class CxxWriter:
             line += f' = {initializer}'
         line += ';'
         self.write_line(line)
-        
+
     def gen_auto_assign(self, lval, rval, *,
                         casttype=None):
         """auto 宣言付きの代入文を出力する．
         """
         self.gen_assign(lval, rval, autodef=True, casttype=casttype)
-        
+
     def gen_autoref_assign(self, lval, rval):
         """auto& 宣言付きの代入文を出力する．
         """
         self.gen_assign(lval, rval, autoref=True)
-        
+
     def gen_assign(self, lval, rval, *,
                    autodef=False,
                    autoref=False,
@@ -213,7 +213,7 @@ class CxxWriter:
             line += f', {val}'
         line += ');'
         self.write_line(line)
-        
+
     def gen_return(self, val):
         """return 文を出力する．
         """
@@ -252,12 +252,12 @@ class CxxWriter:
         """PyObject に変換した値を返す return 文を出力する．
         """
         self.gen_return(f'{pyclassname}::ToPyObject({expr})')
-        
+
     def gen_return_py_none(self):
         """Py_RETURN_NONE を出力する．
         """
         self.write_line('Py_RETURN_NONE;')
-        
+
     def gen_return_py_notimplemented(self):
         """Py_RETURN_NOTIMPLEMENTED を出力する．
         """
@@ -291,7 +291,7 @@ class CxxWriter:
             for comment in dox_comments:
                 self.gen_dox_comment(comment)
         return CodeBlock(self)
-        
+
     def gen_func_declaration(self, *,
                              no_crlf=False,
                              comment=None,
@@ -352,7 +352,7 @@ class CxxWriter:
                        prefix=func_name,
                        postfix=postfix):
             self.write_lines(args, delim=',')
-        
+
     def gen_func_block(self, *,
                        no_crlf=False,
                        comment=None,
@@ -382,7 +382,7 @@ class CxxWriter:
                              func_name=func_name,
                              args=args)
         return CodeBlock(self)
-                       
+
     def gen_if_block(self, condition):
         """if 文を出力する
 
@@ -422,13 +422,13 @@ class CxxWriter:
         """
         return CodeBlock(self,
                          prefix=f'switch ( {expr} ) ')
-        
+
     def gen_while_block(self, cond_expr):
         """while 文を出力する．
         """
         return CodeBlock(self,
                          prefix=f'while ( {cond_expr} ) ')
-        
+
     def gen_for_block(self,
                       init_stmt,
                       cond_expr,
@@ -487,7 +487,7 @@ class CxxWriter:
         return CodeBlock(self,
                          prefix=f'struct {structname} ',
                          postfix=';')
-                         
+
 
     def gen_struct_init_block(self, *,
                               structname,
@@ -544,25 +544,25 @@ class CxxWriter:
                              varname='buf')
             self.write_line(f'buf << {msg} << ": " << err.what();')
             self.gen_value_error(f'buf.str().c_str()')
-            
+
     def gen_type_error(self, error_msg, *, noexit=False):
         self.gen_error('PyExc_TypeError', error_msg, noexit=noexit)
 
     def gen_value_error(self, error_msg, *, noexit=False):
         self.gen_error('PyExc_ValueError', error_msg, noexit=noexit)
-        
+
     def gen_error(self, error_type, error_msg, *, noexit=False):
         """エラー出力
         """
         self.write_line(f'PyErr_SetString({error_type}, {error_msg});')
         if not noexit:
             self.gen_return('nullptr')
-        
+
     def gen_dox_comments(self, comments):
         """Doxygen 用のコメントを出力する．
         """
         self.gen_comments(comment, doxygen=True)
-        
+
     def gen_dox_comment(self, comment):
         """Doxygen 用のコメントを出力する．
         """
@@ -573,7 +573,7 @@ class CxxWriter:
         """
         for comment in comments:
             self.gen_comment(comment, doxygen=doxygen)
-            
+
     def gen_comment(self, comment, *, doxygen=False):
         """コメントを出力する．
         """
@@ -583,7 +583,7 @@ class CxxWriter:
             line = '//'
         line += f' {comment}'
         self.write_line(line)
-        
+
     def gen_CRLF(self):
         """空行を出力する．
         """
@@ -598,7 +598,7 @@ class CxxWriter:
             if i < n - 1:
                 line += delim
             self.write_line(line)
-            
+
     def write_line(self, line):
         """一行を出力する．
         """
