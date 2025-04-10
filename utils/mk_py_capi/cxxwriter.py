@@ -67,7 +67,6 @@ class CxxWriter:
         """
         has_args, has_keywords = analyze_args(arg_list)
         if force_has_keywords:
-            has_args = True
             has_keywords = True
         if has_keywords:
             # キーワードテーブルの定義
@@ -129,7 +128,21 @@ class CxxWriter:
             self.gen_return(ret_val)
             self.indent_dec()
             self.write_line('}')
-
+        elif force_has_keywords:
+            self.gen_comment('余分な引数を取らないことを確認しておく．')
+            line = 'if ( !PyArg_ParseTupleAndKeywords(args, kwds'
+            line += f', "{fmt_str}"'
+            line += f', const_cast<char**>({kwds_table})) ) {{'
+            self.write_line(line)
+            self.indent_inc()
+            if is_proc:
+                ret_val = '-1'
+            else:
+                ret_val = 'nullptr'
+            self.gen_return(ret_val)
+            self.indent_dec()
+            self.write_line('}')
+            
         # PyObject から C++ の変数へ変換する．
         for arg in arg_list:
             arg.gen_conv(self)
