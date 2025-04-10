@@ -277,9 +277,8 @@ class PyObjGen(GenBase):
             raise ValueError("preamble has benn already defined")
         self.__preamble_gen = func_body
         
-    def add_dealloc(self, *,
-                    func_name=None,
-                    func_body='default'):
+    def add_dealloc(self, func_body='default', *,
+                    func_name=None):
         """dealloc 関数定義を追加する．
         """
         if self.__dealloc_gen is not None:
@@ -287,9 +286,8 @@ class PyObjGen(GenBase):
         func_name = self.complete_name(func_name, 'dealloc_func')
         self.__dealloc_gen = DeallocGen(self, func_name, func_body)
 
-    def add_repr(self, *,
-                 func_name=None,
-                 func_body=None):
+    def add_repr(self, func_body=None, *,
+                 func_name=None):
         """repr 関数定義を追加する．
         """
         if self.__repr_gen is not None:
@@ -297,9 +295,8 @@ class PyObjGen(GenBase):
         func_name = self.complete_name(func_name, 'repr_func')
         self.__repr_gen = ReprFuncGen(self, func_name, func_body)
 
-    def add_hash(self, *,
-                 func_name=None,
-                 func_body=None):
+    def add_hash(self, func_body=None, *,
+                 func_name=None):
         """hash 関数定義を追加する．
         """
         if self.__hash_gen is not None:
@@ -312,9 +309,8 @@ class PyObjGen(GenBase):
             raise ValueError('ex_init has been already defined')
         self.__ex_init_gen = gen_body
                     
-    def add_call(self, *,
+    def add_call(self, func_body=None, *,
                  func_name=None,
-                 func_body=None,
                  arg_list=[]):
         """call 関数定義を追加する．
         """
@@ -323,9 +319,8 @@ class PyObjGen(GenBase):
         func_name = self.complete_name(func_name, 'call_func')
         self.__call_gen = CallFuncGen(self, func_name, func_body, arg_list)
 
-    def add_str(self, *,
-                func_name=None,
-                func_body=None):
+    def add_str(self, func_body=None, *,
+                func_name=None):
         """str 関数定義を追加する．
         """
         if self.__str_gen is not None:
@@ -333,9 +328,8 @@ class PyObjGen(GenBase):
         func_name = self.complete_name(func_name, 'str_func')
         self.__str_gen = ReprFuncGen(self, func_name, func_body)
 
-    def add_richcompare(self, *,
-                        func_name=None,
-                        func_body=None):
+    def add_richcompare(self, func_body=None, *,
+                        func_name=None):
         """richcompare 関数定義を追加する．
         """
         if self.__richcompare_gen is not None:
@@ -465,9 +459,8 @@ class PyObjGen(GenBase):
             mp_subscript=mp_subscript,
             mp_ass_subscript=mp_ass_subscript)
         
-    def add_init(self, *,
+    def add_init(self, func_body=None, *,
                  func_name=None,
-                 func_body=None,
                  arg_list=[]):
         """init 関数定義を追加する．
         """
@@ -476,9 +469,8 @@ class PyObjGen(GenBase):
         func_name = self.complete_name(func_name, 'init_func')
         self.__init_gen = InitProcGen(self, func_name, func_body, arg_list)
         
-    def add_new(self, *,
+    def add_new(self, func_body=None, *,
                 func_name=None,
-                func_body=None,
                 arg_list=[]):
         """new 関数定義を追加する．
         """
@@ -503,6 +495,20 @@ class PyObjGen(GenBase):
                               is_static=is_static,
                               func_body=func_body,
                               doc_str=doc_str)
+        
+    def add_static_method(self, name, *,
+                          func_name=None,
+                          func_body=None,
+                          arg_list=[],
+                          doc_str=''):
+        """スタティックメソッド定義を追加する．
+        """
+        self.add_method(name,
+                        func_name=func_name,
+                        func_body=func_body,
+                        arg_list=arg_list,
+                        is_static=True,
+                        doc_str=doc_str)
 
     def add_getter(self, func_name, *,
                    func_body=None,

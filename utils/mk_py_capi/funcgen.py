@@ -172,6 +172,7 @@ class RichcmpFuncGen(FuncBase):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=args):
+            self.gen.gen_ref_conv(writer, refname='val')
             self.body(writer)
 
 
@@ -200,7 +201,7 @@ class InitProcGen(FuncWithArgs):
                                    return_type='int',
                                    func_name=self.name,
                                    args=args):
-            writer.gen_func_preamble(self.arg_list)
+            writer.gen_func_preamble(self.arg_list, is_proc=True)
             self.body(writer)
 
 
@@ -212,7 +213,8 @@ class NewFuncGen(FuncWithArgs):
         if body is None:
             # 空
             def null_body(writer):
-                writer.gen_comment('内容をセットした PyObject* を生成し，返す．')
+                writer.gen_auto_assign('self', 'type->tp_alloc(type, 0)')
+                writer.gen_return_self()
             body = null_body
         elif body == 'sample':
             # sample 実装
@@ -221,7 +223,7 @@ class NewFuncGen(FuncWithArgs):
                 writer.gen_auto_assign('self', 'type->tp_alloc(type, 0)')
                 gen.gen_obj_conv(writer, varname='my_obj')
                 writer.write_line(f'new (&myobj->mVal) {gen.classname}()')
-                writer.gen_return('self')
+                writer.gen_return_self()
             body = sample_body
         super().__init__(gen, name, body, arg_list)
 

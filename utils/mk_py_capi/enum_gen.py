@@ -88,7 +88,7 @@ class EnumGen(PyObjGen):
         self.add_richcompare(func_body=richcmpfunc)
 
         def new_body(writer):
-            writer.gen_return(f'{self.pyclassname}::ToPyObject(val)')
+            writer.gen_return_pyobject(self.pyclassname, 'val')
         self.add_new(func_body=new_body,
                      arg_list=[ObjConvArg(cvartype=f'{self.classname}',
                                           cvarname='val',

@@ -61,11 +61,13 @@ class CxxWriter:
         self.write_line(line)
 
     def gen_func_preamble(self, arg_list, *,
-                          force_has_keywords=False):
+                          force_has_keywords=False,
+                          is_proc=False):
         """引数を解釈する前処理のコードを生成する．
         """
         has_args, has_keywords = analyze_args(arg_list)
         if force_has_keywords:
+            has_args = True
             has_keywords = True
         if has_keywords:
             # キーワードテーブルの定義
@@ -120,7 +122,11 @@ class CxxWriter:
                 self.write_line(line)
             self.indent_dec(delta)
             self.indent_inc()
-            self.gen_return('nullptr')
+            if is_proc:
+                ret_val = '-1'
+            else:
+                ret_val = 'nullptr'
+            self.gen_return(ret_val)
             self.indent_dec()
             self.write_line('}')
 
@@ -204,30 +210,35 @@ class CxxWriter:
         line += ';'
         self.write_line(line)
 
-    def gen_return_py_int(self, varname):
+    def gen_return_py_int(self, expr):
         """int 値を表す PyObject を返す return 文を出力する．
         """
-        self.gen_return_buildvalue("i", [varname])
+        self.gen_return_pyobject('PyInt', expr)
 
-    def gen_return_py_long(self, varname):
+    def gen_return_py_long(self, expr):
         """long 値を表す PyObject を返す return 文を出力する．
         """
-        self.gen_return(f'PyLong::ToPyObject({varname})')
+        self.gen_return_pyobject('PyLong', expr)
 
-    def gen_return_py_float(self, varname):
+    def gen_return_py_float(self, expr):
         """float 値を表す PyObject を返す return 文を出力する．
         """
-        self.gen_return_buildvalue("d", [varname])
+        self.gen_return_pyobject('PyFloat', expr)
 
-    def gen_return_py_string(self, varname):
+    def gen_return_py_string(self, expr):
         """string 値を表す PyObject を返す return 文を出力する．
         """
-        self.gen_return(f'PyString::ToPyObject({varname})')
+        self.gen_return_pyobject('PyString', expr)
 
-    def gen_return_py_bool(self, varname):
+    def gen_return_py_bool(self, expr):
         """bool 値を表す PyObject を返す return 文を出力する．
         """
-        self.gen_return(f'PyBool_FromLong({varname})')
+        self.gen_return(f'PyBool_FromLong({expr})')
+
+    def gen_return_pyobject(self, pyclassname, expr):
+        """PyObject に変換した値を返す return 文を出力する．
+        """
+        self.gen_return(f'{pyclassname}::ToPyObject({expr})')
         
     def gen_return_py_none(self):
         """Py_RETURN_NONE を出力する．
@@ -238,7 +249,14 @@ class CxxWriter:
         """Py_RETURN_NOTIMPLEMENTED を出力する．
         """
         self.write_line('Py_RETURN_NOTIMPLEMENTED;')
-        
+
+    def gen_return_self(self, *, incref=False):
+        """ return self; を出力する．
+        """
+        if incref:
+            self.write_line('Py_XINCREF(self);')
+        self.gen_return('self')
+
     def gen_block(self, *,
                   no_crlf=False,
                   comment=None,
@@ -496,6 +514,15 @@ class CxxWriter:
         return CodeBlock(self,
                          prefix=f'catch ( {expr} ) ')
 
+    def gen_catch_invalid_argument(self, msg=None):
+        if msg is None:
+            msg = '"invalid argument"'
+        with self.gen_catch_block('std::invalid_argument err'):
+            self.gen_vardecl(typename='std::ostringstream',
+                             varname='buf')
+            self.write_line(f'buf << {msg} << ": " << err.what();')
+            self.gen_value_error(f'buf.str().c_str()')
+            
     def gen_type_error(self, error_msg, *, noexit=False):
         self.gen_error('PyExc_TypeError', error_msg, noexit=noexit)
 
