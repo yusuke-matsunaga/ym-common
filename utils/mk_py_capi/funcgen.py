@@ -152,7 +152,24 @@ class RichcmpFuncGen(FuncBase):
     """
     
     def __init__(self, gen, name, body):
-        if body is None:
+        if body == 'eq_default':
+            def cmp_func(writer):
+                with writer.gen_if_block(f'{gen.pyclassname}::Check(other)'):
+                    gen.gen_ref_conv(writer, objname='other', refname='val2')
+                    with writer.gen_if_block('op == Py_EQ'):
+                        writer.gen_return_py_bool('val == val2')
+                    with writer.gen_if_block('op == Py_NE'):
+                        writer.gen_return_py_bool('val != val2')
+                writer.gen_return_py_notimplemented()
+            body = cmp_func
+        elif body == 'cmp_default':
+            def cmp_func(writer):
+                with writer.gen_if_block(f'{gen.pyclassname}::Check(other)'):
+                    gen.gen_ref_conv(writer, objname='other', refname='val2')
+                    writer.write_line('Py_RETURN_RICHCOMPARE(val, val2, op);')
+                writer.gen_return_py_notimplemented()
+            body = cmp_func
+        elif body is None:
             # 空
             def null_body(writer):
                 writer.gen_comments(['self と other を比較して結果のブール値を表す PyObject* を返す．',
@@ -210,12 +227,19 @@ class NewFuncGen(FuncWithArgs):
     """
     
     def __init__(self, gen, name, body, arg_list):
-        if body is None:
-            # 空
-            def null_body(writer):
+        self.__has_preamble = True
+        if body == 'default':
+            # デフォルト実装
+            def default_body(writer):
                 writer.gen_auto_assign('self', 'type->tp_alloc(type, 0)')
                 writer.gen_return_self()
-            body = null_body
+            body = default_body
+        elif body == 'disabled':
+            # 禁止
+            def disabled_body(writer):
+                writer.gen_type_error(f'"instantiation of \'{gen.classname}\' is disabled"')
+            body = disabled_body
+            self.__has_preamble = False
         elif body == 'sample':
             # sample 実装
             def sample_body(writer):
@@ -238,7 +262,8 @@ class NewFuncGen(FuncWithArgs):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=args):
-            writer.gen_func_preamble(self.arg_list, force_has_keywords=True)
+            if self.__has_preamble:
+                writer.gen_func_preamble(self.arg_list, force_has_keywords=True)
             self.body(writer)
 
 
