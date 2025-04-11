@@ -356,7 +356,8 @@ class BinaryFuncGen(FuncBase):
     """
     
     def __init__(self, gen, name, body, *,
-                 arg2name=None):
+                 arg2name=None,
+                 has_ref_conv=True):
         if body is None:
             # 空
             def null_body(writer):
@@ -367,6 +368,7 @@ class BinaryFuncGen(FuncBase):
             arg2name = 'other'
         self.__args = ('PyObject* self',
                        f'PyObject* {arg2name}')
+        self.__has_ref_conv = has_ref_conv
 
     def __call__(self, writer, *,
                  comment=None,
@@ -376,6 +378,8 @@ class BinaryFuncGen(FuncBase):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=self.__args):
+            if self.__has_ref_conv:
+                self.gen.gen_ref_conv(writer, refname='val')
             self.body(writer)
 
 
@@ -385,7 +389,8 @@ class TernaryFuncGen(FuncBase):
     
     def __init__(self, gen, name, body, *,
                  arg2name=None,
-                 arg3name=None):
+                 arg3name=None,
+                 has_ref_conv=True):
         if body is None:
             # 空
             def null_body(writer):
@@ -399,6 +404,7 @@ class TernaryFuncGen(FuncBase):
         self.__args = ('PyObject* self',
                        f'PyObject* {arg2name}',
                        f'PyObject* {arg3name}')
+        self.__has_ref_conv = has_ref_conv
 
     def __call__(self, writer, *,
                  comment=None,
@@ -408,6 +414,8 @@ class TernaryFuncGen(FuncBase):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=self.__args):
+            if self.__has_ref_conv:
+                self.gen.gen_ref_conv(writer, refname='val')
             self.body(writer)
 
 
