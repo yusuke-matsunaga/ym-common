@@ -570,7 +570,7 @@ class PyObjGen(GenBase):
                              has_ref_conv=has_ref_conv)
 
     def new_nb_binaryfunc(self, name, body):
-        return self.new_nb_binaryfunc(name, body, has_ref_conv=False)
+        return self.new_binaryfunc(name, body, has_ref_conv=False)
                           
     def new_ternaryfunc(self, name, body, *,
                         arg2name=None,

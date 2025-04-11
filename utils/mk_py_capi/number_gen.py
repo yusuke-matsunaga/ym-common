@@ -91,13 +91,48 @@ class NumberGen(Number):
                 nb_index=None,
                 nb_matrix_multiply=None,
                 nb_inplace_matrix_multiply=None):
+
+        def nb_common(writer, body):
+            with writer.gen_if_block(f'{gen.pyclassname}::Check(self)'):
+                writer.gen_autoref_assign('val1', f'{gen.pyclassname}::_get_ref(self)')
+                with writer.gen_if_block(f'{gen.pyclassname}::Check(other)'):
+                    writer.gen_autoref_assign('val2', f'{gen.pyclassname}::_get_ref(other)')
+                    with writer.gen_try_block():
+                        body(writer)
+                    writer.gen_catch_invalid_argument()
+            writer.gen_return_py_notimplemented()
+
         if nb_add is not None:
+            if nb_add == 'default':
+                def add_body(writer):
+                    def body(writer):
+                        writer.gen_return_pyobject(gen.pyclassname, 'val1 + val2')
+                    nb_common(writer, body)
+                nb_add = add_body
             nb_add = gen.new_nb_binaryfunc('nb_add', nb_add)
         if nb_subtract is not None:
+            if nb_subtract == 'default':
+                def sub_body(writer):
+                    def body(writer):
+                        writer.gen_return_pyobject(gen.pyclassname, 'val1 - val2')
+                    nb_common(writer, body)
+                nb_subtract = sub_body
             nb_subtract = gen.new_nb_binaryfunc('nb_subtract', nb_subtract)
         if nb_multiply is not None:
+            if nb_multiply == 'default':
+                def mul_body(writer):
+                    def body(writer):
+                        writer.gen_return_pyobject(gen.pyclassname, 'val1 * val2')
+                    nb_common(writer, body)
+                nb_multiply = mul_body
             nb_multiply = gen.new_nb_binaryfunc('nb_multiply', nb_multiply)
         if nb_remainder is not None:
+            if nb_remainder == 'default':
+                def rem_body(writer):
+                    def body(writer):
+                        writer.gen_return_pyobject(gen.pyclassname, 'val1 % val2')
+                    nb_common(writer, body)
+                nb_remainder = rem_body
             nb_remainder = gen.new_nb_binaryfunc('nb_remainder', nb_remainder)
         if nb_divmod is not None:
             nb_divmod = gen.new_nb_binaryfunc('nb_divmod', nb_divmod)
@@ -112,28 +147,71 @@ class NumberGen(Number):
         if nb_bool is not None:
             nb_bool = gen.new_inquiry('nb_bool', nb_bool)
         if nb_invert is not None:
+            if nb_invert == 'default':
+                def inv_body(writer):
+                    writer.gen_return_pyobject(gen.pyclassname, '~val')
+                nb_invert = inv_body
             nb_invert = gen.new_unaryfunc('nb_invert', nb_invert)
         if nb_lshift is not None:
             nb_lshift = gen.new_nb_binaryfunc('nb_lshift', nb_lshift)
         if nb_rshift is not None:
             nb_rshift = gen.new_nb_binaryfunc('nb_rshift', nb_rshift)
         if nb_and is not None:
+            if nb_and == 'default':
+                def and_body(writer):
+                    def body(writer):
+                        writer.gen_return_pyobject(gen.pyclassname, 'val1 & val2')
+                    nb_common(writer, body)
+                nb_and = and_body
             nb_and = gen.new_nb_binaryfunc('nb_and', nb_and)
         if nb_xor is not None:
+            if nb_xor == 'default':
+                def xor_body(writer):
+                    def body(writer):
+                        writer.gen_return_pyobject(gen.pyclassname, 'val1 ^ val2')
+                    nb_common(writer, body)
+                nb_xor = xor_body
             nb_xor = gen.new_nb_binaryfunc('nb_xor', nb_xor)
         if nb_or is not None:
+            if nb_or == 'default':
+                def or_body(writer):
+                    def body(writer):
+                        writer.gen_return_pyobject(gen.pyclassname, 'val1 | val2')
+                    nb_common(writer, body)
+                nb_or = or_body
             nb_or = gen.new_nb_binaryfunc('nb_or', nb_or)
         if nb_int is not None:
             nb_int = gen.new_unaryfunc('nb_int', nb_int)
         if nb_float is not None:
             nb_float = gen.new_unaryfunc('nb_float', nb_float)
         if nb_inplace_add is not None:
+            if nb_inplace_add == 'default':
+                def add_body(writer):
+                    def body(writer):
+                        writer.write_line('val1 += val2;')
+                        writer.gen_return_self(incref=True)
+                    nb_common(writer, body)
+                nb_inplace_add = add_body
             nb_inplace_add = gen.new_nb_binaryfunc('nb_inplace_add',
                                                    nb_inplace_add)
         if nb_inplace_subtract is not None:
+            if nb_inplace_subtract == 'default':
+                def sub_body(writer):
+                    def body(writer):
+                        writer.write_line('val1 -= val2;')
+                        writer.gen_return_self(incref=True)
+                    nb_common(writer, body)
+                nb_inplace_subtract = sub_body
             nb_inplace_subtract = gen.new_nb_binaryfunc('nb_inplace_subtract',
                                                         nb_inplace_subtract)
         if nb_inplace_multiply is not None:
+            if nb_inplace_multiply == 'default':
+                def mul_body(writer):
+                    def body(writer):
+                        writer.write_line('val1 *= val2;')
+                        writer.gen_return_self(incref=True)
+                    nb_common(writer, body)
+                nb_inplace_multiply = mul_body
             nb_inplace_multiply = gen.new_nb_binaryfunc('nb_inplace_multiply',
                                                         nb_inplace_multiply)
         if nb_inplace_remainder is not None:
@@ -149,24 +227,58 @@ class NumberGen(Number):
             nb_inplace_rshift = gen.new_nb_binaryfunc('nb_inplace_rshift',
                                                       nb_inplace_rshift)
         if nb_inplace_and is not None:
+            if nb_inplace_and == 'default':
+                def and_body(writer):
+                    def body(writer):
+                        writer.write_line('val1 &= val2;')
+                        writer.gen_return_self(incref=True)
+                    nb_common(writer, body)
+                nb_inplace_and = and_body
             nb_inplace_and = gen.new_nb_binaryfunc('nb_inplace_and',
                                                    nb_inplace_and)
         if nb_inplace_xor is not None:
+            if nb_inplace_xor == 'default':
+                def xor_body(writer):
+                    def body(writer):
+                        writer.write_line('val1 ^= val2;')
+                        writer.gen_return_self(incref=True)
+                    nb_common(writer, body)
+                nb_inplace_xor = xor_body
             nb_inplace_xor = gen.new_nb_binaryfunc('nb_inplace_xor',
                                                    nb_inplace_xor)
         if nb_inplace_or is not None:
+            if nb_inplace_or == 'default':
+                def or_body(writer):
+                    def body(writer):
+                        writer.write_line('val1 |= val2;')
+                        writer.gen_return_self(incref=True)
+                    nb_common(writer, body)
+                nb_inplace_or = or_body
             nb_inplace_or = gen.new_nb_binaryfunc('nb_inplace_or',
                                                   nb_inplace_or)
         if nb_floor_divide is not None:
             nb_floor_divide = gen.new_nb_binaryfunc('nb_floor_divide',
                                                     nb_floor_divide)
         if nb_true_divide is not None:
+            if nb_true_divide == 'default':
+                def div_body(writer):
+                    def body(writer):
+                        writer.gen_return_py_object(gen.pyclassname, 'val1 / val2')
+                    nb_common(writer, body)
+                nb_true_divide = div_body
             nb_true_divide = gen.new_nb_binaryfunc('nb_true_divide',
                                                    nb_true_divide)
         if nb_inplace_floor_divide is not None:
             nb_inplace_floor_divide = gen.new_nb_binaryfunc('nb_inplace_floor_divide',
                                                             nb_inplace_floor_divide)
         if nb_inplace_true_divide is not None:
+            if nb_inplace_true_divide == 'default':
+                def div_body(writer):
+                    def body(writer):
+                        writer.write_line('val1 /= val2;')
+                        writer.gen_return_self(incref=True)
+                    nb_common(writer, body)
+                nb_inplace_true_divde = add_body
             nb_inplace_true_divide = gen.new_nb_binaryfunc('nb_inplace_true_divide',
                                                            nb_inplace_true_divide)
         if nb_index is not None:
