@@ -376,7 +376,6 @@ class BinaryFuncGen(FuncBase):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=self.__args):
-            self.gen.gen_ref_conv(writer, refname='val')
             self.body(writer)
 
 
@@ -409,7 +408,6 @@ class TernaryFuncGen(FuncBase):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=self.__args):
-            self.gen.gen_ref_conv(writer, refname='val')
             self.body(writer)
 
 
