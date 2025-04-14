@@ -147,11 +147,6 @@ class CxxWriter:
         for arg in arg_list:
             arg.gen_conv(self)
 
-    def gen_number(self, number_gen, number_name):
-        if number_gen is None:
-            return
-        number_gen(self, number_name)
-
     def gen_sequence(self, sequence_gen, sequence_name):
         if sequence_gen is None:
             return

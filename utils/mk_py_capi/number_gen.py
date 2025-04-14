@@ -50,6 +50,168 @@ Number = namedtuple('Number',
                      'nb_matrix_multiply',
                      'nb_inplace_matrix_multiply'])
 
+
+class OpBase:
+    """演算の情報を表すクラス
+    """
+
+    def __init__(self, classname):
+        self.__classname = classname
+
+    def __call__(self, writer, *,
+                 objname,
+                 varname):
+        with writer.gen_if_block(f'{self.__classname}::Check({objname})'):
+            writer.gen_autoref_assign(varname,
+                                      f'{self.__classname}::_get_ref({objname})')
+            self.body(writer)
+
+
+class DefaultOp(OpBase):
+
+    def __init__(self, classname, *,
+                 opclassname=None,
+                 expr):
+        super().__init__(classname=classname)
+        if opclassname is None:
+            opclassname = classname
+        self.__opclassname = opclassname
+        self.__expr = expr
+
+    def body(self, writer):
+        writer.gen_return_pyobject(self.__opclassname, self.__expr)
+
+
+class DefaultAdd(DefaultOp):
+
+    def __init__(self, classname, *,
+                 opclassname=None):
+        super().__init__(classname=classname,
+                         opclassname=opclassname,
+                         expr='val1 + val2')
+
+
+class DefaultSub(DefaultOp):
+
+    def __init__(self, classname, *,
+                 opclassname=None):
+        super().__init__(classname=classname,
+                         opclassname=opclassname,
+                         expr='val1 - val2')
+
+
+class DefaultMul(DefaultOp):
+
+    def __init__(self, classname, *,
+                 opclassname=None):
+        super().__init__(classname=classname,
+                         opclassname=opclassname,
+                         expr='val1 * val2')
+
+
+class DefaultDiv(DefaultOp):
+
+    def __init__(self, classname, *,
+                 opclassname=None):
+        super().__init__(classname=classname,
+                         opclassname=opclassname,
+                         expr='val1 / val2')
+
+
+class DefaultAnd(DefaultOp):
+
+    def __init__(self, classname, *,
+                 opclassname=None):
+        super().__init__(classname=classname,
+                         opclassname=opclassname,
+                         expr='val1 & val2')
+
+
+class DefaultXor(DefaultOp):
+
+    def __init__(self, classname, *,
+                 opclassname=None):
+        super().__init__(classname=classname,
+                         opclassname=opclassname,
+                         expr='val1 ^ val2')
+
+
+class DefaultOr(DefaultOp):
+
+    def __init__(self, classname, *,
+                 opclassname=None):
+        super().__init__(classname=classname,
+                         opclassname=opclassname,
+                         expr='val1 | val2')
+
+
+class DefaultInplaceOp(OpBase):
+
+    def __init__(self, classname, *,
+                 stmt):
+        super().__init__(classname=classname)
+        self.__stmt = stmt
+
+    def body(self, writer):
+        writer.write_line(f'{self.__stmt};')
+        writer.gen_return_self(incref=True)
+
+
+class DefaultInplaceAdd(DefaultInplaceOp):
+
+    def __init__(self, classname):
+        super().__init__(classname=classname,
+                         stmt='val1 += val2')
+
+
+class DefaultInplaceSub(DefaultInplaceOp):
+
+    def __init__(self, classname):
+        super().__init__(classname=classname,
+                         stmt='val1 -= val2')
+
+
+class DefaultInplaceMul(DefaultInplaceOp):
+
+    def __init__(self, classname):
+        super().__init__(classname=classname,
+                         stmt='val1 *= val2')
+
+
+class DefaultInplaceDiv(DefaultInplaceOp):
+
+    def __init__(self, classname):
+        super().__init__(classname=classname,
+                         stmt='val1 /= val2')
+
+
+class DefaultInplaceAnd(DefaultInplaceOp):
+
+    def __init__(self, classname):
+        super().__init__(classname=classname,
+                         stmt='val1 &= val2')
+
+
+class DefaultInplaceXor(DefaultInplaceOp):
+
+    def __init__(self, classname):
+        super().__init__(classname=classname,
+                         stmt='val1 &= val2')
+
+
+class DefaultInplaceXor(DefaultInplaceOp):
+
+    def __init__(self, classname):
+        super().__init__(classname=classname,
+                         stmt='val1 ^= val2')
+
+
+class DefaultInplaceOr(DefaultInplaceOp):
+
+    def __init__(self, classname):
+        super().__init__(classname=classname,
+                         stmt='val1 |= val2')
+
         
 class NumberGen(Number):
     """Number オブジェクト構造体を作るクラス
@@ -92,94 +254,30 @@ class NumberGen(Number):
                 nb_matrix_multiply=None,
                 nb_inplace_matrix_multiply=None):
 
-        def nb_common(writer, body):
-            with writer.gen_if_block(f'{gen.pyclassname}::Check(self)'):
-                writer.gen_autoref_assign('val1', f'{gen.pyclassname}::_get_ref(self)')
-                with writer.gen_if_block(f'{gen.pyclassname}::Check(other)'):
-                    writer.gen_autoref_assign('val2', f'{gen.pyclassname}::_get_ref(other)')
-                    with writer.gen_try_block():
-                        body(writer)
-                    writer.gen_catch_invalid_argument()
-            writer.gen_return_py_notimplemented()
-
-        if nb_add is not None:
-            if nb_add == 'default':
-                def add_body(writer):
-                    def body(writer):
-                        writer.gen_return_pyobject(gen.pyclassname, 'val1 + val2')
-                    nb_common(writer, body)
-                nb_add = add_body
-            nb_add = gen.new_nb_binaryfunc('nb_add', nb_add)
-        if nb_subtract is not None:
-            if nb_subtract == 'default':
-                def sub_body(writer):
-                    def body(writer):
-                        writer.gen_return_pyobject(gen.pyclassname, 'val1 - val2')
-                    nb_common(writer, body)
-                nb_subtract = sub_body
-            nb_subtract = gen.new_nb_binaryfunc('nb_subtract', nb_subtract)
-        if nb_multiply is not None:
-            if nb_multiply == 'default':
-                def mul_body(writer):
-                    def body(writer):
-                        writer.gen_return_pyobject(gen.pyclassname, 'val1 * val2')
-                    nb_common(writer, body)
-                nb_multiply = mul_body
-            nb_multiply = gen.new_nb_binaryfunc('nb_multiply', nb_multiply)
-        if nb_remainder is not None:
-            if nb_remainder == 'default':
-                def rem_body(writer):
-                    def body(writer):
-                        writer.gen_return_pyobject(gen.pyclassname, 'val1 % val2')
-                    nb_common(writer, body)
-                nb_remainder = rem_body
-            nb_remainder = gen.new_nb_binaryfunc('nb_remainder', nb_remainder)
-        if nb_divmod is not None:
-            nb_divmod = gen.new_nb_binaryfunc('nb_divmod', nb_divmod)
-        if nb_power is not None:
-            nb_power = gen.new_nb_ternaryfunc('nb_power', nb_power)
-        if nb_negative is not None:
-            nb_negative = gen.new_unaryfunc('nb_negative', nb_negative)
-        if nb_positive is not None:
-            nb_positive = gen.new_unaryfunc('nb_positive', nb_positive)
-        if nb_absolute is not None:
-            nb_absolute = gen.new_unaryfunc('nb_absolute', nb_absolute)
-        if nb_bool is not None:
-            nb_bool = gen.new_inquiry('nb_bool', nb_bool)
+        if nb_add == 'default':
+            nb_add = gen.new_binop('nb_add',
+                                   op_list1=[DefaultAdd(gen.pyclassname)])
+        if nb_subtract == 'default':
+            nb_subtract = gen.new_binop('nb_subtract',
+                                        op_list1=[DefaultSub(gen.pyclassname)])
+        if nb_multiply == 'default':
+            nb_multiply = gen.new_binop('nb_subtract',
+                                        op_list1=[DefaultMul(gen.pyclassname)])
         if nb_invert is not None:
             if nb_invert == 'default':
                 def inv_body(writer):
                     writer.gen_return_pyobject(gen.pyclassname, '~val')
                 nb_invert = inv_body
             nb_invert = gen.new_unaryfunc('nb_invert', nb_invert)
-        if nb_lshift is not None:
-            nb_lshift = gen.new_nb_binaryfunc('nb_lshift', nb_lshift)
-        if nb_rshift is not None:
-            nb_rshift = gen.new_nb_binaryfunc('nb_rshift', nb_rshift)
-        if nb_and is not None:
-            if nb_and == 'default':
-                def and_body(writer):
-                    def body(writer):
-                        writer.gen_return_pyobject(gen.pyclassname, 'val1 & val2')
-                    nb_common(writer, body)
-                nb_and = and_body
-            nb_and = gen.new_nb_binaryfunc('nb_and', nb_and)
-        if nb_xor is not None:
-            if nb_xor == 'default':
-                def xor_body(writer):
-                    def body(writer):
-                        writer.gen_return_pyobject(gen.pyclassname, 'val1 ^ val2')
-                    nb_common(writer, body)
-                nb_xor = xor_body
-            nb_xor = gen.new_nb_binaryfunc('nb_xor', nb_xor)
-        if nb_or is not None:
-            if nb_or == 'default':
-                def or_body(writer):
-                    def body(writer):
-                        writer.gen_return_pyobject(gen.pyclassname, 'val1 | val2')
-                    nb_common(writer, body)
-                nb_or = or_body
-            nb_or = gen.new_nb_binaryfunc('nb_or', nb_or)
+        if nb_and == 'default':
+            nb_and = gen.new_binop('nb_and',
+                                   op_list1=[DefaultAnd(gen.pyclassname)])
+        if nb_xor == 'default':
+            nb_xor = gen.new_binop('nb_xor',
+                                   op_list1=[DefaultXor(gen.pyclassname)])
+        if nb_or == 'default':
+            nb_or = gen.new_binop('nb_or',
+                                  op_list1=[DefaultOr(gen.pyclassname)])
         if nb_int is not None:
             nb_int = gen.new_unaryfunc('nb_int', nb_int)
         if nb_float is not None:
