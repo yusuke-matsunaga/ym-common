@@ -21,7 +21,6 @@ from .funcgen import LenFuncGen
 from .funcgen import InquiryGen
 from .funcgen import UnaryFuncGen
 from .funcgen import BinaryFuncGen
-from .funcgen import BinOpFuncGen
 from .funcgen import TernaryFuncGen
 from .funcgen import SsizeArgFuncGen
 from .funcgen import SsizeObjArgProcGen
@@ -238,43 +237,6 @@ class PyObjGen(GenBase):
         self.__new_gen = None
 
         # Number 構造体の定義
-        self.__number_name = self.check_name('number')
-        self.__has_nb = False
-        self.__nb_add = None
-        self.__nb_subtract = None
-        self.__nb_multiply = None
-        self.__nb_remainder = None
-        self.__nb_divmod = None
-        self.__nb_power = None
-        self.__nb_negative = None
-        self.__nb_positive = None
-        self.__nb_absolute = None
-        self.__nb_bool = None
-        self.__nb_invert = None
-        self.__nb_lshift = None
-        self.__nb_rshift = None
-        self.__nb_and = None
-        self.__nb_xor = None
-        self.__nb_or = None
-        self.__nb_int = None
-        self.__nb_float = Nont
-        self.__nb_inplace_add = None
-        self.__nb_inplace_subtract = None
-        self.__nb_inplace_multiply = None
-        self.__nb_inplace_remainder = None
-        self.__nb_inplace_power = None
-        self.__nb_inplace_lshift = None
-        self.__nb_inplace_rshift = None
-        self.__nb_inplace_and = None
-        self.__nb_inplace_xor = None
-        self.__nb_inplace_or = None
-        self.__nb_floor_divide = None
-        self.__nb_true_divide = None
-        self.__nb_inplace_floor_divide = None
-        self.__nb_implace_true_divide = None
-        self.__nb_index = None
-        self.__nb_matrix_multiply = None
-        self.__nb_inplace_matrix_multiply = None
         self.__number_gen = None
 
         # Sequence 構造体の定義
@@ -376,460 +338,359 @@ class PyObjGen(GenBase):
 
     def add_nb_add(self, *,
                    func_name=None,
+                   expr=None,
                    op_list1=[],
                    op_list2=[]):
         """nb_add の関数定義を追加する．
         """
-        if self.__nb_add is not None:
-            raise ValueError('nb_add has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_add')
-        op_list1 = [DefaultAdd(self.pyclassname)] + op_list1
-        self.__nb_add = BinOpGen(func_name,
-                                 op_list1=op_list1,
-                                 op_list2=op_list2)
+        self.__number_gen.add_add(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
 
     def add_nb_subtract(self, *,
                         func_name=None,
+                        expr=None,
                         op_list1=[],
                         op_list2=[]):
         """nb_subtract の関数定義を追加する．
         """
-        if self.__nb_subtract is not None:
-            raise ValueError('nb_subtract has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_subtract')
-        op_list1 = [DefaultSub(self.pyclassname)] + op_list1
-        self.__nb_subtract = BinOpGen(func_name,
-                                      op_list1=op_list1,
-                                      op_list2=op_list2)
+        self.__number_gen.add_subtract(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
 
     def add_nb_multiply(self, *,
                         func_name=None,
+                        expr=None,
                         op_list1=[],
                         op_list2=[]):
         """nb_multiply の関数定義を追加する．
         """
-        if self.__nb_multiply is not None:
-            raise ValueError('nb_multiply has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_multiply')
-        op_list1 = [DefaultMul(self.pyclassname)] + op_list1
-        self.__nb_multiply = BinOpGen(func_name,
-                                      op_list1=op_list1,
-                                      op_list2=op_list2)
+        self.__number_gen.add_multiply(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
 
     def add_nb_remainder(self, *,
                          func_name=None,
+                         expr=None,
                          op_list1=[],
                          op_list2=[]):
         """nb_remainder の関数定義を追加する．
         """
-        if self.__nb_remainder is not None:
-            raise ValueError('nb_remainder has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_remainder')
-        #op_list1 = [DefaultAdd(self.pyclassname)] + op_list1
-        self.__nb_remainder = BinOpGen(func_name,
-                                       op_list1=op_list1,
-                                       op_list2=op_list2)
+        self.__number_gen.add_remainder(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
 
     def add_nb_divmod(self, *,
                       func_name=None,
+                      expr=None,
                       op_list1=[],
                       op_list2=[]):
         """nb_divmod の関数定義を追加する．
         """
-        if self.__nb_divmod is not None:
-            raise ValueError('nb_divmod has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_divmod')
-        op_list1 = [DefaultMod(self.pyclassname)] + op_list1
-        self.__nb_divmod = BinOpGen(func_name,
-                                    op_list1=op_list1,
-                                    op_list2=op_list2)
+        self.__number_gen.add_divmod(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
 
     def add_nb_power(self, *,
                      func_name=None,
                      body):
         """nb_power の関数定義を追加する．
         """
-        if self.__nb_power is not None:
-            raise ValueError('nb_power has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_power')
-        self.__nb_power = self.gen.new_nb_ternaryfunc(func_name, body)
+        self.__number_gen.add_power(func_name, op_list1=op_list1, op_list2=op_list2)
 
     def add_nb_negative(self, *,
                         func_name=None,
                         body):
         """nb_negative の関数定義を追加する．
         """
-        if self.__nb_negative is not None:
-            raise ValueError('nb_negative has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_negative')
-        self.__nb_negative = self.gen_unaryfunc(func_name, body)
+        self.__number_gen.add_negative(self.new_unaryfunc(func_name, body))
 
     def add_nb_positive(self, *,
                         func_name=None,
                         body):
         """nb_positive の関数定義を追加する．
         """
-        if self.__nb_positive is not None:
-            raise ValueError('nb_positive has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_positive')
-        self.__nb_positive = self.gen_unaryfunc(func_name, body)
+        self.__number_gen.add_positive(self.new_unaryfunc(func_name, body))
 
     def add_nb_absolute(self, *,
                         func_name=None,
                         body):
         """nb_absolute の関数定義を追加する．
         """
-        if self.__nb_absolute is not None:
-            raise ValueError('nb_absolute has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_absolute')
-        self.__nb_positive = self.gen_unaryfunc(func_name, body)
+        self.__number_gen.add_absolute(self.new_unaryfunc(func_name, body))
 
     def add_nb_bool(self, *,
                     func_name=None,
                     body):
         """nb_bool の関数定義を追加する．
         """
-        if self.__nb_bool is not None:
-            raise ValueError('nb_bool has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_bool')
-        self.__nb_bool = self.gen_unaryfunc(func_name, body)
+        self.__number_gen.add_bool(self.new_unaryfunc(func_name, body))
 
     def add_nb_invert(self, *,
                       func_name=None,
-                      body):
+                      body='default'):
         """nb_invert の関数定義を追加する．
         """
-        if self.__nb_invert is not None:
-            raise ValueError('nb_invert has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_invert')
-        self.__nb_invert = self.gen_unaryfunc(func_name, body)
+        if body == 'default':
+            def invert_body(writer):
+                writer.gen_return_pyobject(self.pyclassname, '~val')
+            body = invert_body
+        self.__number_gen.add_invert(self.new_unaryfunc(func_name, body))
 
     def add_nb_lshift(self, *,
                       func_name=None,
+                      expr=None,
                       op_list1=[]):
         """nb_lshift の関数定義を追加する．
         """
-        if self.__nb_lshift is not None:
-            raise ValueError('nb_lshift has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_lshift')
-        op_list1 = [DefaultLsft(self.pyclassname)] + op_list1
-        self.__nb_lshift = BinOpGen(func_name,
-                                    op_list1=op_list1)
+        self.__number_gen.add_lshift(func_name, expr=expr, op_list1=op_list1)
 
     def add_nb_rshift(self, *,
                       func_name=None,
+                      expr=None,
                       op_list1=[]):
         """nb_rshift の関数定義を追加する．
         """
-        if self.__nb_rshift is not None:
-            raise ValueError('nb_rshift has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_rshift')
-        op_list1 = [DefaultRsft(self.pyclassname)] + op_list1
-        self.__nb_rshift = BinOpGen(func_name,
-                                    op_list1=op_list1)
+        self.__number_gen.add_rshift(func_name, expr=expr, op_list1=op_list1)
 
     def add_nb_and(self, *,
                    func_name=None,
+                   expr=None,
                    op_list1=[],
                    op_list2=[]):
         """nb_and の関数定義を追加する．
         """
-        if self.__nb_and is not None:
-            raise ValueError('nb_and has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_and')
-        op_list1 = [DefaultAnd(self.pyclassname)] + op_list1
-        self.__nb_and = BinOpGen(func_name,
-                                 op_list1=op_list1,
-                                 op_list2=op_list2)
+        self.__number_gen.add_and(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
 
     def add_nb_xor(self, *,
                    func_name=None,
+                   expr=None,
                    op_list1=[],
                    op_list2=[]):
-        """nb_xord の関数定義を追加する．
+        """nb_xor の関数定義を追加する．
         """
-        if self.__nb_xor is not None:
-            raise ValueError('nb_xor has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_xor')
-        op_list1 = [DefaultXor(self.pyclassname)] + op_list1
-        self.__nb_xor = BinOpGen(func_name,
-                                 op_list1=op_list1,
-                                 op_list2=op_list2)
+        self.__number_gen.add_xor(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
 
     def add_nb_or(self, *,
                   func_name=None,
+                  expr=None,
                   op_list1=[],
                   op_list2=[]):
         """nb_or の関数定義を追加する．
         """
-        if self.__nb_or is not None:
-            raise ValueError('nb_or has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_or')
-        op_list1 = [DefaultOr(self.pyclassname)] + op_list1
-        self.__nb_or = BinOpGen(func_name,
-                                op_list1=op_list1,
-                                op_list2=op_list2)
+        self.__number_gen.add_or(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
 
     def add_nb_int(self, *,
                    func_name=None,
                    body):
         """nb_int の関数定義を追加する．
         """
-        if self.__nb_int is not None:
-            raise ValueError('nb_int has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_int')
-        self.__nb_int = self.gen_unaryfunc(func_name, body)
+        self.__number_gen.add_int(self.new_unaryfunc(func_name, body))
 
     def add_nb_float(self, *,
                      func_name=None,
                      body):
         """nb_float の関数定義を追加する．
         """
-        if self.__nb_float is not None:
-            raise ValueError('nb_float has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_float')
-        self.__nb_float = self.gen_unaryfunc(func_name, body)
+        self.__number_gen.add_float(self.new_unaryfunc(func_name, body))
 
     def add_nb_inplace_add(self, *,
                            func_name=None,
+                           stmt=None,
                            op_list1=[]):
         """nb_inplace_add の関数定義を追加する．
         """
-        if self.__nb_inplace_add is not None:
-            raise ValueError('nb_inplace_add has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_add')
-        op_list1 = [DefaultInplaceAdd(self.pyclassname)] + op_list1
-        self.__nb_inplace_add = InplaceBinOpGen(func_name,
-                                                op_list1=op_list1)
+        self.__number_gen.add_inplace_add(func_name, stmt=stmt, op_list1=op_list1)
 
     def add_nb_inplace_subtract(self, *,
                                 func_name=None,
+                                stmt=None,
                                 op_list1=[]):
         """nb_inplace_subtract の関数定義を追加する．
         """
-        if self.__nb_inplace_subtract is not None:
-            raise ValueError('nb_inplace_subtract has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_subtract')
-        op_list1 = [DefaultInplaceSub(self.pyclassname)] + op_list1
-        self.__nb_inplace_subtract = InplaceBinOpGen(func_name,
-                                                     op_list1=op_list1)
+        self.__number_gen.add_inplace_subtract(func_name, stmt=stmt, op_list1=op_list1)
 
     def add_nb_inplace_multiply(self, *,
                                 func_name=None,
+                                stmt=None,
                                 op_list1=[]):
         """nb_inplace_multiply の関数定義を追加する．
         """
-        if self.__nb_inplace_multiply is not None:
-            raise ValueError('nb_inplace_multiply has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_multiply')
-        op_list1 = [DefaultInplaceMul(self.pyclassname)] + op_list1
-        self.__nb_inplace_multiply = InplaceBinOpGen(func_name,
-                                                     op_list1=op_list1)
+        self.__number_gen.add_inplace_multiply(func_name, stmt=stmt, op_list1=op_list1)
 
     def add_nb_inplace_remainder(self, *,
                                  func_name=None,
+                                 stmt=None,
                                  op_list1=[]):
         """nb_inplace_remainder の関数定義を追加する．
         """
-        if self.__nb_inplace_remainder is not None:
-            raise ValueError('nb_inplace_remainder has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_remainder')
-        op_list1 = [DefaultInplaceRem(self.pyclassname)] + op_list1
-        self.__nb_inplace_remainder = InplaceBinOpGen(func_name,
-                                                      op_list1=op_list1)
+        self.__number_gen.add_inplace_remainder(func_name, stmt=stmt, op_list1=op_list1)
 
     def add_nb_inplace_power(self, *,
                              func_name=None,
+                             stmt=None,
                              body):
         """nb_inplace_power の関数定義を追加する．
         """
-        if self.__nb_inplace_power is not None:
-            raise ValueError('nb_inplace_power has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_power')
-        self.__nb_inplace_power = self.new_nb_ternaryfunc(func_name, body)
+        self.__number_gen.add_inplace_power(func_name, stmt=stmt, op_list1=op_list1)
 
     def add_nb_inplace_lshift(self, *,
                               func_name=None,
+                              stmt=None,
                               op_list1=[]):
         """nb_inplace_lshift の関数定義を追加する．
         """
-        if self.__nb_inplace_lshift is not None:
-            raise ValueError('nb_inplace_lshift has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_lshift')
-        op_list1 = [DefaultInplaceLsft(self.pyclassname)] + op_list1
-        self.__nb_inplace_lshift = InplaceBinOpGen(func_name,
-                                                   op_list1=op_list1)
-
+        self.__number_gen.add_inplace_lshift(func_name, stmt=stmt, op_list1=op_list1)
+        
     def add_nb_inplace_rshift(self, *,
                               func_name=None,
+                              stmt=None,
                               op_list1=[]):
         """nb_inplace_rshift の関数定義を追加する．
         """
-        if self.__nb_inplace_rshft is not None:
-            raise ValueError('nb_inplace_rshift has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_rshift')
-        op_list1 = [DefaultInplaceRsft(self.pyclassname)] + op_list1
-        self.__nb_inplace_rshift = InplaceBinOpGen(func_name,
-                                                   op_list1=op_list1)
+        self.__number_gen.add_inplace_rshift(func_name, stmt=stmt, op_list1=op_list1)
 
     def add_nb_inplace_and(self, *,
                            func_name=None,
+                           stmt=None,
                            op_list1=[]):
         """nb_inplace_and の関数定義を追加する．
         """
-        if self.__nb_inplace_and is not None:
-            raise ValueError('nb_inplace_and has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_and')
-        op_list1 = [DefaultInplaceAnd(self.pyclassname)] + op_list1
-        self.__nb_inplace_and = InplaceBinOpGen(func_name,
-                                                op_list1=op_list1)
+        self.__number_gen.add_inplace_and(func_name, stmt=stmt, op_list1=op_list1)
 
     def add_nb_inplace_xor(self, *,
                            func_name=None,
+                           stmt=None,
                            op_list1=[]):
         """nb_inplace_xor の関数定義を追加する．
         """
-        if self.__nb_inplace_xor is not None:
-            raise ValueError('nb_inplace_xor has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_xor')
-        op_list1 = [DefaultInplaceXor(self.pyclassname)] + op_list1
-        self.__nb_inplace_xor = InplaceBinOpGen(func_name,
-                                                op_list1=op_list1)
+        self.__number_gen.add_inplace_xor(func_name, stmt=stmt, op_list1=op_list1)
 
     def add_nb_inplace_or(self, *,
                           func_name=None,
+                          stmt=None,
                           op_list1=[]):
         """nb_inplace_or の関数定義を追加する．
         """
-        if self.__nb_inplace_or is not None:
-            raise ValueError('nb_inplace_or has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_or')
-        op_list1 = [DefaultInplaceOr(self.pyclassname)] + op_list1
-        self.__nb_inplace_or = InplaceBinOpGen(func_name,
-                                               op_list1=op_list1)
+        self.__number_gen.add_inplace_or(func_name, stmt=stmt, op_list1=op_list1)
 
     def add_nb_floor_divide(self, *,
                             func_name=None,
+                            expr=None,
                             op_list1=[],
                             op_list2=[]):
         """nb_floor_divide の関数定義を追加する．
         """
-        if self.__nb_floor_divide is not None:
-            raise ValueError('nb_floor_divide has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_floor_divide')
-        op_list1 = [DefaultFloorDiv(self.pyclassname)] + op_list1
-        self.__nb_floor_divide = BinOpGen(func_name,
-                                          op_list1=op_list1,
-                                          op_list2=op_list2)
+        self.__number_gen.add_floor_divide(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
 
     def add_nb_true_divide(self, *,
                            func_name=None,
+                           expr=None,
                            op_list1=[],
                            op_list2=[]):
         """nb_true_divide の関数定義を追加する．
         """
-        if self.__nb_true_divide is not None:
-            raise ValueError('nb_true_divide has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_true_divide')
-        op_list1 = [DefaultTrueDiv(self.pyclassname)] + op_list1
-        self.__nb_true_divide = BinOpGen(func_name,
-                                         op_list1=op_list1,
-                                         op_list2=op_list2)
+        self.__number_gen.add_true_divide(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
 
     def add_nb_inplace_floor_divide(self, *,
                                     func_name=None,
+                                    stmt=None,
                                     op_list1=[]):
         """nb_inplace_floor_divide の関数定義を追加する．
         """
-        if self.__nb_inplace_floor_divide is not None:
-            raise ValueError('nb_inplace_floor_divide has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_floor_divide')
-        op_list1 = [DefaultInplaceFloorDiv(self.pyclassname)] + op_list1
-        self.__nb_inplace_fllor_divde = InplaceBinOpGen(func_name,
-                                                        op_list1=op_list1)
+        self.__number_gen.add_inplace_floor_divide(func_name, stmt=stmt, op_list1=op_list1)
 
     def add_nb_inplace_true_divide(self, *,
                                    func_name=None,
+                                   stmt=None,
                                    op_list1=[]):
         """nb_inplace_true_divide の関数定義を追加する．
         """
-        if self.__nb_inplace_true_divide is not None:
-            raise ValueError('nb_inplace_true_divide has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_true_divide')
-        op_list1 = [DefaultInplaceTrueDiv(self.pyclassname)] + op_list1
-        self.__nb_inplace_true_divide = InplaceBinOpGen(func_name,
-                                                        op_list1=op_list1)
+        self.__number_gen.add_inplace_true_divide(func_name, stmt=stmt, op_list1=op_list1)
 
     def add_nb_index(self, *,
                      func_name=None,
                      body):
         """nb_index の関数定義を追加する．
         """
-        if self.__nb_index is not None:
-            raise ValueError('nb_index has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_index')
-        self.__nb_index = self.gen_unaryfunc(func_name, body)
+        self.__number_gen.add_index(self.new_unaryfunc(func_name, body))
 
     def add_nb_matrix_multiply(self, *,
                                func_name=None,
+                               expr=None,
                                op_list1=[],
                                op_list2=[]):
         """nb_matrix_multiply の関数定義を追加する．
         """
-        if self.__nb_matrix_multiply is not None:
-            raise ValueError('nb_matrix_multiply has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_matrix_multiply')
-        op_list1 = [DefaultMatMul(self.pyclassname)] + op_list1
-        self.__nb_matrix_multiply = BinOpGen(func_name,
-                                             op_list1=op_list1,
-                                             op_list2=op_list2)
+        self.__number_gen.add_matrix_multiply(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
 
     def add_nb_inplace_matrix_multiply(self, *,
                                        func_name=None,
+                                       stmt=None,
                                        op_list1=[]):
         """nb_inplace_matrix_multiply の関数定義を追加する．
         """
-        if self.__nb_inplace_matrix_multiply is not None:
-            raise ValueError('nb_inplace_matrix_multiply has been already defined')
-        self.__has_nb = True
+        self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_matrix_multiply')
-        op_list1 = [DefaultInplaceMatMul(self.pyclassname)] + op_list1
-        self.__nb_inplace_matrix_multiply = InplaceBinOpGen(func_name,
-                                                            op_list1=op_list1)
+        self.__number_gen.add_inplace_matrix_multiply(func_name, stmt=stmt, op_list1=op_list1)
         
     def add_sequence(self, *,
                      name=None,
@@ -1141,8 +1002,8 @@ class PyObjGen(GenBase):
             tp_list.append(('dealloc', self.__dealloc_gen.name))
         if self.__repr_gen is not None:
             tp_list.append(('repr', self.__repr_gen.name))
-        if self.__number_name is not None:
-            tp_list.append(('as_number', f'&{self.__number_name}'))
+        if self.__number_gen is not None:
+            tp_list.append(('as_number', f'&{self.__number_gen.name}'))
         if self.__sequence_name is not None:
             tp_list.append(('as_sequence', f'&{self.__sequence_name}'))
         if self.__mapping_name is not None:
@@ -1217,120 +1078,10 @@ class PyObjGen(GenBase):
     def gen_number(self, writer):
         """Number 構造体に関するコードを生成する．
         """
-        # 個々の関数を生成する．
-        gen_func(self.__nb_add, writer)
-        gen_func(self.__nb_subtract, writer)
-        gen_func(self.__nb_multiply, writer)
-        gen_func(self.__nb_remainder, writer)
-        gen_func(self.__nb_divmod, writer)
-        gen_func(self.__nb_power, writer)
-        gen_func(self.__nb_negative, writer)
-        gen_func(self.__nb_positive, writer)
-        gen_func(self.__nb_absolute, writer)
-        gen_func(self.__nb_bool, writer)
-        gen_func(self.__nb_invert, writer)
-        gen_func(self.__nb_lshift, writer)
-        gen_func(self.__nb_rshift, writer)
-        gen_func(self.__nb_and, writer)
-        gen_func(self.__nb_xor, writer)
-        gen_func(self.__nb_or, writer)
-        gen_func(self.__nb_int, writer)
-        gen_func(self.__nb_float, writer)
-        gen_func(self.__nb_inplace_add, writer)
-        gen_func(self.__nb_inplace_subtract, writer)
-        gen_func(self.__nb_inplace_multiply, writer)
-        gen_func(self.__nb_inplace_remainder, writer)
-        gen_func(self.__nb_inplace_power, writer)
-        gen_func(self.__nb_inplace_lshift, writer)
-        gen_func(self.__nb_inplace_rshift, writer)
-        gen_func(self.__nb_inplace_and, writer)
-        gen_func(self.__nb_inplace_xor, writer)
-        gen_func(self.__nb_inplace_or, writer)
-        gen_func(self.__nb_floor_divide, writer)
-        gen_func(self.__nb_true_divide, writer)
-        gen_func(self.__nb_inplace_floor_divide, writer)
-        gen_func(self.__nb_inplace_true_divide, writer)
-        gen_func(self.__nb_index, writer)
-        gen_func(self.__nb_matrix_multiply,writer)
-        gen_func(self.__nb_inplace_matrix_multiply, writer)
+        if self.__number_gen is not None:
+            self.__number_gen(writer)
 
-        # 構造体定義を生成する．
-        with writer.gen_struct_init_block(structname='PyNumberMethods',
-                                          varname=self.__number_name,
-                                          comment='Numberオブジェクト構造体'):
-            nb_lines = []
-            add_member_def(nb_lines,
-                           'nb_add', self.__nb_add)
-            add_member_def(nb_lines,
-                           'nb_subtract', self.__nb_subtract)
-            add_member_def(nb_lines,
-                           'nb_multiply', self.__nb_multiply)
-            add_member_def(nb_lines,
-                           'nb_remainder', self.__nb_remainder)
-            add_member_def(nb_lines,
-                           'nb_divmod', self.__nb_divmod)
-            add_member_def(nb_lines,
-                           'nb_power', self.__nb_power)
-            add_member_def(nb_lines,
-                           'nb_negative', self.__nb_negative)
-            add_member_def(nb_lines,
-                           'nb_positive', self.__nb_positive)
-            add_member_def(nb_lines,
-                           'nb_absolute', self.__nb_absolute)
-            add_member_def(nb_lines,
-                           'nb_bool', self.__nb_bool)
-            add_member_def(nb_lines,
-                           'nb_invert', self.__nb_invert)
-            add_member_def(nb_lines,
-                           'nb_lshift', self.__nb_lshift)
-            add_member_def(nb_lines,
-                           'nb_rshift', self.__nb_rshift)
-            add_member_def(nb_lines,
-                           'nb_and', self.__nb_and)
-            add_member_def(nb_lines,
-                           'nb_xor', self.__nb_xor)
-            add_member_def(nb_lines,
-                           'nb_or', self.__nb_or)
-            add_member_def(nb_lines,
-                           'nb_int', self.__nb_int)
-            add_member_def(nb_lines,
-                           'nb_float', self.__nb_float)
-            add_member_def(nb_lines,
-                           'nb_inplace_add', self.__nb_inplace_add)
-            add_member_def(nb_lines,
-                           'nb_inplace_subtract', self.__nb_inplace_subtract)
-            add_member_def(nb_lines,
-                           'nb_inplace_multiply', self.__nb_inplace_multiply)
-            add_member_def(nb_lines,
-                           'nb_inplace_remainder', self.__nb_inplace_remainder)
-            add_member_def(nb_lines,
-                           'nb_inplace_power', self.__nb_inplace_power)
-            add_member_def(nb_lines,
-                           'nb_inplace_lshift', self.__nb_inplace_lshift)
-            add_member_def(nb_lines,
-                           'nb_inplace_rshift', self.__nb_inplace_rshift)
-            add_member_def(nb_lines,
-                           'nb_inplace_and', self.__nb_inplace_and)
-            add_member_def(nb_lines,
-                           'nb_inplace_xor', self.__nb_inplace_xor)
-            add_member_def(nb_lines,
-                           'nb_inplace_or', self.__nb_inplace_or)
-            add_member_def(nb_lines,
-                           'nb_floor_divide', self.__nb_floor_divide)
-            add_member_def(nb_lines,
-                           'nb_true_divide', self.__nb_true_divide)
-            add_member_def(nb_lines,
-                           'nb_inplace_floor_divide',
-                           self.__nb_inplace_floor_divide)
-            add_member_def(nb_lines,
-                           'nb_inplace_true_divide',
-                           self.__nb_inplace_true_divide)
-            add_member_def(nb_lines,
-                           'nb_index', self.__nb_index)
-            add_member_def(nb_lines,
-                           'nb_matrix_multiply', self.__nb_matrix_multiply)
-            add_member_def(nb_lines,
-                           'nb_inplace_matrix_multiply',
-                           self.__nb_inplace_matrix_multiply)
-            writer.write_lines(nb_lines, delim=',')
-        
+    def __check_number(self):
+        if self.__number_gen is None:
+            name = self.check_name('number')
+            self.__number_gen = NumberGen(self, name)

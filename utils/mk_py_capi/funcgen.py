@@ -386,42 +386,6 @@ class BinaryFuncGen(FuncBase):
             with writer.gen_try_block():
                 self.body(writer)
             writer.gen_catch_invalid_argument()
-
-
-class BinOpFuncGen(FuncGen):
-    """二項演算を生成するクラス
-    """
-
-    def __init__(self, gen, name, *,
-                 op_list1,
-                 op_list2=[]):
-        def body(writer):
-            c0 = gen.pyclassname
-            with writer.gen_if_block(f'{c0}::Check(self)'):
-                writer.gen_autoref_assign('val1', f'{c0}::_get_ref(self)')
-                for op in op_list1:
-                    op(writer, objname='other', varname='val2')
-            if len(op_list2) > 0:
-                with writer.gen_if_block(f'{c0}::Check(other)'):
-                    writer.gen_autoref_assign('val2', f'{c0}::_get_ref(other)')
-                    for op in op_list2:
-                        op(writer, objname='self', varname='val1')
-            writer.gen_return_py_notimplemented()
-        super().__init__(gen, name, body)
-
-    def __call__(self, writer, *,
-                 comment=None,
-                 comments=None):
-        args = ('PyObject* self',
-                'PyObject* other')
-        with writer.gen_func_block(comment=comment,
-                                   comments=comments,
-                                   return_type='PyObject*',
-                                   func_name=self.name,
-                                   args=args):
-            with writer.gen_try_block():
-                self.body(writer)
-            writer.gen_catch_invalid_argument()
         
 
 class TernaryFuncGen(FuncBase):
