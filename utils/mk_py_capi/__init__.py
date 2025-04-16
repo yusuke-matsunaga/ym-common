@@ -15,8 +15,10 @@ from .arg import IntArg, UintArg, LongArg, UlongArg, DoubleArg
 from .arg import BoolArg, StringArg
 from .arg import RawObjArg, TypedRawObjArg
 from .arg import ObjConvArg, TypedObjConvArg
-from .number_gen import DefaultOp, DefaultInplaceOp
-from .number_gen import DefaultAdd, DefaultSub, DefaultMul, DefaultDiv
-from .number_gen import DefaultInplaceAdd, DefaultInplaceSub, DefaultInplaceMul, DefaultInplaceDiv
-from .number_gen import DefaultAnd, DefaultXor, DefaultOr
-from .number_gen import DefaultInplaceAnd, DefaultInplaceXor, DefaultInplaceOr
+from .number_gen import Op, Iop
+from .number_gen import AddOp, SubOp, MulOp, DivOp, RemOp
+from .number_gen import AddIop, SubIop, MulIop, DivIop, RemIop
+from .number_gen import LsftOp, RsftOp
+from .number_gen import LsftIop, RsftIop
+from .number_gen import AndOp, XorOp, OrOp
+from .number_gen import AndIop, XorIop, OrIop

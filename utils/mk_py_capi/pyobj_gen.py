@@ -342,7 +342,10 @@ class PyObjGen(GenBase):
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_add')
-        self.__number_gen.add_add(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
+        self.__number_gen.add_add(func_name,
+                                  expr=expr,
+                                  op_list1=op_list1,
+                                  op_list2=op_list2)
 
     def add_nb_subtract(self, *,
                         func_name=None,
@@ -353,7 +356,10 @@ class PyObjGen(GenBase):
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_subtract')
-        self.__number_gen.add_subtract(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
+        self.__number_gen.add_subtract(func_name,
+                                       expr=expr,
+                                       op_list1=op_list1,
+                                       op_list2=op_list2)
 
     def add_nb_multiply(self, *,
                         func_name=None,
@@ -364,7 +370,10 @@ class PyObjGen(GenBase):
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_multiply')
-        self.__number_gen.add_multiply(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
+        self.__number_gen.add_multiply(func_name,
+                                       expr=expr,
+                                       op_list1=op_list1,
+                                       op_list2=op_list2)
 
     def add_nb_remainder(self, *,
                          func_name=None,
@@ -375,18 +384,24 @@ class PyObjGen(GenBase):
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_remainder')
-        self.__number_gen.add_remainder(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
+        self.__number_gen.add_remainder(func_name,
+                                        expr=expr,
+                                        op_list1=op_list1,
+                                        op_list2=op_list2)
 
     def add_nb_divmod(self, *,
                       func_name=None,
-                      expr='default',
+                      expr,
                       op_list1=[],
                       op_list2=[]):
         """nb_divmod の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_divmod')
-        self.__number_gen.add_divmod(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
+        self.__number_gen.add_divmod(func_name,
+                                     expr=expr,
+                                     op_list1=op_list1,
+                                     op_list2=op_list2)
 
     def add_nb_power(self, *,
                      func_name=None,
@@ -395,7 +410,7 @@ class PyObjGen(GenBase):
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_power')
-        self.__number_gen.add_power(func_name, op_list1=op_list1, op_list2=op_list2)
+        self.__number_gen.add_power(self.new_ternaryfunc(func_name, body))
 
     def add_nb_negative(self, *,
                         func_name=None,
@@ -454,7 +469,9 @@ class PyObjGen(GenBase):
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_lshift')
-        self.__number_gen.add_lshift(func_name, expr=expr, op_list1=op_list1)
+        self.__number_gen.add_lshift(func_name,
+                                     expr=expr,
+                                     op_list1=op_list1)
 
     def add_nb_rshift(self, *,
                       func_name=None,
@@ -464,7 +481,9 @@ class PyObjGen(GenBase):
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_rshift')
-        self.__number_gen.add_rshift(func_name, expr=expr, op_list1=op_list1)
+        self.__number_gen.add_rshift(func_name,
+                                     expr=expr,
+                                     op_list1=op_list1)
 
     def add_nb_and(self, *,
                    func_name=None,
@@ -475,7 +494,10 @@ class PyObjGen(GenBase):
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_and')
-        self.__number_gen.add_and(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
+        self.__number_gen.add_and(func_name,
+                                  expr=expr,
+                                  op_list1=op_list1,
+                                  op_list2=op_list2)
 
     def add_nb_xor(self, *,
                    func_name=None,
@@ -486,7 +508,10 @@ class PyObjGen(GenBase):
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_xor')
-        self.__number_gen.add_xor(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
+        self.__number_gen.add_xor(func_name,
+                                  expr=expr,
+                                  op_list1=op_list1,
+                                  op_list2=op_list2)
 
     def add_nb_or(self, *,
                   func_name=None,
@@ -497,7 +522,10 @@ class PyObjGen(GenBase):
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_or')
-        self.__number_gen.add_or(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
+        self.__number_gen.add_or(func_name,
+                                 expr=expr,
+                                 op_list1=op_list1,
+                                 op_list2=op_list2)
 
     def add_nb_int(self, *,
                    func_name=None,
@@ -519,114 +547,134 @@ class PyObjGen(GenBase):
 
     def add_nb_inplace_add(self, *,
                            func_name=None,
-                           stmt=None,
+                           stmt='default',
                            op_list1=[]):
         """nb_inplace_add の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_add')
-        self.__number_gen.add_inplace_add(func_name, stmt=stmt, op_list1=op_list1)
+        self.__number_gen.add_inplace_add(func_name,
+                                          stmt=stmt,
+                                          op_list1=op_list1)
 
     def add_nb_inplace_subtract(self, *,
                                 func_name=None,
-                                stmt=None,
+                                stmt='default',
                                 op_list1=[]):
         """nb_inplace_subtract の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_subtract')
-        self.__number_gen.add_inplace_subtract(func_name, stmt=stmt, op_list1=op_list1)
+        self.__number_gen.add_inplace_subtract(func_name,
+                                               stmt=stmt,
+                                               op_list1=op_list1)
 
     def add_nb_inplace_multiply(self, *,
                                 func_name=None,
-                                stmt=None,
+                                stmt='default',
                                 op_list1=[]):
         """nb_inplace_multiply の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_multiply')
-        self.__number_gen.add_inplace_multiply(func_name, stmt=stmt, op_list1=op_list1)
+        self.__number_gen.add_inplace_multiply(func_name,
+                                               stmt=stmt,
+                                               op_list1=op_list1)
 
     def add_nb_inplace_remainder(self, *,
                                  func_name=None,
-                                 stmt=None,
+                                 stmt='default',
                                  op_list1=[]):
         """nb_inplace_remainder の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_remainder')
-        self.__number_gen.add_inplace_remainder(func_name, stmt=stmt, op_list1=op_list1)
+        self.__number_gen.add_inplace_remainder(func_name,
+                                                stmt=stmt,
+                                                op_list1=op_list1)
 
     def add_nb_inplace_power(self, *,
                              func_name=None,
-                             stmt=None,
                              body):
         """nb_inplace_power の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_power')
-        self.__number_gen.add_inplace_power(func_name, stmt=stmt, op_list1=op_list1)
+        self.__number_gen.add_inplace_power(self.new_ternaryfunc(func_name, body))
 
     def add_nb_inplace_lshift(self, *,
                               func_name=None,
-                              stmt=None,
+                              stmt='default',
                               op_list1=[]):
         """nb_inplace_lshift の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_lshift')
-        self.__number_gen.add_inplace_lshift(func_name, stmt=stmt, op_list1=op_list1)
+        self.__number_gen.add_inplace_lshift(func_name,
+                                             stmt=stmt,
+                                             op_list1=op_list1)
         
     def add_nb_inplace_rshift(self, *,
                               func_name=None,
-                              stmt=None,
+                              stmt='default',
                               op_list1=[]):
         """nb_inplace_rshift の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_rshift')
-        self.__number_gen.add_inplace_rshift(func_name, stmt=stmt, op_list1=op_list1)
+        self.__number_gen.add_inplace_rshift(func_name,
+                                             stmt=stmt,
+                                             op_list1=op_list1)
 
     def add_nb_inplace_and(self, *,
                            func_name=None,
-                           stmt=None,
+                           stmt='default',
                            op_list1=[]):
         """nb_inplace_and の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_and')
-        self.__number_gen.add_inplace_and(func_name, stmt=stmt, op_list1=op_list1)
+        self.__number_gen.add_inplace_and(func_name,
+                                          stmt=stmt,
+                                          op_list1=op_list1)
 
     def add_nb_inplace_xor(self, *,
                            func_name=None,
-                           stmt=None,
+                           stmt='default',
                            op_list1=[]):
         """nb_inplace_xor の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_xor')
-        self.__number_gen.add_inplace_xor(func_name, stmt=stmt, op_list1=op_list1)
+        self.__number_gen.add_inplace_xor(func_name,
+                                          stmt=stmt,
+                                          op_list1=op_list1)
 
     def add_nb_inplace_or(self, *,
                           func_name=None,
-                          stmt=None,
+                          stmt='default',
                           op_list1=[]):
         """nb_inplace_or の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_or')
-        self.__number_gen.add_inplace_or(func_name, stmt=stmt, op_list1=op_list1)
+        self.__number_gen.add_inplace_or(func_name,
+                                         stmt=stmt,
+                                         op_list1=op_list1)
 
     def add_nb_floor_divide(self, *,
                             func_name=None,
-                            expr='default',
+                            expr,
                             op_list1=[],
                             op_list2=[]):
         """nb_floor_divide の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_floor_divide')
-        self.__number_gen.add_floor_divide(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
+        self.__number_gen.add_floor_divide(func_name,
+                                           expr=expr,
+                                           op_list1=op_list1,
+                                           op_list2=op_list2)
 
     def add_nb_true_divide(self, *,
                            func_name=None,
@@ -637,27 +685,34 @@ class PyObjGen(GenBase):
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_true_divide')
-        self.__number_gen.add_true_divide(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
+        self.__number_gen.add_true_divide(func_name,
+                                          expr=expr,
+                                          op_list1=op_list1,
+                                          op_list2=op_list2)
 
     def add_nb_inplace_floor_divide(self, *,
                                     func_name=None,
-                                    stmt=None,
+                                    stmt,
                                     op_list1=[]):
         """nb_inplace_floor_divide の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_floor_divide')
-        self.__number_gen.add_inplace_floor_divide(func_name, stmt=stmt, op_list1=op_list1)
+        self.__number_gen.add_inplace_floor_divide(func_name,
+                                                   stmt=stmt,
+                                                   op_list1=op_list1)
 
     def add_nb_inplace_true_divide(self, *,
                                    func_name=None,
-                                   stmt=None,
+                                   stmt='default',
                                    op_list1=[]):
         """nb_inplace_true_divide の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_true_divide')
-        self.__number_gen.add_inplace_true_divide(func_name, stmt=stmt, op_list1=op_list1)
+        self.__number_gen.add_inplace_true_divide(func_name,
+                                                  stmt=stmt,
+                                                  op_list1=op_list1)
 
     def add_nb_index(self, *,
                      func_name=None,
@@ -677,17 +732,22 @@ class PyObjGen(GenBase):
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_matrix_multiply')
-        self.__number_gen.add_matrix_multiply(func_name, expr=expr, op_list1=op_list1, op_list2=op_list2)
+        self.__number_gen.add_matrix_multiply(func_name,
+                                              expr=expr,
+                                              op_list1=op_list1,
+                                              op_list2=op_list2)
 
     def add_nb_inplace_matrix_multiply(self, *,
                                        func_name=None,
-                                       stmt=None,
+                                       stmt,
                                        op_list1=[]):
         """nb_inplace_matrix_multiply の関数定義を追加する．
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_inplace_matrix_multiply')
-        self.__number_gen.add_inplace_matrix_multiply(func_name, stmt=stmt, op_list1=op_list1)
+        self.__number_gen.add_inplace_matrix_multiply(func_name,
+                                                      stmt=stmt,
+                                                      op_list1=op_list1)
         
     def add_sequence(self, *,
                      name=None,
@@ -741,7 +801,7 @@ class PyObjGen(GenBase):
         func_name = self.complete_name(func_name, 'init_func')
         self.__init_gen = InitProcGen(self, func_name, func_body, arg_list)
         
-    def add_new(self, func_body=None, *,
+    def add_new(self, func_body='default', *,
                 func_name=None,
                 arg_list=[]):
         """new 関数定義を追加する．

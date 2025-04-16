@@ -522,14 +522,16 @@ class CxxWriter:
         return CodeBlock(self,
                          prefix=f'catch ( {expr} ) ')
 
-    def gen_catch_invalid_argument(self, msg=None):
+    def gen_catch_invalid_argument(self, msg=None, *,
+                                   error_val='nullptr'):
         if msg is None:
             msg = '"invalid argument"'
         with self.gen_catch_block('std::invalid_argument err'):
             self.gen_vardecl(typename='std::ostringstream',
                              varname='buf')
             self.write_line(f'buf << {msg} << ": " << err.what();')
-            self.gen_value_error(f'buf.str().c_str()')
+            self.gen_value_error(f'buf.str().c_str()',
+                                 error_val=error_val)
 
     def gen_catch_out_of_range(self, msg=None):
         if msg is None:

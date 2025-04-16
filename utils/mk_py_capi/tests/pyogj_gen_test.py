@@ -9,11 +9,14 @@
 
 from mk_py_capi import PyObjGen
 
-gen = PyObjGen(classname='Test',
-               pyname='test')
 
 def dummy_func(writer):
     pass
+
+
+gen = PyObjGen(classname='Test',
+               pyname='test')
+
 
 gen.add_dealloc()
 gen.add_repr()
@@ -21,43 +24,42 @@ gen.add_hash()
 gen.add_call()
 gen.add_str()
 gen.add_richcompare()
-gen.add_number(
-    nb_add=dummy_func,
-    nb_subtract=dummy_func,
-    nb_multiply=dummy_func,
-    nb_remainder=dummy_func,
-    nb_divmod=dummy_func,
-    nb_power=dummy_func,
-    nb_negative=dummy_func,
-    nb_positive=dummy_func,
-    nb_absolute=dummy_func,
-    nb_bool=dummy_func,
-    nb_invert=dummy_func,
-    nb_lshift=dummy_func,
-    nb_rshift=dummy_func,
-    nb_and=dummy_func,
-    nb_xor=dummy_func,
-    nb_or=dummy_func,
-    nb_int=dummy_func,
-    nb_float=dummy_func,
-    nb_inplace_add=dummy_func,
-    nb_inplace_subtract=dummy_func,
-    nb_inplace_multiply=dummy_func,
-    nb_inplace_remainder=dummy_func,
-    nb_inplace_power=dummy_func,
-    nb_inplace_lshift=dummy_func,
-    nb_inplace_rshift=dummy_func,
-    nb_inplace_and=dummy_func,
-    nb_inplace_xor=dummy_func,
-    nb_inplace_or=dummy_func,
-    nb_floor_divide=dummy_func,
-    nb_true_divide=dummy_func,
-    nb_inplace_floor_divide=dummy_func,
-    nb_inplace_true_divide=dummy_func,
-    nb_index=dummy_func,
-    nb_matrix_multiply=dummy_func,
-    nb_inplace_matrix_multiply=dummy_func
-)
+gen.add_nb_add()
+gen.add_nb_subtract()
+gen.add_nb_multiply()
+gen.add_nb_remainder()
+gen.add_nb_divmod(expr='divmod(val1, val2)')
+gen.add_nb_power(body=dummy_func)
+gen.add_nb_negative(body=dummy_func)
+gen.add_nb_positive(body=dummy_func)
+gen.add_nb_absolute(body=dummy_func)
+gen.add_nb_bool(body=dummy_func)
+gen.add_nb_invert(body=dummy_func)
+gen.add_nb_lshift()
+gen.add_nb_rshift()
+gen.add_nb_and()
+gen.add_nb_xor()
+gen.add_nb_or()
+gen.add_nb_int(body=dummy_func)
+gen.add_nb_float(body=dummy_func)
+gen.add_nb_inplace_add()
+gen.add_nb_inplace_subtract()
+gen.add_nb_inplace_multiply()
+gen.add_nb_inplace_remainder()
+gen.add_nb_inplace_power(body=dummy_func)
+gen.add_nb_inplace_lshift()
+gen.add_nb_inplace_rshift()
+gen.add_nb_inplace_and()
+gen.add_nb_inplace_xor()
+gen.add_nb_inplace_or()
+gen.add_nb_floor_divide(expr='floor_div(val1, val2)')
+gen.add_nb_true_divide()
+gen.add_nb_inplace_floor_divide(stmt='floor_div_int(val1, val2)')
+gen.add_nb_inplace_true_divide()
+gen.add_nb_index(body=dummy_func)
+gen.add_nb_matrix_multiply(expr='matmul(val1, val2)')
+gen.add_nb_inplace_matrix_multiply(stmt='matmul_int(val1, val2)')
+
 gen.add_sequence(
     sq_length=dummy_func,
     sq_concat=dummy_func,

@@ -34,7 +34,7 @@ class OpBase:
             self.body(writer, retclassname)
 
 
-class DefaultOp(OpBase):
+class Op(OpBase):
 
     def __init__(self, classname, expr, *,
                  useref=True):
@@ -45,7 +45,7 @@ class DefaultOp(OpBase):
         writer.gen_return_pyobject(retclassname, self.__expr)
 
 
-class DefaultAdd(DefaultOp):
+class AddOp(Op):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -54,7 +54,7 @@ class DefaultAdd(DefaultOp):
                          useref=useref)
 
 
-class DefaultSub(DefaultOp):
+class SubOp(Op):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -63,7 +63,7 @@ class DefaultSub(DefaultOp):
                          useref=useref)
 
 
-class DefaultMul(DefaultOp):
+class MulOp(Op):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -72,7 +72,7 @@ class DefaultMul(DefaultOp):
                          useref=useref)
 
 
-class DefaultDiv(DefaultOp):
+class DivOp(Op):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -81,7 +81,34 @@ class DefaultDiv(DefaultOp):
                          useref=useref)
 
 
-class DefaultAnd(DefaultOp):
+class RemOp(Op):
+
+    def __init__(self, classname, *,
+                 useref=True):
+        super().__init__(classname=classname,
+                         expr='val1 % val2',
+                         useref=useref)
+
+
+class LsftOp(Op):
+
+    def __init__(self, classname, *,
+                 useref=True):
+        super().__init__(classname=classname,
+                         expr='val1 << val2',
+                         useref=useref)
+
+
+class RsftOp(Op):
+
+    def __init__(self, classname, *,
+                 useref=True):
+        super().__init__(classname=classname,
+                         expr='val1 >> val2',
+                         useref=useref)
+
+
+class AndOp(Op):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -90,7 +117,7 @@ class DefaultAnd(DefaultOp):
                          useref=useref)
 
 
-class DefaultXor(DefaultOp):
+class XorOp(Op):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -99,7 +126,7 @@ class DefaultXor(DefaultOp):
                          useref=useref)
 
 
-class DefaultOr(DefaultOp):
+class OrOp(Op):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -108,7 +135,7 @@ class DefaultOr(DefaultOp):
                          useref=useref)
 
 
-class DefaultInplaceOp(OpBase):
+class Iop(OpBase):
 
     def __init__(self, classname, stmt, *,
                  useref=True):
@@ -120,7 +147,7 @@ class DefaultInplaceOp(OpBase):
         writer.gen_return_self(incref=True)
 
 
-class DefaultInplaceAdd(DefaultInplaceOp):
+class AddIop(Iop):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -129,7 +156,7 @@ class DefaultInplaceAdd(DefaultInplaceOp):
                          useref=useref)
 
 
-class DefaultInplaceSub(DefaultInplaceOp):
+class SubIop(Iop):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -138,7 +165,7 @@ class DefaultInplaceSub(DefaultInplaceOp):
                          useref=useref)
 
 
-class DefaultInplaceMul(DefaultInplaceOp):
+class MulIop(Iop):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -147,7 +174,7 @@ class DefaultInplaceMul(DefaultInplaceOp):
                          useref=useref)
 
 
-class DefaultInplaceDiv(DefaultInplaceOp):
+class DivIop(Iop):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -156,7 +183,34 @@ class DefaultInplaceDiv(DefaultInplaceOp):
                          useref=useref)
 
 
-class DefaultInplaceAnd(DefaultInplaceOp):
+class RemIop(Iop):
+
+    def __init__(self, classname, *,
+                 useref=True):
+        super().__init__(classname=classname,
+                         stmt='val1 %= val2',
+                         useref=useref)
+
+
+class LsftIop(Iop):
+
+    def __init__(self, classname, *,
+                 useref=True):
+        super().__init__(classname=classname,
+                         stmt='val1 <<= val2',
+                         useref=useref)
+
+
+class RsftIop(Iop):
+
+    def __init__(self, classname, *,
+                 useref=True):
+        super().__init__(classname=classname,
+                         stmt='val1 >>= val2',
+                         useref=useref)
+
+
+class AndIop(Iop):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -165,7 +219,7 @@ class DefaultInplaceAnd(DefaultInplaceOp):
                          useref=useref)
 
 
-class DefaultInplaceXor(DefaultInplaceOp):
+class XorIop(Iop):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -174,7 +228,7 @@ class DefaultInplaceXor(DefaultInplaceOp):
                          useref=useref)
 
 
-class DefaultInplaceXor(DefaultInplaceOp):
+class XorIop(Iop):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -183,7 +237,7 @@ class DefaultInplaceXor(DefaultInplaceOp):
                          useref=useref)
 
         
-class DefaultInplaceOr(DefaultInplaceOp):
+class OrIop(Iop):
 
     def __init__(self, classname, *,
                  useref=True):
@@ -286,9 +340,9 @@ class NumberGen:
             raise ValueError('nb_add has been already defined')
         if expr is not None:
             if expr == 'default':
-                op = DefaultAdd(self.pyclassname)
+                op = AddOp(self.pyclassname)
             else:
-                op = DefaultOp(self.pyclassname, expr)
+                op = Op(self.pyclassname, expr)
             op_list1 = [op] + op_list1
         self.nb_add = BinOpGen(self, func_name,
                                op_list1=op_list1,
@@ -302,9 +356,9 @@ class NumberGen:
             raise ValueError('nb_subtract has been already defined')
         if expr is not None:
             if expr == 'default':
-                op = DefaultSub(self.pyclassname)
+                op = SubOp(self.pyclassname)
             else:
-                op = DefaultOp(self.pyclassname, expr)
+                op = Op(self.pyclassname, expr)
             op_list1 = [op] + op_list1
         self.nb_subtract = BinOpGen(self, func_name,
                                     op_list1=op_list1,
@@ -318,9 +372,9 @@ class NumberGen:
             raise ValueError('nb_multiply has been already defined')
         if expr is not None:
             if expr == 'default':
-                op = DefaultMul(self.pyclassname)
+                op = MulOp(self.pyclassname)
             else:
-                op = DefaultOp(self.pyclassname, expr)
+                op = Op(self.pyclassname, expr)
             op_list1 = [op] + op_list1
         self.nb_multiply = BinOpGen(self, func_name,
                                     op_list1=op_list1,
@@ -334,44 +388,31 @@ class NumberGen:
             raise ValueError('nb_remainder has been already defined')
         if expr is not None:
             if expr == 'default':
-                op = DefaultRem(self.pyclassname)
+                op = RemOp(self.pyclassname)
             else:
-                op = DefaultOp(self.pyclassname, expr)
+                op = Op(self.pyclassname, expr)
             op_list1 = [op] + op_list1
         self.nb_remainder = BinOpGen(self, func_name,
                                      op_list1=op_list1,
                                      op_list2=op_list2)
 
     def add_divmod(self, func_name, *,
-                   expr='default',
+                   expr=None,
                    op_list1=[],
                    op_list2=[]):
         if self.nb_divmod is not None:
             raise ValueError('nb_divmod has been already defined')
         if expr is not None:
-            if expr == 'default':
-                # 嘘
-                op = DefaultDiv(self.pyclassname)
-            else:
-                op = DefaultOp(self.pyclassname, expr)
+            op = Op(self.pyclassname, expr)
             op_list1 = [op] + op_list1
         self.nb_divmod = BinOpGen(self, func_name,
                                   op_list1=op_list1,
                                   op_list2=op_list2)
 
-    def add_power(self, func_name, *,
-                  expr='default',
-                  op_list1=[],
-                  op_list2=[]):
+    def add_power(self, body):
         if self.nb_power is not None:
             raise ValueError('nb_power has been already defined')
-        raise ValueError('not implemented yet')
-        """
-        op_list1 = [DefaultAdd(self.pyclassname)] + op_list1
-        self.nb_add = BinOpGen(self, func_name,
-                               op_list1=op_list1,
-                               op_list2=op_list2)
-        """
+        self.nb_power = body
 
     def add_negative(self, body):
         if self.nb_negative is not None:
@@ -405,9 +446,9 @@ class NumberGen:
             raise ValueError('nb_lshift has been already defined')
         if expr is not None:
             if expr == 'default':
-                op = DefaultLsft(self.pyclassname)
+                op = LsftOp(self.pyclassname)
             else:
-                op = DefaultOp(self.pyclassname, expr)
+                op = Op(self.pyclassname, expr)
             op_list1 = [op] + op_list1
         self.nb_lshift = BinOpGen(self, func_name,
                                   op_list1=op_list1)
@@ -419,13 +460,12 @@ class NumberGen:
             raise ValueError('nb_rshift has been already defined')
         if expr is not None:
             if expr == 'default':
-                op = DefaultRsft(self.pyclassname)
+                op = RsftOp(self.pyclassname)
             else:
-                op = DefaultOp(self.pyclassname, expr)
+                op = Op(self.pyclassname, expr)
             op_list1 = [op] + op_list1
         self.nb_rshift = BinOpGen(self, func_name,
-                                  op_list1=op_list1,
-                                  op_list2=op_list2)
+                                  op_list1=op_list1)
 
     def add_and(self, func_name, *,
                 expr='default',
@@ -435,9 +475,9 @@ class NumberGen:
             raise ValueError('nb_and has been already defined')
         if expr is not None:
             if expr == 'default':
-                op = DefaultAnd(self.pyclassname)
+                op = AndOp(self.pyclassname)
             else:
-                op = DefaultOp(self.pyclassname, expr)
+                op = Op(self.pyclassname, expr)
             op_list1 = [op] + op_list1
         self.nb_and = BinOpGen(self, func_name,
                                op_list1=op_list1,
@@ -451,9 +491,9 @@ class NumberGen:
             raise ValueError('nb_xor has been already defined')
         if expr is not None:
             if expr == 'default':
-                op = DefaultXor(self.pyclassname)
+                op = XorOp(self.pyclassname)
             else:
-                op = DefaultOp(self.pyclassname, expr)
+                op = Op(self.pyclassname, expr)
             op_list1 = [op] + op_list1
         self.nb_xor = BinOpGen(self, func_name,
                                op_list1=op_list1,
@@ -467,9 +507,9 @@ class NumberGen:
             raise ValueError('nb_or has been already defined')
         if expr is not None:
             if expr == 'default':
-                op = DefaultOr(self.pyclassname)
+                op = OrOp(self.pyclassname)
             else:
-                op = DefaultOp(self.pyclassname, expr)
+                op = Op(self.pyclassname, expr)
             op_list1 = [op] + op_list1
         self.nb_or = BinOpGen(self, func_name,
                               op_list1=op_list1,
@@ -486,145 +526,144 @@ class NumberGen:
         self.nb_float = body
 
     def add_inplace_add(self, func_name, *,
-                        stmt=None,
+                        stmt='default',
                         op_list1=[]):
         if self.nb_inplace_add is not None:
             raise ValueError('nb_inplace_add has been already defined')
-        if stmt is None:
-            op = DefaultInplaceAdd(self.pyclassname)
-        else:
-            op = DefaultInplaceOp(self.pyclassname, stmt)
-        op_list1 = [op] + op_list1
+        if stmt is not None:
+            if stmt == 'default':
+                op = AddIop(self.pyclassname)
+            else:
+                op = Iop(self.pyclassname, stmt)
+            op_list1 = [op] + op_list1
         self.nb_inplace_add = BinOpGen(self, func_name,
                                        op_list1=op_list1)
 
     def add_inplace_subtract(self, func_name, *,
-                             stmt=None,
+                             stmt='default',
                              op_list1=[]):
         if self.nb_inplace_subtract is not None:
             raise ValueError('nb_inplace_subtract has been already defined')
-        if stmt is None:
-            op = DefaultInplaceSub(self.pyclassname)
-        else:
-            op = DefaultInplaceOp(self.pyclassname, stmt)
-        op_list1 = [op] + op_list1
+        if stmt is not None:
+            if stmt == 'default':
+                op = SubIop(self.pyclassname)
+            else:
+                op = Iop(self.pyclassname, stmt)
+            op_list1 = [op] + op_list1
         self.nb_inplace_subtract = BinOpGen(self, func_name,
                                             op_list1=op_list1)
 
     def add_inplace_multiply(self, func_name, *,
-                             stmt=None,
+                             stmt='default',
                              op_list1=[]):
         if self.nb_inplace_multiply is not None:
             raise ValueError('nb_inplace_multiply has been already defined')
-        if stmt is None:
-            op = DefaultInplaceMul(self.pyclassname)
-        else:
-            op = DefaultInplaceOp(self.pyclassname, stmt)
-        op_list1 = [op] + op_list1
+        if stmt is not None:
+            if stmt == 'default':
+                op = MulIop(self.pyclassname)
+            else:
+                op = Iop(self.pyclassname, stmt)
+            op_list1 = [op] + op_list1
         self.nb_inplace_multiply = BinOpGen(self, func_name,
                                             op_list1=op_list1)
 
     def add_inplace_remainder(self, func_name, *,
-                              stmt=None,
+                              stmt='default',
                               op_list1=[]):
         if self.nb_inplace_remainder is not None:
             raise ValueError('nb_inplace_remainder has been already defined')
-        if stmt is None:
-            op = DefaultInplaceRem(self.pyclassname)
-        else:
-            op = DefaultInplaceOp(self.pyclassname, stmt)
-        op_list1 = [op] + op_list1
+        if stmt is not None:
+            if stmt == 'default':
+                op = RemIop(self.pyclassname)
+            else:
+                op = Iop(self.pyclassname, stmt)
+            op_list1 = [op] + op_list1
         self.nb_inplace_remainder = BinOpGen(self, func_name,
                                              op_list1=op_list1)
 
-    def add_inplace_power(self, func_name, *,
-                          stmt=None,
-                          op_list1=[]):
+    def add_inplace_power(self, body):
         if self.nb_inplace_power is not None:
             raise ValueError('nb_inplace_power has been already defined')
-        raise ValueError('Not implemented yet')
-        """
-        op_list1 = [DefaultInplacePow(self.pyclassname)] + op_list1
-        self.nb_inplace_power = BinOpGen(self, func_name,
-        op_list1=op_list1)
-        """
+        self.nb_inplace_power = body
 
     def add_inplace_lshift(self, func_name, *,
-                           stmt=None,
+                           stmt='default',
                            op_list1=[]):
         if self.nb_inplace_lshift is not None:
             raise ValueError('nb_inplace_lshift has been already defined')
-        if stmt is None:
-            op = DefaultInplaceLsft(self.pyclassname)
-        else:
-            op = DefaultInplaceOp(self.pyclassname, stmt)
-        op_list1 = [op] + op_list1
+        if stmt is not None:
+            if stmt == 'default':
+                op = LsftIop(self.pyclassname)
+            else:
+                op = Iop(self.pyclassname, stmt)
+            op_list1 = [op] + op_list1
         self.nb_inplace_lshift = BinOpGen(self, func_name,
                                           op_list1=op_list1)
 
     def add_inplace_rshift(self, func_name, *,
-                           stmt=None,
+                           stmt='default',
                            op_list1=[]):
         if self.nb_inplace_rshift is not None:
             raise ValueError('nb_inplace_rshift has been already defined')
-        if stmt is None:
-            op = DefaultInplaceRsft(self.pyclassname)
-        else:
-            op = DefaultInplaceOp(self.pyclassname, stmt)
-        op_list1 = [op] + op_list1
+        if stmt is not None:
+            if stmt == 'default':
+                op = RsftIop(self.pyclassname)
+            else:
+                op = Iop(self.pyclassname, stmt)
+            op_list1 = [op] + op_list1
         self.nb_inplace_rshift = BinOpGen(self, func_name,
                                           op_list1=op_list1)
 
     def add_inplace_and(self, func_name, *,
-                        stmt=None,
+                        stmt='default',
                         op_list1=[]):
         if self.nb_inplace_and is not None:
             raise ValueError('nb_inplace_and has been already defined')
-        if stmt is None:
-            op = DefaultInplaceAnd(self.pyclassname)
-        else:
-            op = DefaultInplaceOp(self.pyclassname, stmt)
-        op_list1 = [op] + op_list1
+        if stmt is not None:
+            if stmt == 'default':
+                op = AndIop(self.pyclassname)
+            else:
+                op = Iop(self.pyclassname, stmt)
+            op_list1 = [op] + op_list1
         self.nb_inplace_and = BinOpGen(self, func_name,
                                        op_list1=op_list1)
 
     def add_inplace_xor(self, func_name, *,
-                        stmt=None,
+                        stmt='default',
                         op_list1=[]):
         if self.nb_inplace_xor is not None:
             raise ValueError('nb_inplace_xor has been already defined')
-        if stmt is None:
-            op = DefaultInplaceXor(self.pyclassname)
-        else:
-            op = DefaultInplaceOp(self.pyclassname, stmt)
-        op_list1 = [op] + op_list1
+        if stmt is not None:
+            if stmt == 'default':
+                op = XorIop(self.pyclassname)
+            else:
+                op = Iop(self.pyclassname, stmt)
+            op_list1 = [op] + op_list1
         self.nb_inplace_xor = BinOpGen(self, func_name,
                                        op_list1=op_list1)
 
     def add_inplace_or(self, func_name, *,
-                       stmt=None,
+                       stmt='default',
                        op_list1=[]):
         if self.nb_inplace_or is not None:
             raise ValueError('nb_inplace_or has been already defined')
-        if stmt is None:
-            op = DefaultInplaceOr(self.pyclassname)
-        else:
-            op = DefaultInplaceOp(self.pyclassname, stmt)
-        op_list1 = [op] + op_list1
+        if stmt is not None:
+            if stmt == 'default':
+                op = OrIop(self.pyclassname)
+            else:
+                op = Iop(self.pyclassname, stmt)
+            op_list1 = [op] + op_list1
         self.nb_inplace_or = BinOpGen(self, func_name,
                                       op_list1=op_list1)
 
     def add_floor_divide(self, func_name, *,
-                         expr='default',
+                         expr=None,
                          op_list1=[],
                          op_list2=[]):
         if self.nb_floor_divide is not None:
             raise ValueError('nb_floor_divide has been already defined')
         if expr is not None:
-            if expr == 'default':
-                op = DefaultDiv(self.pyclassname)
-            else:
-                op = DefaultOp(self.pyclassname, expr)
+            op = Op(self.pyclassname, expr)
             op_list1 = [op] + op_list1
         self.nb_floor_divide = BinOpGen(self, func_name,
                                         op_list1=op_list1,
@@ -638,24 +677,22 @@ class NumberGen:
             raise ValueError('nb_divide has been already defined')
         if expr is not None:
             if expr == 'default':
-                op = DefaultDiv(self.pyclassname)
+                op = DivOp(self.pyclassname)
             else:
-                op = DefaultOp(self.pyclassname, expr)
+                op = Op(self.pyclassname, expr)
             op_list1 = [op] + op_list1
-        self.nb_floor_divide = BinOpGen(self, func_name,
-                                        op_list1=op_list1,
-                                        op_list2=op_list2)
+        self.nb_true_divide = BinOpGen(self, func_name,
+                                       op_list1=op_list1,
+                                       op_list2=op_list2)
 
     def add_inplace_floor_divide(self, func_name, *,
                                  stmt=None,
                                  op_list1=[]):
         if self.nb_inplace_floor_divide is not None:
             raise ValueError('nb_inplace_floor_divide has been already defined')
-        if stmt is None:
-            op = DefaultInplaceDiv(self.pyclassname)
-        else:
-            op = DefaultInplaceOp(self.pyclassname, stmt)
-        op_list1 = [op] + op_list1
+        if stmt is not None:
+            op = Iop(self.pyclassname, stmt)
+            op_list1 = [op] + op_list1
         self.nb_inplace_floor_divide = BinOpGen(self, func_name,
                                                 op_list1=op_list1)
 
@@ -664,11 +701,12 @@ class NumberGen:
                                 op_list1=[]):
         if self.nb_inplace_true_divide is not None:
             raise ValueError('nb_inplace_true_divide has been already defined')
-        if stmt is None:
-            op = DefaultInplaceDiv(self.pyclassname)
-        else:
-            op = DefaultInplaceOp(self.pyclassname, stmt)
-        op_list1 = [op] + op_list1
+        if stmt is not None:
+            if stmt == 'default':
+                op = DivIop(self.pyclassname)
+            else:
+                op = Iop(self.pyclassname, stmt)
+            op_list1 = [op] + op_list1
         self.nb_inplace_true_divide = BinOpGen(self, func_name,
                                                op_list1=op_list1)
 
@@ -678,16 +716,13 @@ class NumberGen:
         self.nb_index = body
 
     def add_matrix_multiply(self, func_name, *,
-                            expr='default',
+                            expr=None,
                             op_list1=[],
                             op_list2=[]):
         if self.nb_matrix_multiply is not None:
             raise ValueError('nb_matrix_multiply has been already defined')
         if expr is not None:
-            if expr == 'default':
-                op = DefaultMatMul(self.pyclassname)
-            else:
-                op = DefaultOp(self.pyclassname, expr)
+            op = Op(self.pyclassname, expr)
             op_list1 = [op] + op_list1
         self.nb_matrix_multiply = BinOpGen(self, func_name,
                                            op_list1=op_list1,
@@ -698,11 +733,9 @@ class NumberGen:
                                     op_list1=[]):
         if self.nb_inplace_matrix_multiply is not None:
             raise ValueError('nb_inplace_matrix_multiply has been already defined')
-        if stmt is None:
-            op = DefaultInplaceMatMul(self.pyclassname)
-        else:
-            op = DefaultInplaceOp(self.pyclassname, stmt)
-        op_list1 = [op] + op_list1
+        if stmt is not None:
+            op = Iop(self.pyclassname, stmt)
+            op_list1 = [op] + op_list1
         self.nb_inplace_matrix_multiply = BinOpGen(self, func_name,
                                                    op_list1=op_list1)
 

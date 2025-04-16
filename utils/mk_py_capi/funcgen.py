@@ -87,8 +87,10 @@ class ReprFuncGen(FuncBase):
                                    func_name=self.name,
                                    args=args):
             self.gen.gen_ref_conv(writer, refname='val')
-            self.body(writer)
-            writer.gen_return_py_string('str_val')
+            with writer.gen_try_block():
+                self.body(writer)
+                writer.gen_return_py_string('str_val')
+            writer.gen_catch_invalid_argument()
 
 
 class StrFuncGen(ReprFuncGen):
@@ -127,7 +129,9 @@ class HashFuncGen(FuncBase):
                                    func_name=self.name,
                                    args=args):
             self.gen.gen_ref_conv(writer, refname='val')
-            self.body(writer)
+            with writer.gen_try_block():
+                self.body(writer)
+            writer.gen_catch_invalid_argument(error_val='0')
 
 
 class CallFuncGen(FuncWithArgs):
@@ -157,7 +161,9 @@ class CallFuncGen(FuncWithArgs):
                                    args=self.__args):
             writer.gen_func_preamble(self.arg_list)
             self.gen.gen_ref_conv(writer, refname='val')
-            self.body(writer)
+            with writer.gen_try_block():
+                self.body(writer)
+            writer.gen_catch_invalid_argument()
 
 
 class RichcmpFuncGen(FuncBase):
@@ -169,21 +175,17 @@ class RichcmpFuncGen(FuncBase):
             def cmp_func(writer):
                 with writer.gen_if_block(f'{gen.pyclassname}::Check(other)'):
                     gen.gen_ref_conv(writer, objname='other', refname='val2')
-                    with writer.gen_try_block():
-                        with writer.gen_if_block('op == Py_EQ'):
-                            writer.gen_return_py_bool('val == val2')
-                        with writer.gen_if_block('op == Py_NE'):
-                            writer.gen_return_py_bool('val != val2')
-                    writer.gen_catch_invalid_argument()
+                    with writer.gen_if_block('op == Py_EQ'):
+                        writer.gen_return_py_bool('val == val2')
+                    with writer.gen_if_block('op == Py_NE'):
+                        writer.gen_return_py_bool('val != val2')
                 writer.gen_return_py_notimplemented()
             body = cmp_func
         elif body == 'cmp_default':
             def cmp_func(writer):
                 with writer.gen_if_block(f'{gen.pyclassname}::Check(other)'):
                     gen.gen_ref_conv(writer, objname='other', refname='val2')
-                    with writer.gen_try_block():
-                        writer.write_line('Py_RETURN_RICHCOMPARE(val, val2, op);')
-                    writer.gen_catch_invalid_argument()
+                    writer.write_line('Py_RETURN_RICHCOMPARE(val, val2, op);')
                 writer.gen_return_py_notimplemented()
             body = cmp_func
         elif body is None:
@@ -207,7 +209,9 @@ class RichcmpFuncGen(FuncBase):
                                    func_name=self.name,
                                    args=args):
             self.gen.gen_ref_conv(writer, refname='val')
-            self.body(writer)
+            with writer.gen_try_block():
+                self.body(writer)
+            writer.gen_catch_invalid_argument()
 
 
 class InitProcGen(FuncWithArgs):
@@ -236,7 +240,9 @@ class InitProcGen(FuncWithArgs):
                                    func_name=self.name,
                                    args=args):
             writer.gen_func_preamble(self.arg_list, is_proc=True)
-            self.body(writer)
+            with writer.gen_try_block():
+                self.body(writer)
+            writer.gen_catch_invalid_argument(error_val='-1')
 
 
 class NewFuncGen(FuncWithArgs):
@@ -281,7 +287,9 @@ class NewFuncGen(FuncWithArgs):
                                    args=args):
             if self.__has_preamble:
                 writer.gen_func_preamble(self.arg_list, force_has_keywords=True)
-            self.body(writer)
+            with writer.gen_try_block():
+                self.body(writer)
+            writer.gen_catch_invalid_argument()
 
 
 class LenFuncGen(FuncBase):
@@ -313,8 +321,10 @@ class LenFuncGen(FuncBase):
                                    func_name=self.name,
                                    args=args):
             self.gen.gen_ref_conv(writer, refname='val')
-            self.body(writer)
-            writer.gen_return('len_val')
+            with writer.gen_try_block():
+                self.body(writer)
+                writer.gen_return('len_val')
+            writer.gen_catch_invalid_argument()
             
 
 class InquiryGen(FuncBase):
@@ -339,8 +349,10 @@ class InquiryGen(FuncBase):
                                    func_name=self.name,
                                    args=args):
             self.gen.gen_ref_conv(writer, refname='val')
-            self.body(writer)
-            writer.gen_return('inquiry_val')
+            with writer.gen_try_block():
+                self.body(writer)
+                writer.gen_return('inquiry_val')
+            writer.gen_catch_invalid_argument()
 
             
 class UnaryFuncGen(FuncBase):
