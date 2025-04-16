@@ -27,11 +27,13 @@ class MethodGen:
     """メソッドを作るクラス
     """
     
-    def __init__(self, *, module_func=False):
+    def __init__(self, gen, name, *, module_func=False):
+        self.__gen = gen
+        self.name = name
         self.__method_list = []
         self.__module_func = module_func
 
-    def add(self, gen, func_name, *,
+    def add(self, func_name, *,
             name,
             arg_list,
             is_static,
@@ -42,7 +44,7 @@ class MethodGen:
             def default_body(writer):
                 pass
             func_body = default_body
-        self.__method_list.append(Method(gen=gen,
+        self.__method_list.append(Method(gen=self.__gen,
                                          name=name,
                                          func_name=func_name,
                                          arg_list=arg_list,
@@ -52,7 +54,7 @@ class MethodGen:
                                          func_body=func_body,
                                          doc_str=doc_str))
                                          
-    def __call__(self, writer, name):
+    def __call__(self, writer):
         # 個々のメソッドの実装コードを生成する．
         for method in self.__method_list:
             if self.__module_func or method.is_static:
@@ -74,12 +76,12 @@ class MethodGen:
                                        args=args):
                 writer.gen_func_preamble(method.arg_list)
                 if not (self.__module_func or method.is_static):
-                    method.gen.gen_ref_conv(writer, refname='val')
+                    self.__gen.gen_ref_conv(writer, refname='val')
                 method.func_body(writer)
 
         # メソッドテーブルを生成する．
         with writer.gen_array_block(typename='PyMethodDef',
-                                    arrayname=name,
+                                    arrayname=self.name,
                                     comment='メソッド定義'):
             for method in self.__method_list:
                 writer.write_line(f'{{"{method.name}",')
@@ -107,3 +109,7 @@ class MethodGen:
                 writer.indent_dec(1)
             writer.gen_comment('end-marker')
             writer.write_line('{nullptr, nullptr, 0, nullptr}')
+
+    def gen_tp(self, writer):
+        writer.gen_assign(f'{self.__gen.typename}.tp_methods',
+                          self.name)

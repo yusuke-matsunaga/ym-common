@@ -12,18 +12,23 @@ class FuncBase:
     """関数の基本情報を表すクラス
     """
 
-    def __init__(self, gen, name, body):
+    def __init__(self, gen, name, tp_name, body):
         self.gen = gen
         self.name = name
+        self.tp_name = tp_name
         self.body = body
+
+    def gen_tp(self, writer):
+        writer.gen_assign(f'{self.gen.typename}.tp_{self.tp_name}',
+                          f'{self.name}')
 
 
 class FuncWithArgs(FuncBase):
     """引数付きの関数の基本情報を表すクラス
     """
 
-    def __init__(self, gen, name, body, arg_list):
-        super().__init__(gen, name, body)
+    def __init__(self, gen, name, tp_name, body, arg_list):
+        super().__init__(gen, name, tp_name, body)
         self.arg_list = arg_list
 
         
@@ -37,7 +42,7 @@ class DeallocGen(FuncBase):
             def default_body(writer):
                 writer.write_line(f'obj->mVal.~{gen.classname}();')
             body = default_body
-        self = super().__init__(gen, name, body)
+        self = super().__init__(gen, name, 'dealloc', body)
 
     def __call__(self, writer, *,
                  comment=None,
@@ -52,13 +57,13 @@ class DeallocGen(FuncBase):
                 self.gen.gen_obj_conv(writer, varname='obj')
                 self.body(writer)
             writer.write_line('Py_TYPE(self)->tp_free(self);')
-
+        
 
 class ReprFuncGen(FuncBase):
     """reprfunc 型の関数を生成するクラス
     """
     
-    def __init__(self, gen, name, body):
+    def __init__(self, gen, name, body, tp_name='repr'):
         if body is None:
             # 空
             def null_body(writer):
@@ -70,7 +75,7 @@ class ReprFuncGen(FuncBase):
                 writer.gen_comment("このコードは実際には機能しない．")
                 writer.gen_auto_assign('str_val', 'val.repr_str()')
             body = sample_body
-        super().__init__(gen, name, body)
+        super().__init__(gen, name, tp_name, body)
 
     def __call__(self, writer, *,
                  comment=None,
@@ -84,6 +89,14 @@ class ReprFuncGen(FuncBase):
             self.gen.gen_ref_conv(writer, refname='val')
             self.body(writer)
             writer.gen_return_py_string('str_val')
+
+
+class StrFuncGen(ReprFuncGen):
+    """str() 用の reprfunc を生成するクラス
+    """
+
+    def __init__(self, gen, name, body):
+        super().__init__(gen, name, body, 'str')
 
 
 class HashFuncGen(FuncBase):
@@ -102,7 +115,7 @@ class HashFuncGen(FuncBase):
                 writer.gen_comment("このコードは実際には機能しない．")
                 writer.gen_auto_assign('hash_val', 'val.hash()')
             body = sample_body
-        super().__init__(gen, name, body)
+        super().__init__(gen, name, 'hash', body)
 
     def __call__(self, writer, *,
                  comment=None,
@@ -129,7 +142,7 @@ class CallFuncGen(FuncWithArgs):
             def null_body(writer):
                 writer.gen_comment('args, kwds を解釈して結果を返す．')
             body = null_body
-        super().__init__(gen, name, body, arg_list)
+        super().__init__(gen, name, 'call', body, arg_list)
         self.__args = ('PyObject* self',
                        f'PyObject* {arg2name}',
                        f'PyObject* {arg3name}')
@@ -180,7 +193,7 @@ class RichcmpFuncGen(FuncBase):
                                      'op の値は Py_LT, Py_LE, Py_EQ, Py_NE, Py_GT, Py_GE のいずれか．',
                                      'サポートしていない演算の場合は Py_RETURN_NOTIMPLEMETED を返す．'])
             body = null_body
-        super().__init__(gen, name, body)
+        super().__init__(gen, name, 'richcompare', body)
 
     def __call__(self, writer, *,
                  comment=None,
@@ -209,7 +222,7 @@ class InitProcGen(FuncWithArgs):
                                      '成功したら 0 を返す．',
                                      '失敗したら例外をセットして -1 を返す．'])
             body = null_body
-        super().__init__(gen, name, body, arg_list)
+        super().__init__(gen, name, 'init', body, arg_list)
 
     def __call__(self, writer, *,
                  comment=None,
@@ -253,7 +266,7 @@ class NewFuncGen(FuncWithArgs):
                 writer.write_line(f'new (&myobj->mVal) {gen.classname}()')
                 writer.gen_return_self()
             body = sample_body
-        super().__init__(gen, name, body, arg_list)
+        super().__init__(gen, name, 'new', body, arg_list)
 
     def __call__(self, writer, *,
                  comment=None,
@@ -288,7 +301,7 @@ class LenFuncGen(FuncBase):
                 writer.gen_comment('このコードは実際には機能しない．')
                 writer.gen_auto_assign('len_val', 'val.len()')
             body = sample_body
-        super().__init__(gen, name, body)
+        super().__init__(gen, name, None, body)
 
     def __call__(self, writer, *,
                  comment=None,
@@ -314,7 +327,7 @@ class InquiryGen(FuncBase):
             def null_body(writer):
                 pass
             body = null_body
-        super().__init__(gen, name, body)
+        super().__init__(gen, name, None, body)
 
     def __call__(self, writer, *,
                  comment=None,
@@ -340,7 +353,7 @@ class UnaryFuncGen(FuncBase):
             def null_body(writer):
                 pass
             body = null_body
-        super().__init__(gen, name, body)
+        super().__init__(gen, name, None, body)
 
     def __call__(self, writer, *,
                  comment=None,
@@ -368,7 +381,7 @@ class BinaryFuncGen(FuncBase):
             def null_body(writer):
                 pass
             body = null_body
-        super().__init__(gen, name, body)
+        super().__init__(gen, name, None, body)
         if arg2name is None:
             arg2name = 'other'
         self.__args = ('PyObject* self',
@@ -401,7 +414,7 @@ class TernaryFuncGen(FuncBase):
             def null_body(writer):
                 pass
             body = null_body
-        super().__init__(gen, name, body)
+        super().__init__(gen, name, None, body)
         if arg2name is None:
             arg2name = 'obj2'
         if arg3name is None:
@@ -437,7 +450,7 @@ class SsizeArgFuncGen(FuncBase):
             def null_body(writer):
                 pass
             body = null_body
-        super().__init__(gen, name, body)
+        super().__init__(gen, name, None, body)
         if arg2name is None:
             arg2name = 'arg2'
         self.__args = ('PyObject* self',
@@ -469,7 +482,7 @@ class SsizeObjArgProcGen(FuncBase):
             def null_body(writer):
                 pass
             body = null_body
-        super().__init__(gen, name, body)
+        super().__init__(gen, name, None, body)
         if arg2name is None:
             arg2name = 'arg2'
         if arg3name is None:
@@ -503,7 +516,7 @@ class ObjObjProcGen(FuncBase):
             def null_body(writer):
                 pass
             body = null_body
-        super().__init__(gen, name, body)
+        super().__init__(gen, name, None, body)
         if arg2name is None:
             arg2name = 'obj2'
         self.__args = ('PyObject* self',
@@ -535,7 +548,7 @@ class ObjObjArgProcGen(FuncBase):
             def null_body(writer):
                 pass
             body = null_body
-        super().__init__(gen, name, body)
+        super().__init__(gen, name, None, body)
         if arg2name is None:
             arg2name = 'obj2'
         if arg3name is None:

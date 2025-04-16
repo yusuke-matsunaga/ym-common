@@ -14,6 +14,7 @@ from .funcgen import DeallocGen
 from .funcgen import ReprFuncGen
 from .funcgen import HashFuncGen
 from .funcgen import CallFuncGen
+from .funcgen import StrFuncGen
 from .funcgen import RichcmpFuncGen
 from .funcgen import InitProcGen
 from .funcgen import NewFuncGen
@@ -240,20 +241,16 @@ class PyObjGen(GenBase):
         self.__number_gen = None
 
         # Sequence 構造体の定義
-        self.__sequence_name = None
         self.__sequence_gen = None
 
         # Mapping 構造体の定義
-        self.__mapping_name = None
         self.__mapping_gen = None
 
         # メソッド構造体の定義
-        self.__method_name = self.check_name('methods')
-        self.__method_gen = MethodGen()
+        self.__method_gen = None
 
         # get/set 構造体の定義
-        self.__getset_name = self.check_name('getsets')
-        self.__getset_gen = GetSetGen()
+        self.__getset_gen = None
 
         # 追加の初期化コード
         self.__ex_init_gen = None
@@ -325,7 +322,7 @@ class PyObjGen(GenBase):
         if self.__str_gen is not None:
             raise ValueError('str has been already defined')
         func_name = self.complete_name(func_name, 'str_func')
-        self.__str_gen = ReprFuncGen(self, func_name, func_body)
+        self.__str_gen = StrFuncGen(self, func_name, func_body)
 
     def add_richcompare(self, func_body=None, *,
                         func_name=None):
@@ -338,7 +335,7 @@ class PyObjGen(GenBase):
 
     def add_nb_add(self, *,
                    func_name=None,
-                   expr=None,
+                   expr='default',
                    op_list1=[],
                    op_list2=[]):
         """nb_add の関数定義を追加する．
@@ -349,7 +346,7 @@ class PyObjGen(GenBase):
 
     def add_nb_subtract(self, *,
                         func_name=None,
-                        expr=None,
+                        expr='default',
                         op_list1=[],
                         op_list2=[]):
         """nb_subtract の関数定義を追加する．
@@ -360,7 +357,7 @@ class PyObjGen(GenBase):
 
     def add_nb_multiply(self, *,
                         func_name=None,
-                        expr=None,
+                        expr='default',
                         op_list1=[],
                         op_list2=[]):
         """nb_multiply の関数定義を追加する．
@@ -371,7 +368,7 @@ class PyObjGen(GenBase):
 
     def add_nb_remainder(self, *,
                          func_name=None,
-                         expr=None,
+                         expr='default',
                          op_list1=[],
                          op_list2=[]):
         """nb_remainder の関数定義を追加する．
@@ -382,7 +379,7 @@ class PyObjGen(GenBase):
 
     def add_nb_divmod(self, *,
                       func_name=None,
-                      expr=None,
+                      expr='default',
                       op_list1=[],
                       op_list2=[]):
         """nb_divmod の関数定義を追加する．
@@ -451,7 +448,7 @@ class PyObjGen(GenBase):
 
     def add_nb_lshift(self, *,
                       func_name=None,
-                      expr=None,
+                      expr='default',
                       op_list1=[]):
         """nb_lshift の関数定義を追加する．
         """
@@ -461,7 +458,7 @@ class PyObjGen(GenBase):
 
     def add_nb_rshift(self, *,
                       func_name=None,
-                      expr=None,
+                      expr='default',
                       op_list1=[]):
         """nb_rshift の関数定義を追加する．
         """
@@ -471,7 +468,7 @@ class PyObjGen(GenBase):
 
     def add_nb_and(self, *,
                    func_name=None,
-                   expr=None,
+                   expr='default',
                    op_list1=[],
                    op_list2=[]):
         """nb_and の関数定義を追加する．
@@ -482,7 +479,7 @@ class PyObjGen(GenBase):
 
     def add_nb_xor(self, *,
                    func_name=None,
-                   expr=None,
+                   expr='default',
                    op_list1=[],
                    op_list2=[]):
         """nb_xor の関数定義を追加する．
@@ -493,7 +490,7 @@ class PyObjGen(GenBase):
 
     def add_nb_or(self, *,
                   func_name=None,
-                  expr=None,
+                  expr='default',
                   op_list1=[],
                   op_list2=[]):
         """nb_or の関数定義を追加する．
@@ -622,7 +619,7 @@ class PyObjGen(GenBase):
 
     def add_nb_floor_divide(self, *,
                             func_name=None,
-                            expr=None,
+                            expr='default',
                             op_list1=[],
                             op_list2=[]):
         """nb_floor_divide の関数定義を追加する．
@@ -633,7 +630,7 @@ class PyObjGen(GenBase):
 
     def add_nb_true_divide(self, *,
                            func_name=None,
-                           expr=None,
+                           expr='default',
                            op_list1=[],
                            op_list2=[]):
         """nb_true_divide の関数定義を追加する．
@@ -673,7 +670,7 @@ class PyObjGen(GenBase):
 
     def add_nb_matrix_multiply(self, *,
                                func_name=None,
-                               expr=None,
+                               expr='default',
                                op_list1=[],
                                op_list2=[]):
         """nb_matrix_multiply の関数定義を追加する．
@@ -706,9 +703,9 @@ class PyObjGen(GenBase):
         """
         if self.__sequence_gen is not None:
             raise ValueError('sequence has been already defined')
-        self.__sequence_name = self.complete_name(name, 'sequence')
+        name = self.complete_name(name, 'sequence')
         self.__sequence_gen = SequenceGen(
-            self,
+            self, name,
             sq_length=sq_length,
             sq_concat=sq_concat,
             sq_repeat=sq_repeat,
@@ -727,9 +724,9 @@ class PyObjGen(GenBase):
         """
         if self.__mapping_gen is not None:
             raise ValueError('mapping has been already defined')
-        self.__mapping_name = self.complete_name(name, 'mapping')
+        name = self.complete_name(name, 'mapping')
         self.__mapping_gen = MappingGen(
-            self,
+            self, name,
             mp_length=mp_length,
             mp_subscript=mp_subscript,
             mp_ass_subscript=mp_ass_subscript)
@@ -762,9 +759,12 @@ class PyObjGen(GenBase):
                    doc_str=''):
         """メソッド定義を追加する．
         """
+        if self.__method_gen is None:
+            tbl_name = self.check_name('methods')
+            self.__method_gen = MethodGen(self, tbl_name)
         # デフォルトの関数名は Python のメソッド名をそのまま用いる．
         func_name = self.complete_name(func_name, name)
-        self.__method_gen.add(self, func_name,
+        self.__method_gen.add(func_name,
                               name=name,
                               arg_list=arg_list,
                               is_static=is_static,
@@ -790,6 +790,7 @@ class PyObjGen(GenBase):
                    has_closure=False):
         """getter 定義を追加する．
         """
+        self.__check_getset()
         self.check_name(func_name)
         self.__getset_gen.add_getter(self, func_name,
                                      has_closure=has_closure,
@@ -800,6 +801,7 @@ class PyObjGen(GenBase):
                    has_closure=False):
         """setter 定義を追加する．
         """
+        self.__check_getset()
         self.check_name(func_name)
         self.__getset_gen.add_setter(self, func_name,
                                      has_closure=has_closure,
@@ -812,6 +814,7 @@ class PyObjGen(GenBase):
                  doc_str=''):
         """属性定義を追加する．
         """
+        self.__check_getset()
         self.__getset_gen.add_attr(name,
                                    getter_name=getter_name,
                                    setter_name=setter_name,
@@ -969,15 +972,17 @@ class PyObjGen(GenBase):
                        replace_list=replace_list)
 
     def make_extra_code(self, writer):
-        if self.__preamble_gen is not None:
-            self.__preamble_gen(writer)
+        def gen_common(writer, gen):
+            if gen is not None:
+                gen(writer)
+        gen_common(writer, self.__preamble_gen)
         gen_func(self.__dealloc_gen, writer,
                  comment='終了関数')
         gen_func(self.__repr_gen, writer, 
                  comment='repr 関数')
-        self.gen_number(writer)
-        writer.gen_sequence(self.__sequence_gen, self.__sequence_name)
-        writer.gen_mapping(self.__mapping_gen, self.__mapping_name)
+        gen_common(writer, self.__number_gen)
+        gen_common(writer, self.__sequence_gen)
+        gen_common(writer, self.__mapping_gen)
         gen_func(self.__hash_gen, writer, 
                  comment='hash 関数')
         gen_func(self.__call_gen, writer,
@@ -986,47 +991,48 @@ class PyObjGen(GenBase):
                  comment='str 関数')
         gen_func(self.__richcompare_gen, writer,
                  comment='richcompare 関数')
-        self.__method_gen(writer, self.__method_name)
-        self.__getset_gen(writer, self.__getset_name)
+        gen_common(writer, self.__method_gen)
+        gen_common(writer, self.__getset_gen)
         gen_func(self.__init_gen, writer,
                  comment='init 関数')
         gen_func(self.__new_gen, writer,
                  comment='new 関数')
         
     def make_tp_init(self, writer):
-        tp_list = []
-        tp_list.append(('name', f'"{self.pyname}"'))
-        tp_list.append(('basicsize', self.basicsize))
-        tp_list.append(('itemsize', self.itemsize))
+        def gen_tp(writer, tp_name, rval):
+            writer.gen_assign(f'{self.typename}.tp_{tp_name}', rval)
+        gen_tp(writer, 'name', f'"{self.pyname}"')
+        gen_tp(writer, 'basicsize', self.basicsize)
+        gen_tp(writer, 'itemsize', self.itemsize)
         if self.__dealloc_gen is not None:
-            tp_list.append(('dealloc', self.__dealloc_gen.name))
+            self.__dealloc_gen.gen_tp(writer)
         if self.__repr_gen is not None:
-            tp_list.append(('repr', self.__repr_gen.name))
+            self.__repr_gen.gen_tp(writer)
         if self.__number_gen is not None:
-            tp_list.append(('as_number', f'&{self.__number_gen.name}'))
-        if self.__sequence_name is not None:
-            tp_list.append(('as_sequence', f'&{self.__sequence_name}'))
-        if self.__mapping_name is not None:
-            tp_list.append(('as_mapping', f'&{self.__mapping_name}'))
+            self.__number_gen.gen_tp(writer)
+        if self.__sequence_gen is not None:
+            self.__sequence_gen.gen_tp(writer)
+        if self.__mapping_gen is not None:
+            self.__mapping_gen.gen_tp(writer)
         if self.__hash_gen is not None:
-            tp_list.append(('hash', self.__hash_gen.name))
+            self.__hash_gen.gen_tp(writer)
         if self.__call_gen is not None:
-            tp_list.append(('call', self.__call_gen.name))
+            self.__call_gen.gen_tp(writer)
         if self.__str_gen is not None:
-            tp_list.append(('str', self.__str_gen.name))
-        tp_list.append(('flags', self.flags))
-        tp_list.append(('doc', f'PyDoc_STR("{self.doc_str}")'))
+            self.__str_gen.gen_tp(writer)
+        gen_tp(writer, 'flags', self.flags)
+        gen_tp(writer, 'doc', f'PyDoc_STR("{self.doc_str}")')
         if self.__richcompare_gen is not None:
-            tp_list.append(('richcompare', self.__richcompare_gen.name))
-        tp_list.append(('methods', self.__method_name))
-        tp_list.append(('getset', self.__getset_name))
+            self.__richcompare_gen.gen_tp(writer)
+        if self.__method_gen is not None:
+            self.__method_gen.gen_tp(writer)
+        if self.__getset_gen is not None:
+            self.__getset_gen.gen_tp(writer)
         if self.__init_gen is not None:
-            tp_list.append(('init', self.__init_gen.name))
+            self.__init_gen.gen_tp(writer)
         if self.__new_gen is not None:
-            tp_list.append(('new', self.__new_gen.name))
-        for name, rval in tp_list:
-            writer.gen_assign(f'{self.typename}.tp_{name}', f'{rval}')
-
+            self.__new_gen.gen_tp(writer)
+    
     def make_ex_init(self, writer):
         if self.__ex_init_gen is not None:
             self.__ex_init_gen(writer)
@@ -1074,14 +1080,13 @@ class PyObjGen(GenBase):
         """
         writer.gen_autoref_assign(refname,
                                   f'{self.pyclassname}::_get_ref({objname})')
-
-    def gen_number(self, writer):
-        """Number 構造体に関するコードを生成する．
-        """
-        if self.__number_gen is not None:
-            self.__number_gen(writer)
-
+            
     def __check_number(self):
         if self.__number_gen is None:
             name = self.check_name('number')
             self.__number_gen = NumberGen(self, name)
+
+    def __check_getset(self):
+        if self.__getset_gen is None:
+            name = self.check_name('getsets')
+            self.__getset_gen = GetSetGen(self, name)

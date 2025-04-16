@@ -68,8 +68,9 @@ class ModuleGen(GenBase):
         self.__include_files = include_files
         
         # メソッド構造体の定義
-        self.__method_name = self.check_name('methods')
-        self.__method_gen = MethodGen(module_func=True)
+        # モジュール定義の場合は関数がなくても空のテーブルを津kる．
+        tbl_name = self.check_name('methods')
+        self.__method_gen = MethodGen(self, tbl_name, module_func=True)
 
         # サブモジュールのリスト
         self.__submodule_list = submodule_list
@@ -89,7 +90,7 @@ class ModuleGen(GenBase):
         """
         # デフォルトの関数名は Python のメソッド名をそのまま用いる．
         func_name = self.complete_name(func_name, name)
-        self.__method_gen.add(self, func_name,
+        self.__method_gen.add(func_name,
                               name=name,
                               arg_list=arg_list,
                               is_static=False,
@@ -167,7 +168,8 @@ class ModuleGen(GenBase):
                        replace_list=replace_list)
 
     def make_extra_code(self, writer):
-        self.__method_gen(writer, self.__method_name)
+        if self.__method_gen is not None:
+            self.__method_gen(writer)
 
     def make_init_code(self, writer):
         # サブモジュールの登録

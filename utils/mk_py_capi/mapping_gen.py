@@ -22,7 +22,7 @@ class MappingGen(Mapping):
     """Mapping オブジェクト構造体を作るクラス
     """
 
-    def __new__(cls, gen, *,
+    def __new__(cls, gen, name, *,
                 mp_length=None,
                 mp_subscript=None,
                 mp_ass_subscript=None):
@@ -41,9 +41,11 @@ class MappingGen(Mapping):
                                mp_length=mp_length,
                                mp_subscript=mp_subscript,
                                mp_ass_subscript=mp_ass_subscript)
+        self.gen = gen
+        self.name = name
         return self
         
-    def __call__(self, writer, name):
+    def __call__(self, writer):
         # 個々の関数を生成する．
         gen_func(self.mp_length, writer)
         gen_func(self.mp_subscript, writer)
@@ -51,10 +53,14 @@ class MappingGen(Mapping):
 
         # 構造体定義を生成する．
         with writer.gen_struct_init_block(structname='PyMappingMethods',
-                                          varname=name,
+                                          varname=self.name,
                                           comment='Mapping オブジェクト構造体'):
             mp_lines = []
             add_member_def(mp_lines, 'mp_length', self.mp_length)
             add_member_def(mp_lines, 'mp_subscript', self.mp_subscript)
             add_member_def(mp_lines, 'mp_ass_subscript', self.mp_ass_subscript)
             writer.write_lines(mp_lines, delim=',')
+
+    def gen_tp(self, writer):
+        writer.gen_assign(f'{self.gen.typename}.tp_as_mapping',
+                          f'&{self.name}')

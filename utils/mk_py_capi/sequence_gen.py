@@ -28,7 +28,7 @@ class SequenceGen(Sequence):
     """Sequence オブジェクト構造体を作るクラス
     """
 
-    def __new__(cls, gen, *,
+    def __new__(cls, gen, name, *,
                 sq_length=None,
                 sq_concat=None,
                 sq_repeat=None,
@@ -65,9 +65,11 @@ class SequenceGen(Sequence):
                                sq_contains=sq_contains,
                                sq_inplace_concat=sq_inplace_concat,
                                sq_inplace_repeat=sq_inplace_repeat)
+        self.typename = gen.typename
+        self.name = name
         return self
         
-    def __call__(self, writer, name):
+    def __call__(self, writer):
         # 個々の関数を生成する．
         gen_func(self.sq_length, writer)
         gen_func(self.sq_concat, writer)
@@ -80,7 +82,7 @@ class SequenceGen(Sequence):
 
         # 構造体定義を生成する．
         with writer.gen_struct_init_block(structname='PySequenceMethods',
-                                          varname=name,
+                                          varname=self.name,
                                           comment='Sequence オブジェクト構造体'):
             sq_lines = []
             add_member_def(sq_lines, 'sq_length', self.sq_length)
@@ -92,3 +94,7 @@ class SequenceGen(Sequence):
             add_member_def(sq_lines, 'sq_inplace_concat', self.sq_inplace_concat)
             add_member_def(sq_lines, '.sq_inplace_repeat', self.sq_inplace_repeat)
             writer.write_lines(sq_lines, delim=',')
+
+    def gen_tp(self, writer):
+        writer.gen_assign(f'{self.typename}.tp_as_sequence',
+                          f'&{self.name}')
