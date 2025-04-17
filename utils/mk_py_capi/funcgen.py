@@ -250,7 +250,7 @@ class NewFuncGen(FuncWithArgs):
     """
     
     def __init__(self, gen, name, body, arg_list):
-        self.__has_preamble = True
+        self.__disabled = False
         if body == 'default':
             # デフォルト実装
             def default_body(writer):
@@ -259,10 +259,7 @@ class NewFuncGen(FuncWithArgs):
             body = default_body
         elif body == 'disabled':
             # 禁止
-            def disabled_body(writer):
-                writer.gen_type_error(f'"instantiation of \'{gen.classname}\' is disabled"')
-            body = disabled_body
-            self.__has_preamble = False
+            self.__disabled = True
         elif body == 'sample':
             # sample 実装
             def sample_body(writer):
@@ -285,11 +282,14 @@ class NewFuncGen(FuncWithArgs):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=args):
-            if self.__has_preamble:
+            if self.__disabled:
+                msg = f'"instantiation of \'{self.gen.classname}\' is disabled"'
+                writer.gen_type_error(msg)
+            else:
                 writer.gen_func_preamble(self.arg_list, force_has_keywords=True)
-            with writer.gen_try_block():
-                self.body(writer)
-            writer.gen_catch_invalid_argument()
+                with writer.gen_try_block():
+                    self.body(writer)
+                writer.gen_catch_invalid_argument()
 
 
 class LenFuncGen(FuncBase):

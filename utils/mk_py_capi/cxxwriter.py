@@ -588,7 +588,8 @@ class CxxWriter:
             line = '///'
         else:
             line = '//'
-        line += f' {comment}'
+        if comment != '':
+            line += f' {comment}'
         self.write_line(line)
 
     def gen_CRLF(self):

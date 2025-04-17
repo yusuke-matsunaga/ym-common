@@ -115,7 +115,7 @@ class EnumGen(PyObjGen):
                 if none_value is not None:
                     writer.write_line(f'case {none_value}: Py_RETURN_NONE;')
             with writer.gen_if_block('obj == nullptr'):
-                writer.gen_value_error('"invalid string for PrimType"')
+                writer.gen_value_error(f'"invalid value for {self.classname}"')
             writer.write_line('Py_INCREF(obj);')
             writer.gen_return('obj')
         self.add_conv(conv_body)
