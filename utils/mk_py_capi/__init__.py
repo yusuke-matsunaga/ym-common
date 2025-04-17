@@ -14,7 +14,7 @@ from .arg import OptArg, KwdArg
 from .arg import IntArg, UintArg, LongArg, UlongArg, DoubleArg
 from .arg import BoolArg, StringArg
 from .arg import RawObjArg, TypedRawObjArg
-from .arg import ObjConvArg, TypedObjConvArg
+from .arg import ObjConvArgBase, ObjConvArg, TypedObjConvArg
 from .number_gen import Op, Iop
 from .number_gen import AddOp, SubOp, MulOp, DivOp, RemOp
 from .number_gen import AddIop, SubIop, MulIop, DivIop, RemIop

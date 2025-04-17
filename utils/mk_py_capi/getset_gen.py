@@ -8,6 +8,7 @@
 """
 
 from collections import namedtuple
+from .funcgen import CArg
 
 
 # getter/setterを表す型
@@ -113,12 +114,10 @@ class GetSetGen:
     def __call__(self, writer):
         # getter 関数の生成
         for getter in self.__getter_list:
-            arg0 = 'PyObject* self'
-            if getter.has_closure:
-                arg1 = 'void* closure'
-            else:
-                arg1 = 'void* Py_UNUSED(closure)'
-            args = [ arg0, arg1 ]
+            arg0 = CArg.Self()
+            unused = not getter.has_closure
+            arg1 = CArg.Closure(unused=unused)
+            args = [arg0, arg1]
             with writer.gen_func_block(return_type='PyObject*',
                                        func_name=getter.name,
                                        args=args):
@@ -127,13 +126,11 @@ class GetSetGen:
                 
         # setter 関数の生成
         for setter in self.__setter_list:
-            arg0 = 'PyObject* self'
-            arg1 = 'PyObject* obj'
-            if setter.has_closure:
-                arg2 = 'void* closure'
-            else:
-                arg2 = 'void* Py_UNUSED(closure)'
-            args = [ arg0, arg1, arg2 ]
+            arg0 = CArg.Self()
+            arg1 = CArg.PyArg('obj')
+            unused = not setter.has_closure
+            arg2 = CArg.Closure(unused=unused)
+            args = [arg0, arg1, arg2]
             with writer.gen_func_block(return_type='int',
                                        func_name=setter.name,
                                        args=args):

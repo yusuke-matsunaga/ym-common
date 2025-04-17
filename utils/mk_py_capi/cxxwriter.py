@@ -200,6 +200,9 @@ class CxxWriter:
         line += ';'
         self.write_line(line)
 
+    def gen_stmt(self, stmt):
+        self.write_line(f'{stmt};')
+
     def gen_return_buildvalue(self, fmt, val_list):
         """ Py_BuildValue() を用いた return 文を出力する．
         """
@@ -346,7 +349,35 @@ class CxxWriter:
                        br_chars='()',
                        prefix=func_name,
                        postfix=postfix):
-            self.write_lines(args, delim=',')
+            # 引数のリストを作る．
+            # コメントがある時の処理がめんどくさい
+            has_comments = False
+            max_len = 0
+            n = len(args)
+            for i, arg in enumerate(args):
+                if arg.comment is not None:
+                    has_comments = True
+                l = len(arg.body)
+                if i < n - 1:
+                    l += 1
+                max_len = max(max_len, l)
+            max_len += 1
+            if has_comments:
+                lines = []
+                for i, arg in enumerate(args):
+                    body = arg.body
+                    if i < n - 1:
+                        body += ','
+                    if arg.comment is None:
+                        line = body
+                    else:
+                        spc = ' ' * (max_len - len(body))
+                        line = f'{body}{spc}///< {arg.comment}'
+                    lines.append(line)
+                self.write_lines(lines)
+            else:
+                lines = [arg.body for arg in args]
+                self.write_lines(lines, delim=',')
 
     def gen_func_block(self, *,
                        no_crlf=False,
@@ -603,7 +634,7 @@ class CxxWriter:
         """
         n = len(lines)
         for i, line in enumerate(lines):
-            if i < n - 1:
+            if i < n - 1 and delim is not None:
                 line += delim
             self.write_line(line)
 

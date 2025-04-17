@@ -10,6 +10,7 @@
 from collections import namedtuple
 from .pyobj_gen import PyObjGen
 from .arg import ObjConvArg
+from .funcgen import CArg
 
 
 EnumInfo = namedtuple('EnumInfo',
@@ -48,12 +49,13 @@ class EnumGen(PyObjGen):
                 writer.gen_vardecl(typename='PyObject*',
                                    varname=f'Const_{enum.pyname}',
                                    initializer='nullptr')
+            args = [CArg.GenArg('const char*', 'name'),
+                    CArg.GenArg(classname, 'val'),
+                    CArg.GenArg('PyObject*&', 'const_obj')]
             with writer.gen_func_block(comment='定数の登録を行う関数',
                                        return_type='bool',
                                        func_name='reg_const_obj',
-                                       args=['const char* name',
-                                             f'{classname} val',
-                                             'PyObject*& const_obj']):
+                                       args=args):
                 self.gen_alloc_code(writer, varname='obj')
                 self.gen_obj_conv(writer, objname='obj', varname='my_obj')
                 writer.gen_assign('my_obj->mVal', 'val')

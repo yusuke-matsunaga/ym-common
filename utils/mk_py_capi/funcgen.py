@@ -7,6 +7,71 @@
 :copyright: Copyright (C) 2025 Yusuke Matsunaga, All rights reserved.
 """
 
+def mk_varname(varname, unused=False):
+    if unused:
+        return f'Py_UNUSED({varname})'
+    return varname
+
+
+class CArg:
+
+    def __init__(self, body, *,
+                 comment=None):
+        self.body = body
+        self.comment = comment
+
+    @staticmethod
+    def GenArg(typename, varname, *,
+               comment=None):
+        return CArg(f'{typename} {varname}',
+                    comment=comment)
+
+    @staticmethod
+    def PyArg(varname, *,
+              comment=None):
+        return CArg.GenArg('PyObject*', varname,
+                           comment=comment)
+
+    @staticmethod
+    def Self(*,
+             unused=False,
+             comment=None):
+        varname = mk_varname('self', unused)
+        return CArg.PyArg(varname, comment=comment)
+
+    @staticmethod
+    def Args(*,
+             unused=False,
+             comment=None):
+        varname = mk_varname('args', unused)
+        return CArg.PyArg(varname, comment=comment)
+
+    @staticmethod
+    def Kwds(*,
+             comment=None):
+        return CArg.PyArg('kwds', comment=comment)
+
+    @staticmethod
+    def Other(*,
+              unused=False,
+              comment=None):
+        varname = mk_varname('other', unused)
+        return CArg.PyArg(varname, comment=comment)
+
+    @staticmethod
+    def Type(*,
+             comment=None):
+        return CArg.GenArg('PyTypeObject*', 'type',
+                           comment=comment)
+
+    @staticmethod
+    def Closure(*,
+                unused=False,
+                comment=None):
+        varname = mk_varname('closure', unused)
+        return CArg.GenArg('void*', varname,
+                           comment=comment)
+
 
 class FuncBase:
     """関数の基本情報を表すクラス
@@ -31,11 +96,11 @@ class FuncWithArgs(FuncBase):
         super().__init__(gen, name, tp_name, body)
         self.arg_list = arg_list
 
-        
+
 class DeallocGen(FuncBase):
     """dealloc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body):
         if body == 'default':
             # デフォルト実装
@@ -47,7 +112,7 @@ class DeallocGen(FuncBase):
     def __call__(self, writer, *,
                  comment=None,
                  comments=None):
-        args = ('PyObject* self', )
+        args = [CArg.Self()]
         with writer.gen_func_block(comment=comment,
                                    comments=comments,
                                    return_type='void',
@@ -57,12 +122,12 @@ class DeallocGen(FuncBase):
                 self.gen.gen_obj_conv(writer, varname='obj')
                 self.body(writer)
             writer.write_line('Py_TYPE(self)->tp_free(self);')
-        
+
 
 class ReprFuncGen(FuncBase):
     """reprfunc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body, tp_name='repr'):
         if body is None:
             # 空
@@ -80,7 +145,7 @@ class ReprFuncGen(FuncBase):
     def __call__(self, writer, *,
                  comment=None,
                  comments=None):
-        args = ('PyObject* self', )
+        args = [CArg.Self()]
         with writer.gen_func_block(comment=comment,
                                    comments=comments,
                                    return_type='PyObject*',
@@ -104,7 +169,7 @@ class StrFuncGen(ReprFuncGen):
 class HashFuncGen(FuncBase):
     """hashfunc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body):
         if body is None:
             # 空
@@ -122,7 +187,7 @@ class HashFuncGen(FuncBase):
     def __call__(self, writer, *,
                  comment=None,
                  comments=None):
-        args = ('PyObject* self', )
+        args = [CArg.Self()]
         with writer.gen_func_block(comment=comment,
                                    comments=comments,
                                    return_type='Py_hash_t',
@@ -137,7 +202,7 @@ class HashFuncGen(FuncBase):
 class CallFuncGen(FuncWithArgs):
     """callfunc(ternaryfunc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body, arg_list, *,
                  arg2name='args',
                  arg3name='kwds'):
@@ -147,9 +212,9 @@ class CallFuncGen(FuncWithArgs):
                 writer.gen_comment('args, kwds を解釈して結果を返す．')
             body = null_body
         super().__init__(gen, name, 'call', body, arg_list)
-        self.__args = ('PyObject* self',
-                       f'PyObject* {arg2name}',
-                       f'PyObject* {arg3name}')
+        self.__args = [CArg.Self(),
+                       CArg.PyArg(arg2name),
+                       CArg.PyArg(arg3name)]
 
     def __call__(self, writer, *,
                  comment=None,
@@ -169,7 +234,7 @@ class CallFuncGen(FuncWithArgs):
 class RichcmpFuncGen(FuncBase):
     """richcmpfunc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body):
         if body == 'eq_default':
             def cmp_func(writer):
@@ -200,9 +265,9 @@ class RichcmpFuncGen(FuncBase):
     def __call__(self, writer, *,
                  comment=None,
                  comments=None):
-        args = ('PyObject* self',
-                'PyObject* other',
-                'int op')
+        args = [CArg.Self(),
+                CArg.PyArg('other'),
+                CArg.GenArg('int', 'op')]
         with writer.gen_func_block(comment=comment,
                                    comments=comments,
                                    return_type='PyObject*',
@@ -217,7 +282,7 @@ class RichcmpFuncGen(FuncBase):
 class InitProcGen(FuncWithArgs):
     """initproc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body, arg_list):
         if body is None:
             # 空
@@ -231,9 +296,9 @@ class InitProcGen(FuncWithArgs):
     def __call__(self, writer, *,
                  comment=None,
                  comments=None):
-        args = ('PyObject* self',
-                'PyObject* args',
-                'PyObject* kwds')
+        args = [CArg.Self(),
+                CArg.Args(),
+                CArg.Kwds()]
         with writer.gen_func_block(comment=comment,
                                    comments=comments,
                                    return_type='int',
@@ -248,7 +313,7 @@ class InitProcGen(FuncWithArgs):
 class NewFuncGen(FuncWithArgs):
     """newfunc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body, arg_list):
         self.__disabled = False
         if body == 'default':
@@ -274,9 +339,9 @@ class NewFuncGen(FuncWithArgs):
     def __call__(self, writer, *,
                  comment=None,
                  comments=None):
-        args = ('PyTypeObject* type',
-                'PyObject* args',
-                'PyObject* kwds')
+        args = [CArg.Type(),
+                CArg.Args(),
+                CArg.Kwds()]
         with writer.gen_func_block(comment=comment,
                                    comments=comments,
                                    return_type='PyObject*',
@@ -295,7 +360,7 @@ class NewFuncGen(FuncWithArgs):
 class LenFuncGen(FuncBase):
     """lenfunc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body):
         if body is None:
             # 空
@@ -314,7 +379,7 @@ class LenFuncGen(FuncBase):
     def __call__(self, writer, *,
                  comment=None,
                  comments=None):
-        args = ('PyObject* self', )
+        args = [CArg.Self()]
         with writer.gen_func_block(comment=comment,
                                    comments=comments,
                                    return_type='Py_ssize_t',
@@ -324,13 +389,13 @@ class LenFuncGen(FuncBase):
             with writer.gen_try_block():
                 self.body(writer)
                 writer.gen_return('len_val')
-            writer.gen_catch_invalid_argument()
-            
+            writer.gen_catch_invalid_argument(error_val='-1')
+
 
 class InquiryGen(FuncBase):
     """inquiry 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body):
         if body is None:
             # 空
@@ -342,7 +407,7 @@ class InquiryGen(FuncBase):
     def __call__(self, writer, *,
                  comment=None,
                  comments=None):
-        args = ('PyObject* self', )
+        args = [CArg.Self()]
         with writer.gen_func_block(comment=comment,
                                    comments=comments,
                                    return_type='int',
@@ -352,13 +417,13 @@ class InquiryGen(FuncBase):
             with writer.gen_try_block():
                 self.body(writer)
                 writer.gen_return('inquiry_val')
-            writer.gen_catch_invalid_argument()
+            writer.gen_catch_invalid_argument(error_val='-1')
 
-            
+
 class UnaryFuncGen(FuncBase):
     """unaryfunc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body):
         if body is None:
             # 空
@@ -370,7 +435,7 @@ class UnaryFuncGen(FuncBase):
     def __call__(self, writer, *,
                  comment=None,
                  comments=None):
-        args = ('PyObject* self', )
+        args = [CArg.Self()]
         with writer.gen_func_block(comment=comment,
                                    comments=comments,
                                    return_type='PyObject*',
@@ -385,7 +450,7 @@ class UnaryFuncGen(FuncBase):
 class BinaryFuncGen(FuncBase):
     """binaryfunc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body, *,
                  arg2name=None):
         if body is None:
@@ -396,8 +461,8 @@ class BinaryFuncGen(FuncBase):
         super().__init__(gen, name, None, body)
         if arg2name is None:
             arg2name = 'other'
-        self.__args = ('PyObject* self',
-                       f'PyObject* {arg2name}')
+        self.__args = [CArg.Self(),
+                       CArg.PyArg(arg2name)]
 
     def __call__(self, writer, *,
                  comment=None,
@@ -411,12 +476,12 @@ class BinaryFuncGen(FuncBase):
             with writer.gen_try_block():
                 self.body(writer)
             writer.gen_catch_invalid_argument()
-        
+
 
 class TernaryFuncGen(FuncBase):
     """ternaryfunc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body, *,
                  arg2name=None,
                  arg3name=None,
@@ -431,9 +496,9 @@ class TernaryFuncGen(FuncBase):
             arg2name = 'obj2'
         if arg3name is None:
             arg3name = 'obj3'
-        self.__args = ('PyObject* self',
-                       f'PyObject* {arg2name}',
-                       f'PyObject* {arg3name}')
+        self.__args = [CArg.Self(),
+                       CArg.PyArg(arg2name),
+                       CArg.PyArg(arg3name)]
         self.__has_ref_conv = has_ref_conv
 
     def __call__(self, writer, *,
@@ -454,7 +519,7 @@ class TernaryFuncGen(FuncBase):
 class SsizeArgFuncGen(FuncBase):
     """ssizeargfunc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body, *,
                  arg2name=None):
         if body is None:
@@ -465,8 +530,8 @@ class SsizeArgFuncGen(FuncBase):
         super().__init__(gen, name, None, body)
         if arg2name is None:
             arg2name = 'arg2'
-        self.__args = ('PyObject* self',
-                       f'Py_ssize_t {arg2name}')
+        self.__args = [CArg.Self(),
+                       CArg.GenArg('Py_ssize_t', arg2name)]
 
     def __call__(self, writer, *,
                  comment=None,
@@ -485,7 +550,7 @@ class SsizeArgFuncGen(FuncBase):
 class SsizeObjArgProcGen(FuncBase):
     """ssizeobjargproc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body, *,
                  arg2name=None,
                  arg3name=None):
@@ -499,9 +564,9 @@ class SsizeObjArgProcGen(FuncBase):
             arg2name = 'arg2'
         if arg3name is None:
             arg3name = 'arg3'
-        self.__args = ('PyObject* self',
-                       f'Py_ssize_t {arg2name}',
-                       f'PyObject* {arg3name}')
+        self.__args = [CArg.Self(),
+                       CArg.GenArg('Py_ssize_t', arg2name),
+                       CArg.PyArg(arg3name)]
 
     def __call__(self, writer, *,
                  comment=None,
@@ -514,13 +579,13 @@ class SsizeObjArgProcGen(FuncBase):
             self.gen.gen_ref_conv(writer, refname='val')
             with writer.gen_try_block():
                 self.body(writer)
-            writer.gen_catch_invalid_argument()
+            writer.gen_catch_invalid_argument(error_val='-1')
 
 
 class ObjObjProcGen(FuncBase):
     """objobjproc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body, *,
                  arg2name=None):
         if body is None:
@@ -531,8 +596,8 @@ class ObjObjProcGen(FuncBase):
         super().__init__(gen, name, None, body)
         if arg2name is None:
             arg2name = 'obj2'
-        self.__args = ('PyObject* self',
-                       f'PyObject* {arg2name}')
+        self.__args = [CArg.Self(),
+                       CArg.PyArg(arg2name)]
 
     def __call__(self, writer, *,
                  comment=None,
@@ -545,13 +610,13 @@ class ObjObjProcGen(FuncBase):
             self.gen.gen_ref_conv(writer, refname='val')
             with writer.gen_try_block():
                 self.body(writer)
-            writer.gen_catch_invalid_argument()
+            writer.gen_catch_invalid_argument(error_val='-1')
 
 
 class ObjObjArgProcGen(FuncBase):
     """objobjargproc 型の関数を生成するクラス
     """
-    
+
     def __init__(self, gen, name, body, *,
                  arg2name=None,
                  arg3name=None):
@@ -565,9 +630,9 @@ class ObjObjArgProcGen(FuncBase):
             arg2name = 'obj2'
         if arg3name is None:
             arg3name = 'obj3'
-        self.__args = ('PyObject* self',
-                       f'PyObject* {arg2name}',
-                       f'PyObject* {arg3name}')
+        self.__args = [CArg.Self(),
+                       CArg.PyArg(arg2name),
+                       CArg.PyArg(arg3name)]
 
     def __call__(self, writer, *,
                  comment=None,
@@ -580,7 +645,7 @@ class ObjObjArgProcGen(FuncBase):
             self.gen.gen_ref_conv(writer, refname='val')
             with writer.gen_try_block():
                 self.body(writer)
-            writer.gen_catch_invalid_argument()
+            writer.gen_catch_invalid_argument(error_val='-1')
 
 
 class ConvGen:
@@ -598,6 +663,8 @@ class ConvGen:
                 writer.gen_return('obj')
             body = default_body
         self.body = body
+        self.args = [CArg.GenArg('const ElemType&', 'val',
+                                 comment='[in] 元の値')]
 
     def gen_decl(self, writer):
         """ヘッダ用の宣言を生成する．
@@ -607,7 +674,7 @@ class ConvGen:
             writer.gen_func_declaration(no_crlf=True,
                                         return_type='PyObject*',
                                         func_name='operator()',
-                                        args=('const ElemType& val', ))
+                                        args=self.args)
 
     def gen_tofunc(self, writer):
         """ToPyObject() 関数の定義を生成する．
@@ -620,16 +687,16 @@ class ConvGen:
                                    is_static=True,
                                    return_type='PyObject*',
                                    func_name='ToPyObject',
-                                   args=('const ElemType& val ///< [in] 値', )):
+                                   args=self.args):
             writer.gen_vardecl(typename='Conv',
                                varname='conv')
             writer.gen_return('conv(val)')
-        
+
     def __call__(self, writer):
         with writer.gen_func_block(comment=f'{self.gen.classname} を PyObject に変換する．',
                                    return_type='PyObject*',
                                    func_name=f'{self.gen.pyclassname}::Conv::operator()',
-                                   args=(f'const {self.gen.classname}& val', )):
+                                   args=self.args):
             self.body(writer)
 
 
@@ -648,6 +715,10 @@ class DeconvGen:
                 writer.gen_return('false')
             body = default_body
         self.body = body
+        self.args = [CArg.PyArg('obj',
+                                comment='[in] Python のオブジェクト'),
+                     CArg.GenArg('ElemType&', 'val',
+                                 comment='[out] 結果を格納する変数')]
         self.error_value = error_value
         self.__extra_func = extra_func
 
@@ -656,12 +727,10 @@ class DeconvGen:
         """
         with writer.gen_struct_block('Deconv',
                                      dox_comment=f'@brief PyObject* から {self.gen.classname} を取り出すファンクタクラス'):
-            args = ('PyObject* obj',
-                    'ElemType& val')
             writer.gen_func_declaration(no_crlf=True,
                                         return_type='bool',
                                         func_name='operator()',
-                                        args=args)
+                                        args=self.args)
 
     def gen_fromfunc(self, writer):
         """FromPyObject() 関数の定義を生成する．
@@ -672,21 +741,18 @@ class DeconvGen:
                                    is_static=True,
                                    return_type='bool',
                                    func_name='FromPyObject',
-                                   args=('PyObject* obj, ///< [in] Python のオブジェクト',
-                                         'ElemType& val  ///< [out] 結果を格納する変数')):
+                                   args=self.args):
             writer.gen_vardecl(typename='Deconv',
                                varname='deconv')
             writer.gen_return('deconv(obj, val)')
-        
+
     def __call__(self, writer):
-        args = ('PyObject* obj',
-                f'{self.gen.classname}& val')
         with writer.gen_func_block(comment=f'PyObject を {self.gen.classname} に変換する．',
                                    return_type='bool',
                                    func_name=f'{self.gen.pyclassname}::Deconv::operator()',
-                                   args=args):
+                                   args=self.args):
             if self.__extra_func is not None:
                 with writer.gen_if_block(f'{self.__extra_func}(obj, val)'):
                     writer.gen_return('true')
             self.body(writer)
-        
+

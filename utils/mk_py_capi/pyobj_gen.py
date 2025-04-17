@@ -29,6 +29,7 @@ from .funcgen import ObjObjProcGen
 from .funcgen import ObjObjArgProcGen
 from .funcgen import ConvGen
 from .funcgen import DeconvGen
+from .funcgen import CArg
 from .number_gen import NumberGen
 from .sequence_gen import SequenceGen
 from .mapping_gen import MappingGen
@@ -983,11 +984,13 @@ class PyObjGen(GenBase):
         if self.__deconv_gen is None:
             return
         dox_comment = f'@brief PyObject から {self.classname} を取り出す．'
+        args = [CArg.PyArg('obj',
+                     comment='[in] 対象の Python オブジェクト')]
         with writer.gen_func_block(dox_comment=dox_comment,
                                    is_static=True,
                                    return_type='ElemType',
                                    func_name='Get',
-                                   args=['PyObject* obj ///< [in] 対象の Python オブジェクト']):
+                                   args=args):
             writer.gen_vardecl(typename='ElemType', varname='val',
                                initializer=self.__deconv_gen.error_value)
             with writer.gen_if_block(f'{self.pyclassname}::FromPyObject(obj, val)'):

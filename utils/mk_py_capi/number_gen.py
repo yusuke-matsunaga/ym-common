@@ -7,7 +7,7 @@
 :copyright: Copyright (C) 2025 Yusuke Matsunaga, All rights reserved.
 """
 
-from .funcgen import FuncBase
+from .funcgen import FuncBase, CArg
 from .utils import gen_func, add_member_def
 
 
@@ -276,8 +276,8 @@ class BinOpGen(FuncBase):
     def __call__(self, writer, *,
                  comment=None,
                  comments=None):
-        args = ('PyObject* self',
-                'PyObject* other')
+        args = [CArg.Self(),
+                CArg.Other()]
         with writer.gen_func_block(comment=comment,
                                    comments=comments,
                                    return_type='PyObject*',

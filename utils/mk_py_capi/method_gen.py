@@ -8,6 +8,7 @@
 """
 
 from collections import namedtuple
+from .funcgen import CArg
 from .utils import analyze_args
 
 
@@ -58,18 +59,15 @@ class MethodGen:
         # 個々のメソッドの実装コードを生成する．
         for method in self.__method_list:
             if self.__module_func or method.is_static:
-                arg0 = 'PyObject* Py_UNUSED(self)'
+                self_unused = True
             else:
-                arg0 = 'PyObject* self'
-            if method.has_args:
-                arg1 = 'PyObject* args'
-            else:
-                arg1 = 'PyObject* Py_UNUSED(args)'
+                self_unused = False
+            arg0 = CArg.Self(unused=self_unused)
+            args_unused = not method.has_args
+            arg1 = CArg.Args(unused=args_unused)
+            args = [arg0, arg1]
             if method.has_keywords:
-                arg2 = 'PyObject* kwds'
-                args = [ arg0, arg1, arg2 ]
-            else:
-                args = [ arg0, arg1 ]
+                args += [CArg.Kwds()]
             with writer.gen_func_block(comment=method.doc_str,
                                        return_type='PyObject*',
                                        func_name=method.func_name,
