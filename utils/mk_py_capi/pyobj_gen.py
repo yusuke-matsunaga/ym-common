@@ -37,12 +37,12 @@ from .method_gen import MethodGen
 from .getset_gen import GetSetGen
 from .utils import gen_func
 from .cxxwriter import CxxWriter
-    
+
 
 class ConvDefGen:
     """%%CONV_DEF%% の置換を行うクラス
     """
-    
+
     def __init__(self, conv_gen, deconv_gen):
         self.__conv_def_pat = re.compile('^(\s*)%%CONV_DEF%%$')
         self.__conv_gen = conv_gen
@@ -79,7 +79,7 @@ class ConvDefGen:
 class ToDefGen:
     """%%TOPYOBJECT%% の置換を行うクラス
     """
-    
+
     def __init__(self, conv_gen, deconv_gen):
         self.__to_def_pat = re.compile('^(\s*)%%TOPYOBJECT%%$')
         self.__conv_gen = conv_gen
@@ -101,7 +101,7 @@ class ToDefGen:
             return True
         return False
 
-    
+
 class GetDefGen:
     """%%GET_DEF%% の置換を行うクラス
     """
@@ -119,11 +119,11 @@ class GetDefGen:
             return True
         return False
 
-    
+
 class ExtraCodeGen:
     """%%EXTRA_CODE%% の置換を行うクラス
     """
-    
+
     def __init__(self, gen):
         self.__gen = gen
 
@@ -184,12 +184,12 @@ class ConvCodeGen:
             self.__gen.make_conv_code(writer)
             return True
         return False
-    
+
 
 class PyObjGen(GenBase):
     """PyObject の拡張クラスを生成するクラス
     """
-    
+
     def __init__(self, *,
                  classname,
                  pyclassname=None,
@@ -200,7 +200,7 @@ class PyObjGen(GenBase):
                  header_include_files=[],
                  source_include_files=[]):
         super().__init__()
-        
+
         # C++ のクラス名
         self.classname = classname
         # Python-CAPI 用のクラス名
@@ -219,7 +219,7 @@ class PyObjGen(GenBase):
         self.objectname = objectname
         # Python のクラス名
         self.pyname = pyname
-        
+
         # ヘッダファイル用のインクルードファイルリスト
         self.header_include_files = header_include_files
         # ソースファイル用のインクルードファイルリスト
@@ -265,7 +265,7 @@ class PyObjGen(GenBase):
         self.basicsize = f'sizeof({self.objectname})'
         self.itemsize = '0'
         self.flags = 'Py_TPFLAGS_DEFAULT'
-        
+
         # 説明文
         self.doc_str = f'Python extended object for {self.classname}'
 
@@ -273,7 +273,7 @@ class PyObjGen(GenBase):
         if self.__preamble_gen is not None:
             raise ValueError("preamble has benn already defined")
         self.__preamble_gen = func_body
-        
+
     def add_dealloc(self, func_body='default', *,
                     func_name=None):
         """dealloc 関数定義を追加する．
@@ -305,7 +305,7 @@ class PyObjGen(GenBase):
         if self.__ex_init_gen is not None:
             raise ValueError('ex_init has been already defined')
         self.__ex_init_gen = gen_body
-                    
+
     def add_call(self, func_body=None, *,
                  func_name=None,
                  arg_list=[]):
@@ -447,7 +447,7 @@ class PyObjGen(GenBase):
         """
         self.__check_number()
         func_name = self.complete_name(func_name, 'nb_bool')
-        self.__number_gen.add_bool(self.new_unaryfunc(func_name, body))
+        self.__number_gen.add_bool(self.new_inquiry(func_name, body))
 
     def add_nb_invert(self, *,
                       func_name=None,
@@ -614,7 +614,7 @@ class PyObjGen(GenBase):
         self.__number_gen.add_inplace_lshift(func_name,
                                              stmt=stmt,
                                              op_list1=op_list1)
-        
+
     def add_nb_inplace_rshift(self, *,
                               func_name=None,
                               stmt='default',
@@ -749,7 +749,7 @@ class PyObjGen(GenBase):
         self.__number_gen.add_inplace_matrix_multiply(func_name,
                                                       stmt=stmt,
                                                       op_list1=op_list1)
-        
+
     def add_sequence(self, *,
                      name=None,
                      sq_length=None,
@@ -791,7 +791,7 @@ class PyObjGen(GenBase):
             mp_length=mp_length,
             mp_subscript=mp_subscript,
             mp_ass_subscript=mp_ass_subscript)
-        
+
     def add_init(self, func_body=None, *,
                  func_name=None,
                  arg_list=[]):
@@ -801,7 +801,7 @@ class PyObjGen(GenBase):
             raise ValueError('init has been already defined')
         func_name = self.complete_name(func_name, 'init_func')
         self.__init_gen = InitProcGen(self, func_name, func_body, arg_list)
-        
+
     def add_new(self, func_body='default', *,
                 func_name=None,
                 arg_list=[]):
@@ -811,7 +811,7 @@ class PyObjGen(GenBase):
             raise ValueError('new has been already defined')
         func_name = self.complete_name(func_name, 'new_func')
         self.__new_gen = NewFuncGen(self, func_name, func_body, arg_list)
-        
+
     def add_method(self, name, *,
                    func_name=None,
                    func_body=None,
@@ -831,7 +831,7 @@ class PyObjGen(GenBase):
                               is_static=is_static,
                               func_body=func_body,
                               doc_str=doc_str)
-        
+
     def add_static_method(self, name, *,
                           func_name=None,
                           func_body=None,
@@ -881,7 +881,7 @@ class PyObjGen(GenBase):
                                    setter_name=setter_name,
                                    closure=closure,
                                    doc_str=doc_str)
-    
+
     def add_conv(self, func_body):
         self.__conv_gen = ConvGen(self, func_body)
 
@@ -912,7 +912,7 @@ class PyObjGen(GenBase):
         return BinOpFuncGen(self, name,
                             op_list1=op_list1,
                             op_list2=op_list2)
-                          
+
     def new_ternaryfunc(self, name, body, *,
                         arg2name=None,
                         arg3name=None,
@@ -924,7 +924,7 @@ class PyObjGen(GenBase):
 
     def new_nb_ternaryfunc(self, name, body):
         return self.new_ternaryfunc(name, body, has_ref_conv=False)
-    
+
     def new_ssizeargfunc(self, name, body, *,
                          arg2name=None):
         return SsizeArgFuncGen(self, name, body,
@@ -948,7 +948,7 @@ class PyObjGen(GenBase):
         return ObjObjArgProcGen(self, name, body,
                                 arg2name=arg2name,
                                 arg3name=arg3name)
-                
+
     def make_header(self, fout=sys.stdout):
         """ヘッダファイルを出力する．"""
 
@@ -960,7 +960,7 @@ class PyObjGen(GenBase):
         gen_list.append(ConvDefGen(self.__conv_gen, self.__deconv_gen))
         gen_list.append(ToDefGen(self.__conv_gen, self.__deconv_gen))
         gen_list.append(GetDefGen(self))
-        
+
         # 置換リスト
         replace_list = []
         # 年の置換
@@ -998,7 +998,7 @@ class PyObjGen(GenBase):
             writer.gen_type_error(f'"Could not convert to {self.classname}"',
                                   noexit=True)
             writer.gen_return('val')
-        
+
     def make_source(self, fout=sys.stdout):
 
         # Generator リスト
@@ -1010,7 +1010,7 @@ class PyObjGen(GenBase):
         gen_list.append(TpInitGen(self))
         gen_list.append(ExInitGen(self))
         gen_list.append(ConvCodeGen(self))
-        
+
         # 置換リスト
         replace_list = []
         # 年の置換
@@ -1041,16 +1041,16 @@ class PyObjGen(GenBase):
         gen_common(writer, self.__preamble_gen)
         gen_func(self.__dealloc_gen, writer,
                  comment='終了関数')
-        gen_func(self.__repr_gen, writer, 
+        gen_func(self.__repr_gen, writer,
                  comment='repr 関数')
         gen_common(writer, self.__number_gen)
         gen_common(writer, self.__sequence_gen)
         gen_common(writer, self.__mapping_gen)
-        gen_func(self.__hash_gen, writer, 
+        gen_func(self.__hash_gen, writer,
                  comment='hash 関数')
         gen_func(self.__call_gen, writer,
                  comment='call 関数')
-        gen_func(self.__str_gen, writer, 
+        gen_func(self.__str_gen, writer,
                  comment='str 関数')
         gen_func(self.__richcompare_gen, writer,
                  comment='richcompare 関数')
@@ -1060,7 +1060,7 @@ class PyObjGen(GenBase):
                  comment='init 関数')
         gen_func(self.__new_gen, writer,
                  comment='new 関数')
-        
+
     def make_tp_init(self, writer):
         def gen_tp(writer, tp_name, rval):
             writer.gen_assign(f'{self.typename}.tp_{tp_name}', rval)
@@ -1095,7 +1095,7 @@ class PyObjGen(GenBase):
             self.__init_gen.gen_tp(writer)
         if self.__new_gen is not None:
             self.__new_gen.gen_tp(writer)
-    
+
     def make_ex_init(self, writer):
         if self.__ex_init_gen is not None:
             self.__ex_init_gen(writer)
@@ -1127,7 +1127,7 @@ class PyObjGen(GenBase):
         with writer.gen_if_block(f'{self.pyclassname}::Check(obj)'):
             writer.gen_assign(varname, f'{self.pyclassname}::_get_ref(obj)')
             writer.gen_return('true')
-        
+
     def gen_obj_conv(self, writer, *,
                      objname='self',
                      varname):
@@ -1143,7 +1143,7 @@ class PyObjGen(GenBase):
         """
         writer.gen_autoref_assign(refname,
                                   f'{self.pyclassname}::_get_ref({objname})')
-            
+
     def __check_number(self):
         if self.__number_gen is None:
             name = self.check_name('number')

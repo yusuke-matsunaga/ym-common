@@ -45,7 +45,7 @@ class InitCodeGen:
             writer.indent_set(0)
             return True
         return False
-    
+
 
 class ModuleGen(GenBase):
     """Python モジュールの初期化コードを生成するクラス
@@ -66,7 +66,7 @@ class ModuleGen(GenBase):
 
         # インクルードファイルのリスト
         self.__include_files = include_files
-        
+
         # メソッド構造体の定義
         # モジュール定義の場合は関数がなくても空のテーブルを津kる．
         tbl_name = self.check_name('methods')
@@ -77,7 +77,7 @@ class ModuleGen(GenBase):
 
         # Python 拡張クラスのリスト
         self.__pyclass_list = pyclass_list
-        
+
         # 追加の初期化コード
         self.__ex_init_gen = ex_init
 
@@ -121,7 +121,7 @@ class ModuleGen(GenBase):
         # インタロック用のモジュール名の置換
         replace_list.append(('%%CapModuleName%%',
                              self.modulename.upper()))
-        
+
         # テンプレートファイルは同じディレクトリにあると仮定している．
         template_file = self.template_file('custom_module.cc')
 
@@ -130,7 +130,7 @@ class ModuleGen(GenBase):
                        writer=CxxWriter(fout=fout),
                        gen_list=gen_list,
                        replace_list=replace_list)
-        
+
     def make_source(self, fout=sys.stdout):
         """モジュールの定義ファイルを出力する．
         """
@@ -154,7 +154,7 @@ class ModuleGen(GenBase):
         # 名前空間の置換
         if self.namespace is not None:
             replace_list.append(('%%NAMESPACE%%', self.namespace))
-        
+
         # テンプレートファイルは同じディレクトリにあると仮定している．
         template_file = self.template_file('custom_module.cc')
 

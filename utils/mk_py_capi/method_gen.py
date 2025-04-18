@@ -27,7 +27,7 @@ Method = namedtuple('Method',
 class MethodGen:
     """メソッドを作るクラス
     """
-    
+
     def __init__(self, gen, name, *, module_func=False):
         self.__gen = gen
         self.name = name
@@ -54,7 +54,7 @@ class MethodGen:
                                          has_keywords=has_keywords,
                                          func_body=func_body,
                                          doc_str=doc_str))
-                                         
+
     def __call__(self, writer):
         # 個々のメソッドの実装コードを生成する．
         for method in self.__method_list:

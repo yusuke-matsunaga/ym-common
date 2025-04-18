@@ -23,7 +23,7 @@ Sequence = namedtuple('Sequence',
                        'sq_inplace_repeat'])
 
 
-        
+
 class SequenceGen(Sequence):
     """Sequence オブジェクト構造体を作るクラス
     """
@@ -68,7 +68,7 @@ class SequenceGen(Sequence):
         self.typename = gen.typename
         self.name = name
         return self
-        
+
     def __call__(self, writer):
         # 個々の関数を生成する．
         gen_func(self.sq_length, writer)

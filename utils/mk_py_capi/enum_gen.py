@@ -65,7 +65,7 @@ class EnumGen(PyObjGen):
                 writer.gen_assign('const_obj', 'obj')
                 writer.gen_return('true')
         self.add_preamble(preamble_body)
-        
+
         self.add_dealloc(func_body=None)
 
         def reprfunc(writer):
@@ -96,7 +96,7 @@ class EnumGen(PyObjGen):
                                           cvarname='val',
                                           cvardefault=None,
                                           pyclassname=f'{self.pyclassname}'),])
-        
+
         def init_body(writer):
             writer.gen_comment('定数オブジェクトの生成・登録')
             for enum in enum_list:

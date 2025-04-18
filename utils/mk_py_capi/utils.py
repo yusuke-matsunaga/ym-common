@@ -30,7 +30,7 @@ def gen_func(func_gen, writer, *,
         func_gen(writer,
                  comment=comment,
                  comments=comments)
-        
+
 
 def add_member_def(line_list, member_name, func_def):
     """メンバ関数定義用の記述を作る．

@@ -28,7 +28,7 @@ class GenBase:
             for line in fin:
                 # 余分な改行を削除
                 line = line.rstrip()
-                 
+
                 for gen in gen_list:
                     # 特定のパタンに対する処理を行う．
                     if gen(line, writer):
@@ -39,7 +39,7 @@ class GenBase:
                         # 置換パタンによる置き換え
                         line = line.replace(rep_pat, rep_val)
                     writer.write_line(line)
-        
+
     def complete_name(self, name, default_name):
         """名前がない場合に名前を補完する．
         """
@@ -86,7 +86,7 @@ class IncludesGen:
             return True
         return False
 
-    
+
 class BeginNamespaceGen:
     """%%BEGIN_NAMESPACE%% の置換を行うクラス
     """

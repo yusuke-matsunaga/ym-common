@@ -236,7 +236,7 @@ class XorIop(Iop):
                          stmt='val1 ^= val2',
                          useref=useref)
 
-        
+
 class OrIop(Iop):
 
     def __init__(self, classname, *,
@@ -287,7 +287,7 @@ class BinOpGen(FuncBase):
                 self.body(writer)
             writer.gen_catch_invalid_argument()
 
-        
+
 class NumberGen:
     """Number オブジェクト構造体を作るクラス
     """

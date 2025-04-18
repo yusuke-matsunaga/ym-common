@@ -416,7 +416,6 @@ class InquiryGen(FuncBase):
             self.gen.gen_ref_conv(writer, refname='val')
             with writer.gen_try_block():
                 self.body(writer)
-                writer.gen_return('inquiry_val')
             writer.gen_catch_invalid_argument(error_val='-1')
 
 
@@ -755,4 +754,3 @@ class DeconvGen:
                 with writer.gen_if_block(f'{self.__extra_func}(obj, val)'):
                     writer.gen_return('true')
             self.body(writer)
-

@@ -16,7 +16,7 @@ Mapping = namedtuple('Mapping',
                      ['mp_length',
                       'mp_subscript',
                       'mp_ass_subscript'])
-        
+
 
 class MappingGen(Mapping):
     """Mapping オブジェクト構造体を作るクラス
@@ -44,7 +44,7 @@ class MappingGen(Mapping):
         self.gen = gen
         self.name = name
         return self
-        
+
     def __call__(self, writer):
         # 個々の関数を生成する．
         gen_func(self.mp_length, writer)

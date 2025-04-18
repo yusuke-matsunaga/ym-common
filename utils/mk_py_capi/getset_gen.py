@@ -37,7 +37,7 @@ class GetSetGen:
         self.__getter_list = []
         self.__setter_list = []
         self.__attr_list = []
-        
+
     def add_getter(self, gen, func_name, *,
                    has_closure=False,
                    func_body):
@@ -123,7 +123,7 @@ class GetSetGen:
                                        args=args):
                 getter.gen.gen_ref_conv(writer, refname='val')
                 getter.body(writer)
-                
+
         # setter 関数の生成
         for setter in self.__setter_list:
             arg0 = CArg.Self()
