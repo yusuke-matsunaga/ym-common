@@ -76,6 +76,7 @@ class EnumGen(PyObjGen):
                     writer.write_line(f'case {enum_info.cval}: str_val = "{enum_info.strname}"; break;')
                 if none_value is not None:
                     writer.write_line(f'case {none_value}: str_val = "None"; break;')
+            writer.gen_return_py_string('str_val')
         self.add_repr(func_body=reprfunc)
 
         def richcmpfunc(writer):

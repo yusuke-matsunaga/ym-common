@@ -154,7 +154,6 @@ class ReprFuncGen(FuncBase):
             self.gen.gen_ref_conv(writer, refname='val')
             with writer.gen_try_block():
                 self.body(writer)
-                writer.gen_return_py_string('str_val')
             writer.gen_catch_invalid_argument()
 
 
@@ -224,7 +223,7 @@ class CallFuncGen(FuncWithArgs):
                                    return_type='PyObject*',
                                    func_name=self.name,
                                    args=self.__args):
-            writer.gen_func_preamble(self.arg_list)
+            writer.gen_arg_parser(self.arg_list)
             self.gen.gen_ref_conv(writer, refname='val')
             with writer.gen_try_block():
                 self.body(writer)
@@ -304,7 +303,7 @@ class InitProcGen(FuncWithArgs):
                                    return_type='int',
                                    func_name=self.name,
                                    args=args):
-            writer.gen_func_preamble(self.arg_list, is_proc=True)
+            writer.gen_arg_parser(self.arg_list, is_proc=True)
             with writer.gen_try_block():
                 self.body(writer)
             writer.gen_catch_invalid_argument(error_val='-1')
@@ -348,10 +347,10 @@ class NewFuncGen(FuncWithArgs):
                                    func_name=self.name,
                                    args=args):
             if self.__disabled:
-                msg = f'"instantiation of \'{self.gen.classname}\' is disabled"'
+                msg = f'"Instantiation of \'{self.gen.classname}\' is disabled"'
                 writer.gen_type_error(msg)
             else:
-                writer.gen_func_preamble(self.arg_list, force_has_keywords=True)
+                writer.gen_arg_parser(self.arg_list, force_has_keywords=True)
                 with writer.gen_try_block():
                     self.body(writer)
                 writer.gen_catch_invalid_argument()

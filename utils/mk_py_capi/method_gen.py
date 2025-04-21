@@ -17,12 +17,47 @@ Method = namedtuple('Method',
                     ['gen',
                      'name',
                      'func_name',
-                     'arg_list',
+                     'arg_parser',
                      'is_static',
-                     'has_args',
-                     'has_keywords',
                      'func_body',
                      'doc_str'])
+
+class NullParser:
+    """引数を取らない場合のダミーパーサー
+    """
+
+    def __init__(self):
+        pass
+
+    def has_args(self):
+        return False
+
+    def has_keywords(self):
+        return False
+
+    def __call__(self, writer):
+        pass
+
+
+class DefaultParser:
+    """通常の引数パーサー
+    """
+
+    def __init__(self, arg_list):
+        self.__arg_list = arg_list
+        has_args, has_keywords = analyze_args(arg_list)
+        self.__has_args = has_args
+        self.__has_keywords = has_keywords
+
+    def has_args(self):
+        return self.__has_args
+
+    def has_keywords(self):
+        return self.__has_keywords
+
+    def __call__(self, writer):
+        writer.gen_arg_parser(self.__arg_list)
+
 
 class MethodGen:
     """メソッドを作るクラス
@@ -37,10 +72,16 @@ class MethodGen:
     def add(self, func_name, *,
             name,
             arg_list,
+            arg_parser,
             is_static,
             func_body,
             doc_str):
-        has_args, has_keywords = analyze_args(arg_list)
+        if arg_list is None:
+            if arg_parser is None:
+                arg_parser = NullParser()
+        else:
+            assert arg_parser is None
+            arg_parser = DefaultParser(arg_list)
         if func_body is None:
             def default_body(writer):
                 pass
@@ -48,10 +89,8 @@ class MethodGen:
         self.__method_list.append(Method(gen=self.__gen,
                                          name=name,
                                          func_name=func_name,
-                                         arg_list=arg_list,
+                                         arg_parser=arg_parser,
                                          is_static=is_static,
-                                         has_args=has_args,
-                                         has_keywords=has_keywords,
                                          func_body=func_body,
                                          doc_str=doc_str))
 
@@ -63,16 +102,16 @@ class MethodGen:
             else:
                 self_unused = False
             arg0 = CArg.Self(unused=self_unused)
-            args_unused = not method.has_args
+            args_unused = not method.arg_parser.has_args()
             arg1 = CArg.Args(unused=args_unused)
             args = [arg0, arg1]
-            if method.has_keywords:
+            if method.arg_parser.has_keywords():
                 args += [CArg.Kwds()]
             with writer.gen_func_block(comment=method.doc_str,
                                        return_type='PyObject*',
                                        func_name=method.func_name,
                                        args=args):
-                writer.gen_func_preamble(method.arg_list)
+                method.arg_parser(writer)
                 if not (self.__module_func or method.is_static):
                     self.__gen.gen_ref_conv(writer, refname='val')
                 method.func_body(writer)
@@ -85,16 +124,16 @@ class MethodGen:
                 writer.write_line(f'{{"{method.name}",')
                 writer.indent_inc(1)
                 line = ''
-                if method.has_keywords:
+                if method.arg_parser.has_keywords():
                     line = 'reinterpret_cast<PyCFunction>('
                 line += method.func_name
-                if method.has_keywords:
+                if method.arg_parser.has_keywords():
                     line += ')'
                 line += ','
                 writer.write_line(line)
-                if method.has_args:
+                if method.arg_parser.has_args():
                     line = 'METH_VARARGS'
-                    if method.has_keywords:
+                    if method.arg_parser.has_keywords():
                         line += ' | METH_KEYWORDS'
                 else:
                     line = 'METH_NOARGS'

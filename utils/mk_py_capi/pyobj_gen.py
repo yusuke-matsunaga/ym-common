@@ -828,6 +828,28 @@ class PyObjGen(GenBase):
         self.__method_gen.add(func_name,
                               name=name,
                               arg_list=arg_list,
+                              arg_parser=None,
+                              is_static=is_static,
+                              func_body=func_body,
+                              doc_str=doc_str)
+
+    def add_method_with_parser(self, name, *,
+                               func_name=None,
+                               func_body=None,
+                               arg_parser,
+                               is_static=False,
+                               doc_str=''):
+        """メソッド定義を追加する．
+        """
+        if self.__method_gen is None:
+            tbl_name = self.check_name('methods')
+            self.__method_gen = MethodGen(self, tbl_name)
+        # デフォルトの関数名は Python のメソッド名をそのまま用いる．
+        func_name = self.complete_name(func_name, name)
+        self.__method_gen.add(func_name,
+                              name=name,
+                              arg_list=None,
+                              arg_parser=arg_parser,
                               is_static=is_static,
                               func_body=func_body,
                               doc_str=doc_str)
@@ -843,6 +865,21 @@ class PyObjGen(GenBase):
                         func_name=func_name,
                         func_body=func_body,
                         arg_list=arg_list,
+                        is_static=True,
+                        doc_str=doc_str)
+
+    def add_static_method_with_parser(self, name, *,
+                                      func_name=None,
+                                      func_body=None,
+                                      arg_parser,
+                                      doc_str=''):
+        """スタティックメソッド定義を追加する．
+        """
+        self.add_method(name,
+                        func_name=func_name,
+                        func_body=func_body,
+                        arg_list=None,
+                        arg_parser=arg_parser,
                         is_static=True,
                         doc_str=doc_str)
 

@@ -60,9 +60,9 @@ class CxxWriter:
         line = f'#include {quote}{filename}{quote}'
         self.write_line(line)
 
-    def gen_func_preamble(self, arg_list, *,
-                          force_has_keywords=False,
-                          is_proc=False):
+    def gen_arg_parser(self, arg_list, *,
+                       force_has_keywords=False,
+                       is_proc=False):
         """引数を解釈する前処理のコードを生成する．
         """
         has_args, has_keywords = analyze_args(arg_list)
@@ -267,6 +267,27 @@ class CxxWriter:
         if incref:
             self.write_line('Py_XINCREF(self);')
         self.gen_return('self')
+
+    def gen_goto(self, label):
+        """ goto 文を出力する．
+        """
+        self.gen_stmt(f'goto {label}')
+
+    def gen_label(self, label):
+        """ ラベルを出力する．
+        """
+        self.indent_dec(1)
+        self.write_line(f'{label}:')
+        self.indent_inc(1)
+
+    def gen_tp_alloc(self, *,
+                     objclass,
+                     typevar='type',
+                     selfvar='self',
+                     objvar='my_obj'):
+        self.gen_auto_assign(f'{selfvar}', f'{typevar}->tp_alloc({typevar}, 0)')
+        self.gen_auto_assign(f'{objvar}',
+                             f'reinterpret_cast<{objclass}*>(self)')
 
     def gen_block(self, *,
                   no_crlf=False,
