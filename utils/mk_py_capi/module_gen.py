@@ -8,6 +8,7 @@
 """
 
 import re
+import os
 import sys
 from .genbase import GenBase
 from .genbase import IncludesGen, BeginNamespaceGen, EndNamespaceGen
@@ -55,20 +56,21 @@ class ModuleGen(GenBase):
                  modulename,
                  namespace=None,
                  doc_str='',
-                 include_files=[],
+                 pyclass_gen_list=[],
+                 extra_include_files=[],
                  submodule_list=[],
-                 pyclass_list=[],
                  ex_init=None):
         super().__init__()
         self.modulename = modulename
         self.namespace = namespace
         self.doc_str = doc_str
+        self.gen_list = pyclass_gen_list
 
         # インクルードファイルのリスト
-        self.__include_files = include_files
+        self.__include_files = [f'pym/{gen.pyclassname}.h' for gen in pyclass_gen_list] + extra_include_files
 
         # メソッド構造体の定義
-        # モジュール定義の場合は関数がなくても空のテーブルを津kる．
+        # モジュール定義の場合は関数がなくても空のテーブルをつくる．
         tbl_name = self.check_name('methods')
         self.__method_gen = MethodGen(self, tbl_name, module_func=True)
 
@@ -76,7 +78,7 @@ class ModuleGen(GenBase):
         self.__submodule_list = submodule_list
 
         # Python 拡張クラスのリスト
-        self.__pyclass_list = pyclass_list
+        self.__pyclass_list = [gen.pyclassname for gen in pyclass_gen_list]
 
         # 追加の初期化コード
         self.__ex_init_gen = ex_init
@@ -101,6 +103,22 @@ class ModuleGen(GenBase):
         """サブモジュールを追加する．
         """
         self.__submodule_list.append((name, init_func))
+
+    def make_all(self, *, include_dir, source_dir):
+        filename = os.path.join(include_dir, f'{self.modulename}.h')
+        with open(filename, 'wt') as fout:
+            self.make_header(fout=fout)
+        filename = os.path.join(source_dir, f'{self.modulename}_module.cc')
+        with open(filename, 'wt') as fout:
+            self.make_source(fout=fout)
+
+        for gen in self.gen_list:
+            filename = os.path.join(include_dir, f'{gen.pyclassname}.h')
+            with open(filename, 'wt') as fout:
+                gen.make_header(fout=fout)
+            filename = os.path.join(source_dir, f'{gen.pyclassname}.cc')
+            with open(filename, 'wt') as fout:
+                gen.make_source(fout=fout)
 
     def make_header(self, fout=sys.stdout):
         """ヘッダファイルを出力する．
