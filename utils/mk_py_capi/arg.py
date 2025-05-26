@@ -87,6 +87,36 @@ class IntArg(RawArg):
                          cvardefault=cvardefault)
 
 
+class Int32Arg(RawArg):
+    """std::int32_t 型の引数を表すクラス
+    """
+
+    def __init__(self, *,
+                 name=None,
+                 cvarname,
+                 cvardefault=None):
+        super().__init__(name=name,
+                         pchar='l',
+                         cvartype='std::int32_t',
+                         cvarname=cvarname,
+                         cvardefault=cvardefault)
+
+
+class Int64Arg(RawArg):
+    """int 型の引数を表すクラス
+    """
+
+    def __init__(self, *,
+                 name=None,
+                 cvarname,
+                 cvardefault=None):
+        super().__init__(name=name,
+                         pchar='L',
+                         cvartype='std::int64_t',
+                         cvarname=cvarname,
+                         cvardefault=cvardefault)
+
+
 class UintArg(RawArg):
     """unsigned int 型の引数を表すクラス
     """
@@ -98,6 +128,36 @@ class UintArg(RawArg):
         super().__init__(name=name,
                          pchar='I',
                          cvartype='unsigned int',
+                         cvarname=cvarname,
+                         cvardefault=cvardefault)
+
+
+class Uint32Arg(RawArg):
+    """std::uint32_t 型の引数を表すクラス
+    """
+
+    def __init__(self, *,
+                 name=None,
+                 cvarname,
+                 cvardefault=None):
+        super().__init__(name=name,
+                         pchar='k',
+                         cvartype='std::uint32_t',
+                         cvarname=cvarname,
+                         cvardefault=cvardefault)
+
+
+class Uint64Arg(RawArg):
+    """std::uint64_t 型の引数を表すクラス
+    """
+
+    def __init__(self, *,
+                 name=None,
+                 cvarname,
+                 cvardefault=None):
+        super().__init__(name=name,
+                         pchar='K',
+                         cvartype='std::uint64_t',
                          cvarname=cvarname,
                          cvardefault=cvardefault)
 

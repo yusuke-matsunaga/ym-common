@@ -11,7 +11,9 @@ from .module_gen import ModuleGen
 from .pyobj_gen import PyObjGen
 from .enum_gen import EnumGen, EnumInfo
 from .arg import OptArg, KwdArg
-from .arg import IntArg, UintArg, LongArg, UlongArg, DoubleArg
+from .arg import IntArg, Int32Arg, Int64Arg
+from .arg import UintArg, Uint32Arg, Uint64Arg
+from .arg import LongArg, UlongArg, DoubleArg
 from .arg import BoolArg, StringArg
 from .arg import RawObjArg, TypedRawObjArg
 from .arg import ObjConvArgBase, ObjConvArg, TypedObjConvArg
