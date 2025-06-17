@@ -274,7 +274,7 @@ function ( ym_use_gtest )
   find_package(Threads REQUIRED)
 
   set( __git_repository https://github.com/google/googletest.git )
-  set( __git_tag release-1.11.0 )
+  set( __git_tag main )
   if ( ${ARGC} )
     math( EXPR __n "${ARGC} - 1" )
     foreach ( pos RANGE 0 ${__n} )
