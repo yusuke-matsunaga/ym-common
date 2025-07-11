@@ -29,9 +29,9 @@ multitimer_test()
     }
   }
   mt.start(0);
-  cout << mt.get_time(0) << endl
-       << mt.get_time(1) << endl
-       << mt.get_time(2) << endl;
+  std::cout << mt.get_time(0) << std::endl
+	    << mt.get_time(1) << std::endl
+	    << mt.get_time(2) << std::endl;
 }
 
 END_NAMESPACE_YM

@@ -28,7 +28,7 @@ timer_test(
   timer.stop();
 
   auto t = timer.get_time();
-  cout << t << endl;
+  std::cout << t << std::endl;
 
   return 0;
 }

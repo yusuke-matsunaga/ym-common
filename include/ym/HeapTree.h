@@ -176,21 +176,21 @@ public:
   /// @brief 内容を出力する．
   void
   print(
-    ostream& s,                                       ///< [in] 出力先のストリーム
+    std::ostream& s,                                  ///< [in] 出力先のストリーム
     std::function<void(ostream&, ItemType)> printfunc ///< [in] 要素の出力関数
-    = [](ostream& s, ItemType item) {
+    = [](std::ostream& s, ItemType item) {
       s << item;
     }
   ) const
   {
-    s << " heap_size = " << size() << endl;
+    s << " heap_size = " << size() << std::endl;
     for ( auto item: mArray ) {
       s << " Item#" << heap_pos(item) - 1
 	<< ": ";
       printfunc(s, item);
-      s << endl;
+      s << std::endl;
     }
-    s << endl;
+    s << std::endl;
   }
 
 
@@ -304,7 +304,7 @@ private:
   //////////////////////////////////////////////////////////////////////
 
   // 要素の配列
-  vector<ItemType> mArray;
+  std::vector<ItemType> mArray;
 
   // 要素をキーにして mArray 上の位置を持つ辞書
   // 実際には位置＋１の値を持つ．

@@ -8,6 +8,9 @@
 /// Copyright (C) 2016, 2021 Yusuke Matsunaga
 /// All rights reserved.
 
+#include <exception>
+#include <iostream>
+
 
 BEGIN_NAMESPACE_YM
 
@@ -30,7 +33,7 @@ const bool ym_check = true;
 /// このクラスは例外が起こったファイル名と行番号を持つ．
 //////////////////////////////////////////////////////////////////////
 class AssertError :
-  public exception
+  public std::exception
 {
 public:
 
@@ -78,9 +81,9 @@ private:
 /// @return s をそのまま返す
 //////////////////////////////////////////////////////////////////////
 inline
-ostream&
+std::ostream&
 operator<<(
-  ostream& s,            ///< [in] 出力ストリーム
+  std::ostream& s,            ///< [in] 出力ストリーム
   const AssertError& obj ///< [in] エラーオブジェクト
 )
 {

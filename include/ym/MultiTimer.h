@@ -135,7 +135,7 @@ private:
   time_point mStartTime;
 
   // 累積経過時間(ミリ秒)
-  vector<double> mAccTime;
+  std::vector<double> mAccTime;
 
 };
 
