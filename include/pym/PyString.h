@@ -25,7 +25,7 @@ class PyString
 {
 public:
 
-  using ElemType = string;
+  using ElemType = std::string;
 
 public:
 
@@ -92,7 +92,7 @@ public:
   static
   PyObject*
   ToPyList(
-    const vector<ElemType>& val_list ///< [in] 値のリスト
+    const std::vector<ElemType>& val_list ///< [in] 値のリスト
   )
   {
     return PyList<ElemType, PyString>::ToPyObject(val_list);

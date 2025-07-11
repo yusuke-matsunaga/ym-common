@@ -71,8 +71,8 @@ public:
       return false;
     }
     auto sys_modules = PyImport_GetModuleDict();
-    auto m_name = string{PyModule_GetName(m)};
-    string h_name = m_name + "." + name;
+    auto m_name = std::string{PyModule_GetName(m)};
+    auto h_name = m_name + "." + name;
     if ( PyDict_SetItemString(sys_modules,
 			      h_name.c_str(), sub_m) < 0 ) {
       return false;

@@ -147,7 +147,7 @@ typedef size_t SizeType;
 #define YM_NAMESPACE_STR "::@YM_NSNAME@"
 
 // 雑多な定義
-//#include "ym/ym_stl.h"
+#include "ym/ym_stl.h"
 #include "ym/ym_assert.h"
 
 #endif // YM_CONFIG_H

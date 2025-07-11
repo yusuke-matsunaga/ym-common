@@ -176,8 +176,8 @@ public:
   /// @brief 内容を出力する．
   void
   print(
-    std::ostream& s,                                  ///< [in] 出力先のストリーム
-    std::function<void(ostream&, ItemType)> printfunc ///< [in] 要素の出力関数
+    std::ostream& s,                                       ///< [in] 出力先のストリーム
+    std::function<void(std::ostream&, ItemType)> printfunc ///< [in] 要素の出力関数
     = [](std::ostream& s, ItemType item) {
       s << item;
     }

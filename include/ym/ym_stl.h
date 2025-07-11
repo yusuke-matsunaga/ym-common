@@ -31,7 +31,7 @@
 #include <algorithm>
 #include <functional>
 
-
+#if 0
 //////////////////////////////////////////////////////////////////////
 // std:: にある汎用的な名前を自分の名前空間(YM_NAMESPACE)にインポートする
 //////////////////////////////////////////////////////////////////////
@@ -83,5 +83,6 @@ using std::tie;
 using std::ignore;
 
 END_NAMESPACE_YM
+#endif
 
 #endif // YM_STL_H
